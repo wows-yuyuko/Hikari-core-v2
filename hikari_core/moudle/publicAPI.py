@@ -96,7 +96,8 @@ async def get_ship_byName(shipname: str) -> List:
                         Ship_Name_Cn=each['nameCn'],
                         Ship_Name_Cn360=each['nameCn360'],
                         Ship_Name_English=each['nameEnglish'],
-                        ship_Name_Numbers=each['nameEnglish'],
+                        ship_Name_Numbers=each['nameNumbers'],
+                        ship_Name_Ru=each['nameRu'],
                         Ship_Id=each['shipId'],
                     )
                 )

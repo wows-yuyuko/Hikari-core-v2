@@ -25,6 +25,7 @@ class Ship_Model(BaseModel):
     Ship_Name_Cn360: Optional[str]
     Ship_Name_English: Optional[str]
     ship_Name_Numbers: Optional[str]
+    ship_Name_Ru: Optional[str]
     Ship_Id: Optional[int]
 
 
