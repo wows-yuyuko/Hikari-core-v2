@@ -17,7 +17,7 @@ async def start():
     global start_time
     start_time = time.time()
     set_hikari_config(use_broswer='chromium', http2=False, proxy='http://localhost:7890', token='test:yuyuko_test', yuyuko_type='QQ_CHANNEL')
-    await command('asia ship.rank 无比', False)
+    await command('eu Izumi_Hiyori ship BA蒙大拿', False)
     # await command("公会战记录 cn 团子大家族 25", False)
     # await command("公会战记录 cn 团子大家族 25 1", False)
     # await command("公会战记录 me 25", False)

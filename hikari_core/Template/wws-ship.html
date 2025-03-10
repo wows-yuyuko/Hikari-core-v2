@@ -90,6 +90,23 @@
         display: flex;
         flex-direction: column;
     }
+    .ranking {
+		display: flex;
+		justify-content: space-around;
+		align-content: space-around;
+		height: 60px;
+		line-height: 40px;
+		font-weight: bold;
+		margin-bottom: 15px;
+	}
+
+	.ranking_border {
+		margin-top: 10px;
+		height: 40px;
+		border-radius: 28px;
+		padding: 4px 20px;
+		background-color: #F2F2F2;
+	}
 
     .masking-header {
         display: flex;
@@ -441,6 +458,14 @@
                 <span>N/A</span>
             </div>
         {% endif %}
+
+        {% if data['shipRank'] %}
+			<div class="ranking">
+				<div class="ranking_border"><span
+					style="color: #606266;">排名</span>&nbsp;&nbsp;<span>{{data['shipRank']}}</span>
+				</div>
+			</div>
+		{% endif %}
 
         <div class="information-body">
             <div class="information-col information-table-header two-background-color" style="border-radius: 16px">
