@@ -6,7 +6,7 @@ from typing import Tuple
 
 dir_path = Path(__file__).parent
 template_path = dir_path / 'Template'
-__version__ = '1.1.2'
+__version__ = '1.1.4'
 
 
 @dataclass
@@ -151,9 +151,9 @@ async def set_ShipRank_Numbers(data, server, shipId):
             maxDamage = int(each.select('td span')[6].string.replace(' ', ''))
             xp = int(each.select('td span')[7].string.replace(' ', ''))
             maxXp = int(each.select('td span')[8].string.replace(' ', ''))
-            planesDestroyed = float(each.select('td span')[9].string)
-            planesDestroyedColor = await search_color(each.select('td span')[9].attrs['style'])
-            maxPlanesDestroyed = int(each.select('td span')[10].string)
+            # planesDestroyed = float(each.select('td span')[9].string)
+            # planesDestroyedColor = await search_color(each.select('td span')[9].attrs['style'])
+            # maxPlanesDestroyed = int(each.select('td span')[10].string)
             info = {
                 'accountId': accountId,
                 'battles': battles,
@@ -164,10 +164,7 @@ async def set_ShipRank_Numbers(data, server, shipId):
                 'index': index,
                 'maxDamage': maxDamage,
                 'maxFrags': maxFrags,
-                'maxPlanesDestroyed': maxPlanesDestroyed,
                 'maxXp': maxXp,
-                'planesDestroyed': planesDestroyed,
-                'planesDestroyedColor': planesDestroyedColor,
                 'pr': pr,
                 'prColor': prColor,
                 'server': server,
