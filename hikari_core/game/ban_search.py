@@ -17,11 +17,11 @@ async def get_BanInfo(hikari: Hikari_Model) -> Hikari_Model:
     try:
         if hikari.Status == 'init':
             if hikari.Input.Search_Type == 3:
-                hikari.Input.AccountId = await get_AccountIdByName(hikari.Input.Server, hikari.Input.AccountName)
+                hikari.Input.AccountId = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
                 if not isinstance(hikari.Input.AccountId, int):
                     return hikari.error(f'{hikari.Input.AccountId}')
             else:
-                bindResult = await get_DefaultBindInfo(hikari.Input.Platform, hikari.Input.PlatformId)
+                bindResult = await get_DefaultBindInfo(hikari, hikari.Input.Platform, hikari.Input.PlatformId)
                 if bindResult:
                     if bindResult['serverType'] == 'cn':
                         hikari.Input.AccountId = int(bindResult['accountId'])
@@ -32,7 +32,7 @@ async def get_BanInfo(hikari: Hikari_Model) -> Hikari_Model:
         else:
             return hikari.error('当前请求状态错误')
         url = f'{hikari_config.yuyuko_url}/public/wows/ban/cn/user'
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.post(url, json={'accountId': hikari.Input.AccountId}, timeout=10)
         result = orjson.loads(resp.content)
         hikari.Output.Yuyuko_Code = result['code']

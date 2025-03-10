@@ -60,8 +60,15 @@ async def create_client_default() -> AsyncClient:
     return _client_default
 
 
-async def get_client_yuyuko() -> AsyncClient:
-    return _client_yuyuko if _client_yuyuko else await create_client_yuyuko()
+async def get_client_yuyuko(UserModel) -> AsyncClient:
+    user_info_json = UserModel.json()
+    global _client_yuyuko
+    if _client_yuyuko:
+        _client_yuyuko.headers.update({'YUYUKO-INFO': user_info_json})
+    else:
+        _client_yuyuko = await create_client_yuyuko()
+        _client_yuyuko.headers.update({'YUYUKO-INFO': user_info_json})
+    return _client_yuyuko
 
 
 async def get_client_wg() -> AsyncClient:

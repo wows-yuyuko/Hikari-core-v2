@@ -17,7 +17,7 @@ async def get_RecentsInfo(hikari: Hikari_Model) -> Hikari_Model:
     try:
         if hikari.Status == 'init':
             if hikari.Input.Search_Type == 3:
-                hikari.Input.AccountId = await get_AccountIdByName(hikari.Input.Server, hikari.Input.AccountName)
+                hikari.Input.AccountId = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
                 if not isinstance(hikari.Input.AccountId, int):
                     return hikari.error(f'{hikari.Input.AccountId}')
         else:
@@ -40,7 +40,7 @@ async def get_RecentsInfo(hikari: Hikari_Model) -> Hikari_Model:
                 'shipId': 0,
             }
         print(params)
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=10)
         result = orjson.loads(resp.content)
         hikari.Output.Yuyuko_Code = result['code']

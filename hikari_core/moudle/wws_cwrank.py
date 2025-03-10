@@ -26,7 +26,7 @@ async def get_CwRank(hikari: Hikari_Model) -> Hikari_Model:
             'page': 1,
             'size': 100,
         }
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=10)
         result = orjson.loads(resp.content)
         hikari.Output.Yuyuko_Code = result['code']

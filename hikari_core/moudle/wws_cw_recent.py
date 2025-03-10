@@ -16,7 +16,7 @@ async def get_cw_recent(hikari: Hikari_Model) -> Hikari_Model:
     try:
         if hikari.Status == 'init':
             if hikari.Input.Search_Type == 3:
-                clanList = await get_ClanIdByName(hikari.Input.Server, hikari.Input.ClanName)
+                clanList = await get_ClanIdByName(hikari, hikari.Input.Server, hikari.Input.ClanName)
                 if clanList:
                     if len(clanList) < 2:
                         hikari.Input.ClanId = clanList[0]['clanId']
@@ -51,7 +51,7 @@ async def get_cw_recent(hikari: Hikari_Model) -> Hikari_Model:
             'team': hikari.Input.Recent_Day,
         }
 
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=10)
         result = orjson.loads(resp.content)
         hikari.Output.Yuyuko_Code = result['code']
@@ -59,7 +59,7 @@ async def get_cw_recent(hikari: Hikari_Model) -> Hikari_Model:
             if result['data']:
                 hikari.set_template_info('wws-clan-cw.html', 1200, 100)
             else:
-                return hikari.failed("没有战斗数据")
+                return hikari.failed('没有战斗数据')
             return hikari.success(result['data'])
         elif result['code'] == 403:
             return hikari.failed(f"{result['message']}\n请先绑定账号")

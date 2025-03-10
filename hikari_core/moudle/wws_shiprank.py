@@ -58,7 +58,7 @@ async def search_ShipRank_Yuyuko(hikari: Hikari_Model):
     try:
         url = f'{hikari_config.yuyuko_url}/api/upload/numbers/data/v2/upload/ship/rank'
         params = {'server': hikari.Input.Server, 'shipId': int(hikari.Input.ShipInfo.Ship_Id)}
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=10)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:
@@ -106,7 +106,7 @@ async def search_ShipRank_Numbers(hikari: Hikari_Model):
 async def post_ShipRank(data):
     try:
         url = f'{hikari_config.yuyuko_url}/api/upload/numbers/data/upload/ship/rank'
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.post(url, json=data, timeout=10)
         result = orjson.loads(resp.content)
         logger.success(result)
@@ -121,7 +121,7 @@ async def post_ShipRank(data):
 async def search_cn_rank(hikari: Hikari_Model):
     try:
         url = f'{hikari_config.yuyuko_url}/public/rank/ship/cn/{int(hikari.Input.ShipInfo.Ship_Id)}/0?page=1&desc=true'
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, timeout=10)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:

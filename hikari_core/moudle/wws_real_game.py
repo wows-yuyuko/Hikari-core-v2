@@ -182,7 +182,7 @@ async def get_diff_ship(hikari: Hikari_Model):  # noqa: PLR0915
                         else:
                             shipId = int(match.group(1))
                         params = {'shipId': shipId}
-                        client_yuyuko = await get_client_yuyuko()
+                        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
                         resp = await client_yuyuko.get(seach_ship_url, params=params)
                         result = orjson.loads(resp.content)
                         try:
@@ -244,7 +244,7 @@ async def add_listen_list(hikari: Hikari_Model):
     try:
         if hikari.Status == 'init':
             if hikari.Input.Search_Type == 3:
-                hikari.Input.AccountId = await get_AccountIdByName(hikari.Input.Server, hikari.Input.AccountName)
+                hikari.Input.AccountId = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
                 if not isinstance(hikari.Input.AccountId, int):
                     return hikari.error(f'{hikari.Input.AccountId}')
         else:

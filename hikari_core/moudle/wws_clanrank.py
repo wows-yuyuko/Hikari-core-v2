@@ -16,7 +16,7 @@ async def get_ClanRank(hikari: Hikari_Model) -> Hikari_Model:
     try:
         if hikari.Status == 'init':
             if hikari.Input.Search_Type == 3:
-                clanList = await get_ClanIdByName(hikari.Input.Server, hikari.Input.ClanName)
+                clanList = await get_ClanIdByName(hikari, hikari.Input.Server, hikari.Input.ClanName)
                 if clanList:
                     if len(clanList) < 2:
                         hikari.Input.ClanId = clanList[0]['clanId']
@@ -48,7 +48,7 @@ async def get_ClanRank(hikari: Hikari_Model) -> Hikari_Model:
             params = {'server': hikari.Input.Server, 'accountId': hikari.Input.ClanId}
         else:
             params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId}
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=10)
         result = orjson.loads(resp.content)
         hikari.Output.Yuyuko_Code = result['code']

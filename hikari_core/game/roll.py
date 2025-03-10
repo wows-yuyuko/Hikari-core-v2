@@ -28,7 +28,7 @@ async def roll_ship(hikari: Hikari_Model):
             'shipType': hikari.Input.ShipInfo.Ship_Type,
         }
         url = f'{hikari_config.yuyuko_url}/public/wows/roll/ship/roll'
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.post(url, json=params, timeout=10)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:

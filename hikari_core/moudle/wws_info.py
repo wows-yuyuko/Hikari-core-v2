@@ -16,15 +16,15 @@ async def get_AccountInfo(hikari: Hikari_Model) -> Hikari_Model:
     try:
         if hikari.Status == 'init':
             if hikari.Input.Search_Type == 3:
-                hikari.Input.AccountId = await get_AccountIdByName(hikari.Input.Server, hikari.Input.AccountName)
+                hikari.Input.AccountId = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
                 if not isinstance(hikari.Input.AccountId, int):
                     return hikari.error(f'{hikari.Input.AccountId}')
         else:
             return hikari.error('当前请求状态错误')
         if hikari.Input.Search_Type == 3:
-            is_cache = await check_yuyuko_cache(hikari.Input.Server, hikari.Input.AccountId)
+            is_cache = await check_yuyuko_cache(hikari, hikari.Input.Server, hikari.Input.AccountId)
         else:
-            is_cache = await check_yuyuko_cache(hikari.Input.Platform, hikari.Input.PlatformId)
+            is_cache = await check_yuyuko_cache(hikari, hikari.Input.Platform, hikari.Input.PlatformId)
         if is_cache:
             logger.success('上报数据成功')
         else:
@@ -34,7 +34,7 @@ async def get_AccountInfo(hikari: Hikari_Model) -> Hikari_Model:
             params = {'server': hikari.Input.Server, 'accountId': hikari.Input.AccountId}
         else:
             params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId}
-        client_yuyuko = await get_client_yuyuko()
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=10)
         result = orjson.loads(resp.content)
         hikari.Output.Yuyuko_Code = result['code']
