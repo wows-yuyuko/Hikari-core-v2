@@ -17,7 +17,7 @@ async def get_ShipRecent(hikari: Hikari_Model) -> Hikari_Model:
     """查询单船Recent"""
     try:
         if hikari.Status == 'init':
-            shipList = await get_ship_byName(hikari.Input.ShipInfo.Ship_Name_Cn)
+            shipList = await get_ship_byName(hikari)
             if shipList:
                 if len(shipList) < 2:
                     hikari.Input.ShipInfo = shipList[0]
