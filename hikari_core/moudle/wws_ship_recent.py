@@ -6,6 +6,7 @@ import orjson
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
+from ..config import hikari_config
 from ..HttpClient_Pool import get_client_yuyuko, recreate_client_yuyuko
 from ..model import Hikari_Model
 from .publicAPI import check_yuyuko_cache, get_AccountIdByName, get_ship_byName
@@ -49,7 +50,7 @@ async def get_ShipRecent(hikari: Hikari_Model) -> Hikari_Model:
         else:
             logger.success('跳过上报数据，直接请求')
 
-        url = 'https://recent.wows.shinoaki.com:8890/api/wows/recent/day/list/info'
+        url = f'{hikari_config.yuyuko_url}/api/wows/recent/day/list/info'
         if hikari.Input.Search_Type == 3:
             params = {
                 'server': hikari.Input.Server,

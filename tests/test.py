@@ -16,8 +16,10 @@ group_id = '967546463'
 async def start():
     global start_time
     start_time = time.time()
-    set_hikari_config(use_broswer='chromium', http2=False, proxy='http://localhost:7890', token='test:yuyuko_test', yuyuko_type='QQ_CHANNEL')
-    await command('me ship 奥斯汀', False)
+    set_hikari_config(use_broswer='chromium', http2=False, proxy='http://localhost:7890',
+                      local_test=True,
+                      token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL')
+    await command('me recent 7', False)
     # await command("公会战记录 cn 团子大家族 25", False)
     # await command("公会战记录 cn 团子大家族 25 1", False)
     # await command("公会战记录 me 25", False)

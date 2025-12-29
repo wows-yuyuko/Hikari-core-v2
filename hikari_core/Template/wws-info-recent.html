@@ -3,32 +3,18 @@
 <head>
     <meta charset="utf-8">
     <title></title>
+    <link href="https://wows.shinoaki.com/wows-web/main.css" rel="stylesheet" type="text/css">
 </head>
 <style>
-    * {
-        padding: 0;
-        margin: 0;
-    }
 
-    .flex-2 {
-        flex: 2;
-    }
-
-    .flex-3 {
-        flex: 3;
-    }
-
-    .flex-4 {
-        flex: 4;
-    }
-
-    .flex-8 {
-        flex: 8;
-    }
-
-    .flex-10 {
-        flex: 10;
-    }
+    {%if data['userInfo']['avatar']['poster']['status']==2 %}
+        .main-content{
+            background: url("{{data['userInfo']['avatar']['poster']['data']}}") no-repeat;
+            background-position: center;
+            background-size: cover;
+            min-height: 100vh
+        }
+    {% endif %}
 
     {%if data['userInfo']['avatar']['colorName']['status']==2 %}
         .mirage-text {
@@ -38,15 +24,6 @@
             animation: ran-7e872de5 10s linear infinite;
         }
     {% endif %}
-
-    .main-content {
-        width: 1500px;
-        font-size: 30px;
-        font-family: "Microsoft YaHei UI", serif;
-        font-weight: bold;
-        background-size: contain;
-        /*background: url("https://shinoaki.com/110554439_p0.jpg") no-repeat;*/
-    }
 
     .page-header {
         border-radius: 36px;
@@ -78,42 +55,6 @@
     }
 
 
-    .ship-name {
-        text-align: left;
-        margin-left: 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        flex-grow: 1;
-        width: 0;
-    }
-
-    .random-col-item-ship {
-        overflow: hidden;
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-        padding: 0 0 0 15px;
-    }
-
-    .page-box {
-        width: 1500px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .masking-header {
-        display: flex;
-        justify-content: flex-start;
-        height: 280px;
-        width: auto;
-        margin-top: 10px;
-        margin-left: 10px;
-        gap: 15px;
-        border-radius: 36px;
-        background: linear-gradient(to right, rgba(250, 250, 250, 0.75) 600px,rgba(250, 250, 250, 0)  );
-    }
-
     .clan-user-server {
         margin: 20px;
         text-align: left;
@@ -123,276 +64,6 @@
         font-weight: bold;
         flex-grow: 1;
         justify-content: center;
-    {% if data['userInfo']['avatar']['sign']['status'] != 2 %}
-        gap: 20px;
-    {% endif %}
-
-    }
-
-    .user-info {
-        font-weight: bolder;
-        line-height: 30px;
-        font-size: 45px;
-    }
-
-    .user-sign-time {
-        margin-top: 30px;
-        font-family: "Microsoft YaHei UI Light", serif;
-    }
-
-    .user-server {
-        margin-top: 5px;
-        font-family: "Microsoft YaHei UI Light", serif;
-    }
-
-    .server-style {
-        font-weight: bold;
-    }
-
-    .user-signature {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        padding: 30px;
-        gap: 10px;
-        width: auto;
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 36px;
-        margin-top: 30px;
-    }
-
-    .pr {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        line-height: 80px;
-        font-size: 35px;
-        border-radius: 26px;
-        margin-left: 50px;
-        margin-right: 50px;
-    }
-
-    .recnet-time {
-        text-align: center;
-        font-weight: normal;
-        margin-top: 20px;
-    }
-
-    .overview-change {
-        display: flex;
-        margin-top: 30px;
-        padding: 0 80px;
-        height: 450px;
-    }
-
-    .overview-change-item {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        margin: 0 20px;
-    }
-
-    .item-top {
-        flex: 5;
-        border-radius: 16px;
-    }
-
-    .item-bottom {
-        display: flex;
-        flex: 4;
-        margin-top: 20px;
-    }
-
-    .bottom-mini-item-left {
-        margin-right: 10px;
-    }
-
-    .bottom-mini-item-right {
-        margin-left: 10px;
-    }
-
-    .bottom-mini-item-left,
-    .bottom-mini-item-right {
-        display: flex;
-        flex-direction: column;
-        border-radius: 16px;
-        flex: 1;
-    }
-
-    .one-background-color {
-        /*background: #FAFAFAD9 85%;*/
-        background-color: #F2F2F2;
-    }
-
-    .two-background-color {
-        /*background: rgba(217, 217, 217, 0.7);*/
-        background-color: #D9D9D9;
-    }
-
-    .item-top {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .item-top div {
-        height: 120px;
-        text-align: center;
-        font-size: 60px;
-    }
-
-    .item-top-top {
-        color: #606266;
-        font-weight: normal;
-        line-height: 150px;
-    }
-
-    .item-top-bottom {
-        line-height: 90px;
-    }
-
-
-    .mini-item-top {
-        color: #606266;
-        font-weight: normal;
-        line-height: 135px;
-    }
-
-    .mini-item-bottom {
-        line-height: 45px;
-    }
-
-    .bottom-mini-item-left div,
-    .bottom-mini-item-right div {
-        height: 95px;
-        text-align: center;
-        font-size: 35px;
-    }
-
-    .information-header {
-        margin: 0 400px;
-        margin-top: 30px;
-        height: 60px;
-        line-height: 60px;
-        border-radius: 16px;
-        /*background: rgba(217, 217, 217, 0.7);*/
-        text-align: center;
-    }
-
-    .information-body {
-        margin: 0 100px;
-        margin-top: 30px;
-        display: flex;
-        flex-direction: column;
-        /*background-color: #F2F2F2;*/
-        border-radius: 16px;
-    }
-
-    .information-col {
-        height: 60px;
-        display: flex;
-        line-height: 60px;
-    }
-
-    .information-col-item {
-        flex: 1;
-        text-align: center;
-    }
-
-    .information-table-header {
-        color: #606266;
-    }
-
-    .information-type {
-        color: #909399;
-    }
-
-    .random-header {
-        margin: 0 400px;
-        margin-top: 30px;
-        height: 60px;
-        line-height: 60px;
-        border-radius: 16px;
-        /*background-color: #D9D9D9;*/
-        text-align: center;
-    }
-
-    .random-data {
-        display: flex;
-        flex-direction: column;
-        margin: 0 100px;
-        margin-top: 30px;
-        /*background-color: #F2F2F2;*/
-        border-radius: 16px;
-    }
-
-    .random-data-col {
-        display: flex;
-        height: 90px;
-    }
-
-    .random-col-item {
-        line-height: 90px;
-        text-align: center;
-    }
-
-    .random-table-header {
-        color: #606266;
-        height: 60px;
-        display: flex;
-    }
-
-    .random-table-header .random-col-item {
-        line-height: 60px;
-    }
-
-    .footer {
-        margin-top: 30px;
-        text-align: center;
-        font-weight: bold;
-        font-size: 24px;
-        color: #909399;
-        margin-bottom: 20px;
-    }
-
-    .rank-data-col {
-        display: flex;
-        height: 90px;
-    }
-
-    .frag-data {
-        display: flex;
-        margin: 30px 90px;
-    }
-
-    .frag-data-col {
-        display: flex;
-        flex: 1;
-        margin-bottom: 20px;
-    }
-
-    .frag-item {
-        flex: 1;
-        text-align: center;
-        /*background-color: #F2F2F2;*/
-        border-radius: 16px;
-        margin: 0 10px;
-    }
-
-    .frag-key, .frag-value {
-        height: 100px;
-        font-size: 35px;
-    }
-
-    .frag-key {
-        color: #606266;
-        font-weight: normal;
-        line-height: 120px;
-    }
-
-    .frag-value {
-        line-height: 80px;
     }
 </style>
 <body>
@@ -546,9 +217,9 @@
             </div>
         {% endif %}
 
-        <div class="information-header two-background-color">综合战绩</div>
-        <div class="information-body">
-            <div class="information-col information-table-header">
+        <div class="random-header one-background-color">综合战绩</div>
+        <div class="information-body one-background-color data-battle-type">
+            <div class="information-col ">
                 <div class="information-col-item">类型</div>
                 <div class="information-col-item">场次</div>
                 <div class="information-col-item">胜率</div>
@@ -559,7 +230,7 @@
             </div>
             {% if data['battleTypeInfo']['PVP_SOLO']['battle'] %}
                 <div class="information-col">
-                    <div class="information-col-item information-type">单野</div>
+                    <div class="information-col-item ">单野</div>
                     <div class="information-col-item">{{ data['battleTypeInfo']['PVP_SOLO']['battleInfo']['battleInfo']['battle'] }}</div>
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['win'] }}%
@@ -575,7 +246,7 @@
 
             {% if data['battleTypeInfo']['PVP_DIV2']['battle'] %}
                 <div class="information-col">
-                    <div class="information-col-item information-type">自行车</div>
+                    <div class="information-col-item ">自行车</div>
                     <div class="information-col-item">{{ data['battleTypeInfo']['PVP_DIV2']['battleInfo']['battleInfo']['battle'] }}</div>
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['win'] }}%
@@ -591,7 +262,7 @@
 
             {% if data['battleTypeInfo']['PVP_DIV3']['battle'] %}
                 <div class="information-col">
-                    <div class="information-col-item information-type">三轮车</div>
+                    <div class="information-col-item ">三轮车</div>
                     <div class="information-col-item">{{ data['battleTypeInfo']['PVP_DIV3']['battleInfo']['battleInfo']['battle'] }}</div>
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['win'] }}%
@@ -607,7 +278,7 @@
 
             {% if data['battleTypeInfo']['RANK_SOLO']['battle'] %}
                 <div class="information-col">
-                    <div class="information-col-item information-type">排位</div>
+                    <div class="information-col-item ">排位</div>
                     <div class="information-col-item">{{ data['battleTypeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] }}</div>
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['win'] }}%
@@ -623,40 +294,40 @@
         </div>
 
         {% if data['battleTypeInfo']['PVP']['battle'] %}
-            <div class="random-header two-background-color">随机战数据</div>
-            <div class="random-data one-background-color">
-                <div class="random-table-header">
-                    <div class="random-col-item flex-4">等级</div>
-                    <div class="random-col-item flex-8">战舰</div>
-                    <div class="random-col-item flex-3">场次</div>
-                    <div class="random-col-item flex-3">PR</div>
-                    <div class="random-col-item flex-3">胜率</div>
-                    <div class="random-col-item flex-4">场均</div>
-                    <div class="random-col-item flex-3">击杀</div>
-                    <div class="random-col-item flex-3">命中</div>
+            <div class="random-header one-background-color">随机战</div>
+            <div class="information-body one-background-color data-battle-type">
+                <div class="ship-information-col ">
+                    <div class="ship-col-item flex-4">等级</div>
+                    <div class="ship-col-item flex-8">战舰</div>
+                    <div class="ship-col-item flex-3">场次</div>
+                    <div class="ship-col-item flex-3">PR</div>
+                    <div class="ship-col-item flex-3">胜率</div>
+                    <div class="ship-col-item flex-4">场均</div>
+                    <div class="ship-col-item flex-3">击杀</div>
+                    <div class="ship-col-item flex-3">命中</div>
                 </div>
                 {% for ship in data['shipInfoBattleList'] %}
                     {% if ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle']>0 %}
-                        <div class="random-data-col">
-                            <div class="random-col-item flex-4" style="text-align: left;">
+                        <div class="ship-data-col">
+                            <div class="ship-col-item flex-4" style="text-align: left;">
                                 <span style="background: url('{{ ship['shipInfo']['countryImage'] }}') no-repeat;background-size: contain;background-position: center;margin-left: 10px;padding: 20px;margin-right: 10px;"></span>
                                 <span style="background: url('{{ ship['shipInfo']['shipTypeImage'] }}') no-repeat;background-size: contain;background-position: center;padding: 20px;margin-right: 10px;"></span>
                                 <span>{{ ship['shipInfo']['levelStr'] }}</span></div>
-                            <div class="random-col-item random-col-item-ship flex-8">
+                            <div class="ship-col-item ship-col-item-ship flex-8">
                                 <div class="ship-box"
                                      style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;width: 80px;height: 100%;"></div>
                                 <div class="ship-box ship-name" style="font-size: 25px;letter-spacing: 3px;">{{ ship['shipInfo']['nameCn'] }}</div>
                             </div>
-                            <div class="random-col-item flex-3">{{ ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] }}</div>
-                            <div class="random-col-item flex-3"
+                            <div class="ship-col-item flex-3">{{ ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] }}</div>
+                            <div class="ship-col-item flex-3"
                                  style="color: {{ ship['typeInfo']['PVP']['prInfo']['color'] }};">{{ ship['typeInfo']['PVP']['prInfo']['value'] }}</div>
-                            <div class="random-col-item flex-3"
+                            <div class="ship-col-item flex-3"
                                  style="color: {{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['win'] }}%
                             </div>
-                            <div class="random-col-item flex-4"
+                            <div class="ship-col-item flex-4"
                                  style="color: {{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['damage'] }}</div>
-                            <div class="random-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['avgInfo']['frags']) }}</div>
-                            <div class="random-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
+                            <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['avgInfo']['frags']) }}</div>
+                            <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
                         </div>
                     {% endif %}
                 {% endfor %}
@@ -700,40 +371,40 @@
         {% endif %}
         <!-- 以下为排位数据，不再额外做类名样式 -->
         {% if data['battleTypeInfo']['RANK_SOLO']['battle'] %}
-            <div class="random-header two-background-color">排位战数据</div>
-            <div class="random-data one-background-color">
-                <div class="random-table-header">
-                    <div class="random-col-item flex-4">等级</div>
-                    <div class="random-col-item flex-8">战舰</div>
-                    <div class="random-col-item flex-3">场次</div>
-                    <div class="random-col-item flex-3">PR</div>
-                    <div class="random-col-item flex-3">胜率</div>
-                    <div class="random-col-item flex-4">场均</div>
-                    <div class="random-col-item flex-3">击杀</div>
-                    <div class="random-col-item flex-3">命中</div>
+            <div class="random-header one-background-color">排位战</div>
+            <div class="information-body one-background-color data-battle-type">
+                <div class="ship-information-col ">
+                    <div class="ship-col-item flex-4">等级</div>
+                    <div class="ship-col-item flex-8">战舰</div>
+                    <div class="ship-col-item flex-3">场次</div>
+                    <div class="ship-col-item flex-3">PR</div>
+                    <div class="ship-col-item flex-3">胜率</div>
+                    <div class="ship-col-item flex-4">场均</div>
+                    <div class="ship-col-item flex-3">击杀</div>
+                    <div class="ship-col-item flex-3">命中</div>
                 </div>
                 {% for ship in data['shipInfoBattleList'] %}
                     {% if ship['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle']>0 %}
-                    <div class="random-data-col">
-                        <div class="random-col-item flex-4" style="text-align: left;">
+                        <div class="ship-information-col ">
+                        <div class="ship-col-item flex-4" style="text-align: left;">
                             <span style="background: url('{{ ship['shipInfo']['countryImage'] }}') no-repeat;background-size: contain;background-position: center;margin-left: 10px;padding: 20px;margin-right: 10px;"></span>
                             <span style="background: url('{{ ship['shipInfo']['shipTypeImage'] }}') no-repeat;background-size: contain;background-position: center;padding: 20px;margin-right: 10px;"></span>
                             <span>{{ ship['shipInfo']['levelStr'] }}</span></div>
-                        <div class="random-col-item random-col-item-ship flex-8">
+                        <div class="ship-col-item ship-col-item-ship flex-8">
                             <div class="ship-box"
                                  style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;width: 80px;height: 100%;"></div>
                             <div class="ship-box ship-name" style="font-size: 25px;letter-spacing: 3px;">{{ ship['shipInfo']['nameCn'] }}</div>
                         </div>
-                        <div class="random-col-item flex-3">{{ ship['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] }}</div>
-                        <div class="random-col-item flex-3"
+                        <div class="ship-col-item flex-3">{{ ship['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] }}</div>
+                        <div class="ship-col-item flex-3"
                              style="color: {{ ship['typeInfo']['RANK_SOLO']['prInfo']['color'] }};">{{ ship['typeInfo']['RANK_SOLO']['prInfo']['value'] }}</div>
-                        <div class="random-col-item flex-3"
+                        <div class="ship-col-item flex-3"
                              style="color: {{ ship['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ ship['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['win'] }}%
                         </div>
-                        <div class="random-col-item flex-4"
+                        <div class="ship-col-item flex-4"
                              style="color: {{ ship['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ ship['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damage'] }}</div>
-                        <div class="random-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['frags']) }}</div>
-                        <div class="random-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['RANK_SOLO']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
+                        <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['frags']) }}</div>
+                        <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['RANK_SOLO']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
                     </div>
                     {% endif %}
                 {% endfor %}
@@ -785,69 +456,5 @@
     </div>
 </div>
 </body>
-
-<script>
-    let pr_number = document.querySelector('.pr-number').innerText;
-    pr_number = parseInt(pr_number);
-    if (pr_number === 0) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #828282, #FFFFFF)";
-    } else if (pr_number < 750) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #F44336, #FFFFFF)";
-
-    } else if (pr_number < 1100) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #FF9800, #FFFFFF)";
-
-    } else if (pr_number < 1350) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #FFC107, #FFFFFF)";
-    } else if (pr_number < 1550) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #8BC34A, #AED581, #689F38)";
-
-    } else if (pr_number < 1750) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #4CAF50, #81C784, #388E3C)";
-
-    } else if (pr_number < 2100) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #00BCD4, #B2EBF2)";
-
-    } else if (pr_number < 2450) {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #9C27B0, #BA68C8, #8E24AA)";
-
-    } else {
-        document.querySelector(".pr").style.background = "linear-gradient(to right, #673AB7, #9575CD, #D1C4E9)";
-    }
-</script>
-
-<script>
-    <!--    战绩数据颜色条-->
-    let bgColor = "#E4E4E4"
-    let arr_information = document.getElementsByClassName('information-col');
-    for (let i = 0; i < arr_information.length; i++) {
-        if (i % 2 === 0 && i === arr_information.length - 1) {
-            arr_information[i].style.backgroundColor = bgColor;
-            arr_information[i].style.borderBottomLeftRadius = '16px';
-            arr_information[i].style.borderBottomRightRadius = '16px';
-        } else if (i % 2 === 0) {
-            arr_information[i].style.backgroundColor = bgColor;
-        }
-    }
-    let arr_random = document.getElementsByClassName('random-data-col');
-    for (let i = 0; i < arr_random.length; i++) {
-        if (i % 2 === 0 && i === (arr_random.length - 1)) {
-            arr_random[i].style.backgroundColor = bgColor;
-            arr_random[i].style.borderBottomLeftRadius = "16px";
-            arr_random[i].style.borderBottomRightRadius = "16px";
-        } else if (i % 2 === 0) {
-            arr_random[i].style.backgroundColor = bgColor;
-        }
-    }
-    let arr_rank = document.getElementsByClassName('rank-data-col');
-    for (let i = 0; i < arr_rank.length; i++) {
-        if (i % 2 === 0 && i === (arr_rank.length - 1)) {
-            arr_rank[i].style.backgroundColor = bgColor;
-            arr_rank[i].style.borderBottomLeftRadius = "16px";
-            arr_rank[i].style.borderBottomRightRadius = "16px";
-        } else if (i % 2 === 0) {
-            arr_rank[i].style.backgroundColor = bgColor;
-        }
-    }
-</script>
+<script src="https://wows.shinoaki.com/wows-web/main.js" type="text/javascript"></script>
 </html>
