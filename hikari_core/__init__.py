@@ -106,6 +106,9 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
             elif hikari.Status == 'wait':
                 template_data = await set_render_params(hikari.Input.Select_Data)
             content = await template.render_async(template_data)
+            # 测试模式下才赋值给模板内容
+            if hikari_config.local_test:
+                hikari.template_content = content
             hikari.Output.Data = content
             hikari.Output.Data_Type = type(hikari.Output.Data)
 

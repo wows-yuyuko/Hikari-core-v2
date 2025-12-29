@@ -61,6 +61,7 @@ class Hikari_Model(BaseModel):
     Status: str = 'init'  # init:初始化 success:请求成功  failed:请求成功但API有错误或空返回  error:异常及本地错误
     UserInfo: UserInfo_Model = UserInfo_Model()
     Function: Func = None
+    template_content: str = ''
     Input: Input_Model = Input_Model()
     Output: Output_Model = Output_Model()
 
