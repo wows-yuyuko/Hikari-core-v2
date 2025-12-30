@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title></title>
     <link href="file:\\{{template_path}}/main.css" rel="stylesheet" type="text/css">
+    <link href="file:\\{{template_path}}/avatar.css" rel="stylesheet" type="text/css">
 </head>
 <style>
 
@@ -19,18 +20,14 @@
     {%if data['userInfo']['avatar']['colorName']['status']==2 %}
         .mirage-text {
             background: {{ data['userInfo']['avatar']['colorName']['data'] }};
+            background-size: 200% 200%;
             color: transparent;
             -webkit-background-clip: text;
-            animation: ran-7e872de5 10s linear infinite;
+            animation: ran-7e872de5 3s linear infinite;
         }
     {% endif %}
 
     .page-header {
-        border-radius: 36px;
-        height: 300px;
-        margin: 50px 50px 30px;
-        display: flex;
-        justify-content: flex-start;
     {%if data['userInfo']['avatar']['banner']['status']==2 %}
         background: url("{{data['userInfo']['avatar']['banner']['data']}}") no-repeat;
     {% endif %}
@@ -39,12 +36,6 @@
     }
 
     .avatar-header {
-        filter: drop-shadow(9px 9px 12px rgba(0, 0, 0, 0.3));
-        border-radius: 36px;
-        height: 93%;
-        width: 260px;
-        margin-left: 10px;
-        margin-top: 10px;
     {%if data['userInfo']['avatar']['avatar']['status']==2 %}
         background: url("{{data['userInfo']['avatar']['avatar']['data']}}") no-repeat;
     {% else %}
@@ -52,18 +43,6 @@
     {% endif %}
         background-position: center;
         background-size: 100%;
-    }
-
-
-    .clan-user-server {
-        margin: 20px;
-        text-align: left;
-        font-size: 20px;
-        display: flex;
-        flex-direction: column;
-        font-weight: bold;
-        flex-grow: 1;
-        justify-content: center;
     }
 </style>
 <body>
