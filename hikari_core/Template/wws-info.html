@@ -95,17 +95,30 @@
         <div class="pr">
             {% if data['battleTypeInfo']['PVP']['battle'] %}
                 <span class="pr-number">{{ data['battleTypeInfo']['PVP']['prInfo']['value'] }}
-                    <span class="pr-change change-pr">{{ data['dwpData']['pr'] }}</span>&nbsp;&nbsp;&nbsp;&nbsp;<span
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span
                             class="pr-text">{{ data['battleTypeInfo']['PVP']['prInfo']['name'] }}</span></span>
             {% else %}
                 <span class="pr-number">{{ data['battleTypeInfo']['RANK_SOLO']['prInfo']['value'] }}
-                    <span class="pr-change change-pr">{{ data['dwpData']['pr'] }}</span>&nbsp;&nbsp;&nbsp;&nbsp;<span
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span
                             class="pr-text">{{ data['battleTypeInfo']['RANK_SOLO']['prInfo']['name'] }}</span></span>
             {% endif %}
         </div>
 
         <div class="recnet-time">
             <span>最后战斗时间：</span><span>{{ time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(abs(data['lastBattleTime'])))}}</span>
+        </div>
+
+        <div class="information-body one-background-color">
+            <div class="information-col">
+                <div class="information-col-item">场均</div>
+                <div class="information-col-item">胜率</div>
+                <div class="information-col-item">PR</div>
+            </div>
+            <div class="information-col">
+                <div class="information-col-item change-avgdmg">{{ data['dwpData']['damage'] }}</div>
+                <div class="information-col-item change-win">{{ data['dwpData']['wins'] }}</div>
+                <div class="information-col-item change-pr">{{ data['dwpData']['pr'] }}</div>
+            </div>
         </div>
 
         {% if data['battleTypeInfo']['PVP']['battle'] %}
@@ -131,7 +144,6 @@
                         <div class="overview-win-title item-top-top">胜率</div>
                         <div class="overview-win item-top-bottom"
                              style="color: {{ data['battleTypeInfo']['PVP']['shipInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['PVP']['shipInfo']['avgInfo']['win'] }}%
-                            <span class="wins-change change-win">{{ data['dwpData']['wins'] }}</span>
                         </div>
                     </div>
                     <div class="mid-item-bottom item-bottom">
@@ -150,7 +162,6 @@
                         <div class="overview-avgdmg-title item-top-top">场均</div>
                         <div class="overview-avgdmg item-top-bottom"
                              style="color: {{ data['battleTypeInfo']['PVP']['shipInfo']['avgInfo']['damageData']['color'] }};">{{ data['battleTypeInfo']['PVP']['shipInfo']['avgInfo']['damage'] }}
-                            <span class="damage-change change-avgdmg">{{ data['dwpData']['damage'] }}</span>
                         </div>
                     </div>
                     <div class="right-item-bottom item-bottom">
@@ -224,7 +235,7 @@
 
         <div class="random-header one-background-color">战舰类型</div>
 
-        <div class="information-body one-background-color data-ship-type">
+        <div class="information-body one-background-color data-battle-type">
             <div class="information-col">
                 <div class="information-col-item">类型</div>
                 <div class="information-col-item">场次</div>

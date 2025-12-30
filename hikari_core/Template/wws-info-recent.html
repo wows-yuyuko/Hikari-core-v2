@@ -116,11 +116,11 @@
                     <div class="left-item-bottom item-bottom">
                         <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
                             <div class="mini-item-top">加成经验</div>
-                            <div class="mini-item-bottom change-avgdmg">{{ data['battleTypeInfo']['PVP']['battleInfo']['avgInfo']['xp'] }}</div>
+                            <div class="mini-item-bottom">{{ data['battleTypeInfo']['PVP']['battleInfo']['avgInfo']['xp'] }}</div>
                         </div>
                         <div class="change-win-box bottom-mini-item-right one-background-color">
                             <div class="mini-item-top">命中率</div>
-                            <div class="mini-item-bottom change-win">{{ data['battleTypeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain'] }}%</div>
+                            <div class="mini-item-bottom">{{ data['battleTypeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain'] }}%</div>
                         </div>
                     </div>
                 </div>
@@ -134,11 +134,11 @@
                     <div class="mid-item-bottom item-bottom">
                         <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
                             <div class="mini-item-top">侦察</div>
-                            <div class="mini-item-bottom change-avgdmg">{{ '%.2f' | format(data['battleTypeInfo']['PVP']['battleInfo']['avgInfo']['shipsSpotted']) }}</div>
+                            <div class="mini-item-bottom">{{ '%.2f' | format(data['battleTypeInfo']['PVP']['battleInfo']['avgInfo']['shipsSpotted']) }}</div>
                         </div>
                         <div class="change-win-box bottom-mini-item-right one-background-color">
                             <div class="mini-item-top">击落</div>
-                            <div class="mini-item-bottom change-win">{{ '%.2f' | format(data['battleTypeInfo']['PVP']['battleInfo']['avgInfo']['planesKilled']) }}</div>
+                            <div class="mini-item-bottom">{{ '%.2f' | format(data['battleTypeInfo']['PVP']['battleInfo']['avgInfo']['planesKilled']) }}</div>
                         </div>
                     </div>
                 </div>
@@ -171,11 +171,11 @@
                     <div class="left-item-bottom item-bottom">
                         <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
                             <div class="mini-item-top">加成经验</div>
-                            <div class="mini-item-bottom change-avgdmg">{{ data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['xp'] }}</div>
+                            <div class="mini-item-bottom">{{ data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['xp'] }}</div>
                         </div>
                         <div class="change-win-box bottom-mini-item-right one-background-color">
                             <div class="mini-item-top">命中率</div>
-                            <div class="mini-item-bottom change-win">{{ data['battleTypeInfo']['RANK_SOLO']['battleInfo']['hitRatioInfo']['ratioMain'] }}%</div>
+                            <div class="mini-item-bottom">{{ data['battleTypeInfo']['RANK_SOLO']['battleInfo']['hitRatioInfo']['ratioMain'] }}%</div>
                         </div>
                     </div>
                 </div>
@@ -189,11 +189,11 @@
                     <div class="mid-item-bottom item-bottom">
                         <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
                             <div class="mini-item-top">侦察</div>
-                            <div class="mini-item-bottom change-avgdmg">{{ '%.2f' | format(data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['shipsSpotted']) }}</div>
+                            <div class="mini-item-bottom">{{ '%.2f' | format(data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['shipsSpotted']) }}</div>
                         </div>
                         <div class="change-win-box bottom-mini-item-right one-background-color">
                             <div class="mini-item-top">击落</div>
-                            <div class="mini-item-bottom change-win">{{ '%.2f' | format(data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['planesKilled']) }}</div>
+                            <div class="mini-item-bottom">{{ '%.2f' | format(data['battleTypeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['planesKilled']) }}</div>
                         </div>
                     </div>
                 </div>
@@ -296,7 +296,7 @@
         {% if data['battleTypeInfo']['PVP']['battle'] %}
             <div class="random-header one-background-color">随机战</div>
             <div class="information-body one-background-color data-battle-type">
-                <div class="ship-information-col ">
+                <div class="ship-data-col two-background-color">
                     <div class="ship-col-item flex-4">等级</div>
                     <div class="ship-col-item flex-8">战舰</div>
                     <div class="ship-col-item flex-3">场次</div>
@@ -373,7 +373,7 @@
         {% if data['battleTypeInfo']['RANK_SOLO']['battle'] %}
             <div class="random-header one-background-color">排位战</div>
             <div class="information-body one-background-color data-battle-type">
-                <div class="ship-information-col ">
+                <div class="ship-data-col two-background-color">
                     <div class="ship-col-item flex-4">等级</div>
                     <div class="ship-col-item flex-8">战舰</div>
                     <div class="ship-col-item flex-3">场次</div>
