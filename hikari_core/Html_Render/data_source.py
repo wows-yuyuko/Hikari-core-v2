@@ -8,7 +8,8 @@ import jinja2
 from .browser import get_new_page
 from .minimal_screens_hot_service import minimal_screens_hot_service
 
-screens_hot_service = None
+_screens_hot_service = None
+_screens_hot_service_status = False
 
 TEMPLATES_PATH = str(Path(__file__).parent / 'templates')
 
@@ -118,9 +119,11 @@ async def html_to_pic(  # noqa: PLR0913
     if 'file:' not in template_path:
         raise Exception('template_path 应该为 file:///path/to/template')
     if use_browser == 'chromium':
-        screens_hot_service = minimal_screens_hot_service()
-        await screens_hot_service.start()
-        return await screens_hot_service.screenshot(html)
+        global _screens_hot_service
+        if _screens_hot_service is None:
+            _screens_hot_service = minimal_screens_hot_service()
+            await _screens_hot_service.start()
+        return await _screens_hot_service.screenshot(html)
     # 火狐的走默认
     async with get_new_page(use_browser, **kwargs) as page:
         await page.goto(template_path)
