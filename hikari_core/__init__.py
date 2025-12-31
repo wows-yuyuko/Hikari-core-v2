@@ -13,7 +13,7 @@ from .command_select import *  # noqa: F403
 from .config import hikari_config, set_hikari_config  # noqa:F401
 from .data_source import set_render_params, template_path
 from .game.help import update_template
-from .Html_Render import html_to_pic
+from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .model import Hikari_Model, Input_Model, UserInfo_Model
 
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path), enable_async=True)

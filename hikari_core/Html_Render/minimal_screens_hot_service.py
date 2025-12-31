@@ -10,9 +10,11 @@ import os
 import tempfile
 import time
 from pathlib import Path
-from typing import Optional, Dict
+from PIL import Image
+from typing import Union, Optional, List, Dict, Any
 import logging
 import gc
+import io
 
 from playwright.async_api import async_playwright, Browser, Page
 
@@ -22,6 +24,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
 
 class minimal_screens_hot_service:
     """极简截图服务 - 专注启动速度和内存优化"""
@@ -258,6 +261,104 @@ class minimal_screens_hot_service:
                 except:
                     pass
 
+    async def screenshot_gif_img(self, html_content: str, session_id: str = None,
+                                 fps: int = 10,
+                                 duration: int = 3) -> bytes:
+        """核心截图方法 - 优化执行流程"""
+        self.request_count += 1
+
+        page = None
+        temp_file = None
+
+        try:
+            # 1. 获取页面（复用或创建）
+            page = await self.create_page(session_id)
+
+            # 2. 快速写入临时文件（比data URL稳定）
+            html_hash = hashlib.md5(html_content.encode()).hexdigest()[:8]
+            temp_file = self.temp_dir / f"temp_{html_hash}.html"
+
+            # 使用同步写入，更快
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+
+            # 3. 极速加载策略
+            load_start = time.time()
+
+            # 关键：使用最快加载模式
+            await page.goto(
+                f"file://{temp_file}",
+                wait_until='domcontentloaded',  # 最快：DOM加载完成即可
+                timeout=10000,  # 10秒超时
+            )
+
+            load_time = time.time() - load_start
+            logger.debug(f"页面加载: {load_time:.2f}s")
+
+            # 4. 智能等待渲染
+            await self._smart_wait(page)
+
+            # 5. 快速截图
+            screenshot_start = time.time()
+            # 创建临时目录存放截图
+            with tempfile.TemporaryDirectory() as temp_dir:
+                screenshot_files = []
+                # 计算截图次数
+                interval = 1.0 / fps  # 每帧间隔(秒)
+                total_frames = int(duration * fps)
+                # 开始截图
+                for i in range(total_frames):
+                    timestamp = int(time.time() * 1000)
+                    filename = Path(temp_dir) / f"frame_{i:03d}_{timestamp}.png"
+
+                    # 截图
+                    await page.screenshot(
+                        path=str(filename),
+                        type='png',
+                        full_page=True,  # 只截取可视区域
+                        omit_background=True,
+                    )
+                    screenshot_files.append(str(filename))
+
+                    # 如果需要，可以在每次截图之间执行一些操作
+                    # 例如：滚动、点击等
+
+                    # 等待下一帧
+                    if i < total_frames - 1:  # 最后一帧后不需要等待
+                        await page.wait_for_timeout(int(interval * 1000))
+
+                # 将截图转换为GIF
+                image_data = await self._images_to_gif(screenshot_files, fps)
+
+            screenshot_time = time.time() - screenshot_start
+            logger.debug(f"截图耗时: {screenshot_time:.2f}s")
+
+            total_time = time.time() - load_start
+            logger.info(f"请求{self.request_count} - 总耗时: {total_time:.2f}s")
+
+            # 6. 内存清理（定期触发）
+            await self._auto_cleanup()
+            return image_data
+
+        except Exception as e:
+            logger.error(f"截图失败: {e}")
+            raise
+
+        finally:
+            # 7. 快速清理
+            if temp_file and temp_file.exists():
+                try:
+                    temp_file.unlink()
+                except:
+                    pass
+
+            # 8. 非会话页面立即关闭（避免内存累积）
+            if page and not session_id:
+                try:
+                    await page.context.close()
+                except:
+                    pass
+
     async def _smart_wait(self, page: Page):
         """智能等待页面渲染完成"""
         try:
@@ -361,3 +462,38 @@ class minimal_screens_hot_service:
         except:
             pass
         logger.info("服务已关闭")
+
+    async def _images_to_gif(self, image_files: List[str], fps: int) -> bytes:
+
+        """将图片列表转换为GIF"""
+        if not image_files:
+            raise Exception("没有图片可以转换为GIF")
+
+        images = []
+        for img_file in image_files:
+            try:
+                img = Image.open(img_file)
+                images.append(img)
+            except Exception as e:
+                print(f"加载图片失败 {img_file}: {e}")
+                continue
+        if not images:
+            raise Exception("所有图片加载失败")
+
+        # 将PIL图像转换为字节流
+        output = io.BytesIO()
+
+        # 计算每帧持续时间(毫秒)
+        frame_duration = 1000 // fps
+
+        # 保存为GIF
+        images[0].save(
+            output,
+            format='GIF',
+            save_all=True,
+            append_images=images[1:],
+            duration=frame_duration,
+            loop=0,  # 无限循环
+            optimize=True
+        )
+        return output.getvalue()

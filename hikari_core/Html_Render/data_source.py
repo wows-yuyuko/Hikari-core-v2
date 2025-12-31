@@ -4,6 +4,8 @@ from typing import Literal, Union
 
 import aiofiles
 import jinja2
+import time
+import tempfile
 
 from .browser import get_new_page
 from .minimal_screens_hot_service import minimal_screens_hot_service
@@ -21,11 +23,11 @@ env = jinja2.Environment(
 
 
 async def text_to_pic(
-    text: str,
-    css_path: str = '',
-    width: int = 500,
-    type: Literal['jpeg', 'png'] = 'png',
-    quality: Union[int, None] = None,
+        text: str,
+        css_path: str = '',
+        width: int = 500,
+        type: Literal['jpeg', 'png'] = 'png',
+        quality: Union[int, None] = None,
 ) -> bytes:
     """多行文本转图片
 
@@ -69,9 +71,9 @@ async def read_tpl(path: str) -> str:
 
 
 async def template_to_html(
-    template_path: str,
-    template_name: str,
-    **kwargs,
+        template_path: str,
+        template_name: str,
+        **kwargs,
 ) -> str:
     """使用jinja2模板引擎通过html生成图片
 
@@ -94,13 +96,13 @@ async def template_to_html(
 
 
 async def html_to_pic(  # noqa: PLR0913
-    html: str,
-    wait: int = 0,
-    template_path: str = f'file://{getcwd()}',  # noqa: B008
-    type: Literal['jpeg', 'png'] = 'png',
-    quality: Union[int, None] = None,
-    use_browser: str = 'chromium',
-    **kwargs,
+        html: str,
+        wait: int = 0,
+        template_path: str = f'file://{getcwd()}',  # noqa: B008
+        type: Literal['jpeg', 'png'] = 'png',
+        quality: Union[int, None] = None,
+        use_browser: str = 'chromium',
+        **kwargs,
 ) -> bytes:
     """html转图片
 
@@ -137,17 +139,53 @@ async def html_to_pic(  # noqa: PLR0913
     return img_raw
 
 
+async def html_to_pic_by_gif(  # noqa: PLR0913
+        html: str,
+        wait: int = 0,
+        fps: int = 10,
+        duration: int = 5,  # GIF总时长(秒)
+        template_path: str = f'file://{getcwd()}',  # noqa: B008
+        quality: Union[int, None] = None,
+        use_browser: str = 'chromium',
+        **kwargs,
+) -> bytes:
+    """html转图片
+
+    Args:
+        html (str): html文本
+        wait (int, optional): 等待时间. Defaults to 0.
+        template_path (str, optional): 模板路径 如 "file:///path/to/template/"
+        type (Literal["jpeg", "png"]): 图片类型, 默认 png
+        quality (int, optional): 图片质量 0-100 当为`png`时无效
+        **kwargs: 传入 page 的参数
+
+    Returns:
+        bytes: 图片, 可直接发送
+    """
+    # logger.debug(f"html:\n{html}")
+    if 'file:' not in template_path:
+        raise Exception('template_path 应该为 file:///path/to/template')
+    if use_browser == 'chromium':
+        global _screens_hot_service
+        if _screens_hot_service is None:
+            _screens_hot_service = minimal_screens_hot_service()
+            await _screens_hot_service.start()
+        # 计算截图次数
+        return await _screens_hot_service.screenshot_gif_img(html, fps=fps, duration=duration)
+    raise Exception('gif仅支持chrome（chromium）内核')
+
+
 async def template_to_pic(  # noqa: PLR0913
-    template_path: str,
-    template_name: str,
-    templates: dict,
-    pages: dict = {  # noqa: B006
-        'viewport': {'width': 500, 'height': 10},
-        'base_url': f'file://{getcwd()}',  # noqa: B008
-    },
-    wait: int = 0,
-    type: Literal['jpeg', 'png'] = 'png',
-    quality: Union[int, None] = None,
+        template_path: str,
+        template_name: str,
+        templates: dict,
+        pages: dict = {  # noqa: B006
+            'viewport': {'width': 500, 'height': 10},
+            'base_url': f'file://{getcwd()}',  # noqa: B008
+        },
+        wait: int = 0,
+        type: Literal['jpeg', 'png'] = 'png',
+        quality: Union[int, None] = None,
 ) -> bytes:
     """使用jinja2模板引擎通过html生成图片
 
@@ -182,12 +220,12 @@ async def template_to_pic(  # noqa: PLR0913
 
 
 async def capture_element(
-    url: str,
-    element: str,
-    timeout: float = 0,
-    type: Literal['jpeg', 'png'] = 'png',
-    quality: Union[int, None] = None,
-    **kwargs,
+        url: str,
+        element: str,
+        timeout: float = 0,
+        type: Literal['jpeg', 'png'] = 'png',
+        quality: Union[int, None] = None,
+        **kwargs,
 ) -> bytes:
     async with get_new_page(**kwargs) as page:
         await page.goto(url, timeout=timeout)
