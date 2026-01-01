@@ -3,7 +3,7 @@ from typing import List, Protocol, Tuple, runtime_checkable
 
 from .game.ban_search import get_BanInfo
 from .game.box_check import check_christmas_box
-from .game.help import async_update_template, check_version, get_help
+from .game.help import async_update_template, check_version, get_help,async_update_ship_cache
 
 # from .game.ocr import get_Random_Ocr_Pic
 from .game.roll import roll_ship
@@ -62,6 +62,7 @@ clan_command_list = [
 first_command_list = [  # 同指令中越长的匹配词越靠前
     command(('check_version', '检查更新'), check_version),
     command(('更新样式',), async_update_template),
+    command(('更新战舰',), async_update_ship_cache),
     command(('查询监控', '监控列表', '查询监听', '监听列表'), get_listen_list),
     command(('测试监控',), get_diff_ship),
     command(('添加监控',), add_listen_list),

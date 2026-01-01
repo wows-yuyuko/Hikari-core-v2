@@ -12,7 +12,7 @@ from .analyze import analyze_command
 from .command_select import *  # noqa: F403
 from .config import hikari_config, set_hikari_config  # noqa:F401
 from .data_source import set_render_params, template_path
-from .game.help import update_template
+from .game.help import update_template,update_ship_cache
 from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .model import Hikari_Model, Input_Model, UserInfo_Model
 
@@ -133,6 +133,7 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
 
 
 update_template()
+update_ship_cache()
 scheduler = BackgroundScheduler(timezone='Asia/Shanghai')
 scheduler.add_job(update_template, 'cron', hour='4,12')
 scheduler.start()

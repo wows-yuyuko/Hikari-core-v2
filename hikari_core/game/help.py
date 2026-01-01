@@ -1,22 +1,20 @@
-import shutil
+import asyncio
+import os
+import time
 import traceback
 import zipfile
 from asyncio.exceptions import TimeoutError
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import urlparse
 
-import asyncio
 import httpx
 import orjson
-import os
-import time
-from datetime import datetime, timedelta
-from urllib.parse import urlparse
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
-from ..data_source import __version__, template_path
 from ..HttpClient_Pool import get_client_default, recreate_client_default
+from ..data_source import __version__, template_path
 from ..model import Hikari_Model
 from ..moudle.publicAPI import get_all_shipList_server
 
@@ -91,6 +89,18 @@ async def async_update_template(hikari: Hikari_Model = Hikari_Model()):
         return hikari.error(f'更新模板失败: {str(e)}')
 
 
+async def async_update_ship_cache(hikari: Hikari_Model = Hikari_Model()):
+    try:
+        # 在线程池中执行阻塞操作
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(executor, update_ship_cache)
+        if result:
+            return hikari.success('更新战舰资源成功')
+        return hikari.error('更新战舰资源失败')
+    except Exception as e:
+        return hikari.error(f'更新战舰资源失败: {str(e)}')
+
+
 def update_template():
     """更新模板"""
     try:
@@ -105,27 +115,31 @@ def update_template():
                     with open(template_path / name, 'wb+') as file:
                         file.write(resp.content)
             logger.info('更新模板成功')
-        logger.info('开始更新战舰资源')
-        wows_temp = Path(__file__).resolve().parent.parent.parent / "wows_temp"
-        base_path = wows_temp / "ship_cache"
-        base_path.mkdir(exist_ok=True, parents=True)
-        zip_path = wows_temp / "ship_cache.zip"
-        if not zip_path.exists():
-            logger.error('开始下载战舰图片资源，等待时间较长！')
-            _download_file("https://v3-api.wows.shinoaki.com/nahida-static/ship_cache.zip", zip_path)
-            extract_zip(zip_path, wows_temp)
-        for shipK_list in get_all_shipList_server(False):
-            write_ship_cache(base_path, shipK_list['shipTypeImage'])
-            write_ship_cache(base_path, shipK_list['countryImage'])
-            write_ship_cache(base_path, shipK_list['imgSmall'])
-        for shipK_list in get_all_shipList_server(True):
-            write_ship_cache(base_path, shipK_list['shipTypeImage'])
-            write_ship_cache(base_path, shipK_list['countryImage'])
-            write_ship_cache(base_path, shipK_list['imgSmall'])
         return True
     except Exception:
         logger.error(traceback.format_exc())
         return False
+
+
+def update_ship_cache():
+    logger.info('开始更新战舰资源')
+    wows_temp = Path(__file__).resolve().parent.parent.parent / "wows_temp"
+    base_path = wows_temp / "ship_cache"
+    base_path.mkdir(exist_ok=True, parents=True)
+    zip_path = wows_temp / "ship_cache.zip"
+    if not zip_path.exists():
+        logger.error('开始下载战舰图片资源压缩包(100MB)，等待时间较长！')
+        _download_file("https://v3-api.wows.shinoaki.com/nahida-static/ship_cache.zip", zip_path)
+        extract_zip(zip_path, wows_temp)
+    for shipK_list in get_all_shipList_server(False):
+        write_ship_cache(base_path, shipK_list['shipTypeImage'])
+        write_ship_cache(base_path, shipK_list['countryImage'])
+        write_ship_cache(base_path, shipK_list['imgSmall'])
+    for shipK_list in get_all_shipList_server(True):
+        write_ship_cache(base_path, shipK_list['shipTypeImage'])
+        write_ship_cache(base_path, shipK_list['countryImage'])
+        write_ship_cache(base_path, shipK_list['imgSmall'])
+    logger.info("更新战舰资源完成")
 
 
 def write_ship_cache(file_dir: Path, ship_url: str):
