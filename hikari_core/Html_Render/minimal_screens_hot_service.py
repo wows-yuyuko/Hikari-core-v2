@@ -32,7 +32,7 @@ class minimal_screens_hot_service:
     def __init__(self):
         self.browser: Optional[Browser] = None
         self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
-        self.temp_dir = Path(__file__).resolve().parent.parent.parent / "browser_temp"
+        self.temp_dir = Path(__file__).resolve().parent.parent.parent / "wows_temp" / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
 
         # 内存监控
@@ -475,7 +475,7 @@ class minimal_screens_hot_service:
                 img = Image.open(img_file)
                 images.append(img)
             except Exception as e:
-                print(f"加载图片失败 {img_file}: {e}")
+                logger.error(f"加载图片失败 {img_file}: {e}")
                 continue
         if not images:
             raise Exception("所有图片加载失败")
