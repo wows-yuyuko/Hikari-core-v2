@@ -121,6 +121,12 @@ def update_template():
         logger.error(traceback.format_exc())
         return False
 
+def update_ship_cache_cron():
+    wows_temp = Path(__file__).resolve().parent.parent.parent / "wows_temp"
+    base_path = wows_temp / "ship_cache"
+    base_path.mkdir(exist_ok=True, parents=True)
+    zip_path = wows_temp / "ship_cache.zip"
+    load_ship_cache_zip(wows_temp, zip_path)
 
 def update_ship_cache():
     logger.info('开始更新战舰资源')
