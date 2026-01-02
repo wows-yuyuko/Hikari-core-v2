@@ -7,7 +7,7 @@ from .data_source import dir_path
 
 
 class Config_Model(BaseModel):
-    proxy: Optional[str]
+    proxy: Optional[str] = None
     http2: bool = True
     token: Optional[str] = '123456:111111111111'
     auto_rendering: bool = True
@@ -23,7 +23,7 @@ hikari_config = Config_Model()
 
 
 def set_hikari_config(  # noqa: PLR0913
-        proxy: Optional[str],
+        proxy: Optional[str] = None,
         http2: bool = True,
         token: Optional[str] = '123456:111111111111',
         auto_rendering: bool = True,

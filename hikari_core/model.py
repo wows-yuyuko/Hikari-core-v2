@@ -17,44 +17,44 @@ class UserInfo_Model(BaseModel):
 
 
 class Ship_Model(BaseModel):
-    Ship_Server_Type: Optional[str]
-    Ship_Nation: Optional[str]
-    Ship_Tier: Optional[int]
-    Ship_Type: Optional[str]
-    Ship_Name_Cn: Optional[str]
-    Ship_Name_Cn360: Optional[str]
-    Ship_Name_English: Optional[str]
-    ship_Name_Numbers: Optional[str]
-    ship_Name_Ru: Optional[str]
-    Ship_Id: Optional[int]
+    Ship_Server_Type: Optional[str] = None
+    Ship_Nation: Optional[str] = None
+    Ship_Tier: Optional[int] = None
+    Ship_Type: Optional[str] = None
+    Ship_Name_Cn: Optional[str] = None
+    Ship_Name_Cn360: Optional[str] = None
+    Ship_Name_English: Optional[str] = None
+    ship_Name_Numbers: Optional[str] = None
+    ship_Name_Ru: Optional[str] = None
+    Ship_Id: Optional[int] = None
 
 
 class Input_Model(BaseModel):
     Command_Text: Optional[str] = ''  # 输入的指令,请提前去除wws
-    Command_List: Optional[List]
+    Command_List: Optional[List] = None
     Search_Type: Optional[int] = 3  # 1:me  2:@  3:server+name or default
-    Platform: Optional[str]
-    PlatformId: Optional[str]
-    Server: Optional[str]
-    AccountName: Optional[str]
-    AccountId: Optional[int]
-    ClanName: Optional[str]
-    ClanId: Optional[int]
+    Platform: Optional[str] = None
+    PlatformId: Optional[str] = None
+    Server: Optional[str] = None
+    AccountName: Optional[str] = None
+    AccountId: Optional[int] = None
+    ClanName: Optional[str] = None
+    ClanId: Optional[int] = None
     CwSeasonId: Optional[int] = 0
     Recent_Day: Optional[int] = 0
     Recent_Date: Optional[str] = time.strftime('%Y-%m-%d', time.localtime())
-    Select_Index: Optional[int]
-    Select_Data: Optional[List]
+    Select_Index: Optional[int] = None
+    Select_Data: Optional[List] = None
     ShipInfo: Ship_Model = Ship_Model()
 
 
 class Output_Model(BaseModel):
-    Yuyuko_Code: Optional[int]
+    Yuyuko_Code: Optional[int] = None
     Data_Type: str = Field('str', description='返回的类型')
     Data: Union[str, int, bytes] = Field('初始化', description='返回的数据')
-    Template: Optional[str]
-    Width: Optional[int]
-    Height: Optional[int]
+    Template: Optional[str] = None
+    Width: Optional[int] = None
+    Height: Optional[int] = None
 
 
 class Hikari_Model(BaseModel):
