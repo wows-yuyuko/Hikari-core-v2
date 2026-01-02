@@ -179,7 +179,7 @@ def find_and_modify_shipinfo(data, target_key="shipInfo"):
     """
     def recursive_modify(obj, path=""):
 
-        wows_temp = Path(__file__).resolve().parent.parent / "wows_temp" / "ship_cache"
+        wows_temp = Path(os.getcwd()) / "wows_temp" / "ship_cache"
         if isinstance(obj, dict):
             # 如果找到目标键
             if target_key in obj:

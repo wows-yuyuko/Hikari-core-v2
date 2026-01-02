@@ -32,7 +32,7 @@ class minimal_screens_hot_service:
     def __init__(self):
         self.browser: Optional[Browser] = None
         self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
-        self.temp_dir = Path(__file__).resolve().parent.parent.parent / "wows_temp" / "browser_temp"
+        self.temp_dir = Path(os.getcwd()) / "wows_temp" / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
 
         # 内存监控

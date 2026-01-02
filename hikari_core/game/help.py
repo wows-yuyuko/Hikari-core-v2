@@ -122,7 +122,7 @@ def update_template():
         return False
 
 def update_ship_cache_cron():
-    wows_temp = Path(__file__).resolve().parent.parent.parent / "wows_temp"
+    wows_temp = Path(os.getcwd()) / "wows_temp"
     base_path = wows_temp / "ship_cache"
     base_path.mkdir(exist_ok=True, parents=True)
     zip_path = wows_temp / "ship_cache.zip"
@@ -130,7 +130,7 @@ def update_ship_cache_cron():
 
 def update_ship_cache():
     logger.info('开始更新战舰资源')
-    wows_temp = Path(__file__).resolve().parent.parent.parent / "wows_temp"
+    wows_temp = Path(os.getcwd()) / "wows_temp"
     base_path = wows_temp / "ship_cache"
     base_path.mkdir(exist_ok=True, parents=True)
     zip_path = wows_temp / "ship_cache.zip"
