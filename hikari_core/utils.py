@@ -1,10 +1,12 @@
 import gzip
 import hashlib
 import io
+import os
 import time
 import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import httpx
@@ -14,6 +16,8 @@ from loguru import logger
 
 from .data_source import template_path
 
+def get_cache_file() -> Path:
+    return Path(os.getcwd()) / "data" / "wows-yuyuko"
 
 def startup():
     try:

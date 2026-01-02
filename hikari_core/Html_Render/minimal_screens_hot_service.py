@@ -18,6 +18,8 @@ import io
 
 from playwright.async_api import async_playwright, Browser, Page
 
+from hikari_core.utils import get_cache_file
+
 # 日志配置
 logging.basicConfig(
     level=logging.INFO,
@@ -32,7 +34,7 @@ class minimal_screens_hot_service:
     def __init__(self):
         self.browser: Optional[Browser] = None
         self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
-        self.temp_dir = Path(os.getcwd()) / "wows_temp" / "browser_temp"
+        self.temp_dir = get_cache_file() / "wows_temp" / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
 
         # 内存监控

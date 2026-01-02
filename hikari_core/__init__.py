@@ -17,6 +17,7 @@ from .data_source import set_render_params, template_path
 from .game.help import update_template, update_ship_cache,update_ship_cache_cron
 from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .model import Hikari_Model, Input_Model, UserInfo_Model
+from .utils import get_cache_file
 
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path), enable_async=True)
 env.globals.update(
@@ -179,7 +180,7 @@ def find_and_modify_shipinfo(data, target_key="shipInfo"):
     """
     def recursive_modify(obj, path=""):
 
-        wows_temp = Path(os.getcwd()) / "wows_temp" / "ship_cache"
+        wows_temp = get_cache_file() / "wows_temp" / "ship_cache"
         if isinstance(obj, dict):
             # 如果找到目标键
             if target_key in obj:

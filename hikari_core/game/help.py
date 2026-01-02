@@ -17,6 +17,7 @@ from ..HttpClient_Pool import get_client_default, recreate_client_default
 from ..data_source import __version__, template_path
 from ..model import Hikari_Model
 from ..moudle.publicAPI import get_all_shipList_server
+from ..utils import get_cache_file
 
 executor = ThreadPoolExecutor()
 
@@ -122,7 +123,7 @@ def update_template():
         return False
 
 def update_ship_cache_cron():
-    wows_temp = Path(os.getcwd()) / "wows_temp"
+    wows_temp = get_cache_file() / "wows_temp"
     base_path = wows_temp / "ship_cache"
     base_path.mkdir(exist_ok=True, parents=True)
     zip_path = wows_temp / "ship_cache.zip"
@@ -130,7 +131,7 @@ def update_ship_cache_cron():
 
 def update_ship_cache():
     logger.info('开始更新战舰资源')
-    wows_temp = Path(os.getcwd()) / "wows_temp"
+    wows_temp = get_cache_file() / "wows_temp"
     base_path = wows_temp / "ship_cache"
     base_path.mkdir(exist_ok=True, parents=True)
     zip_path = wows_temp / "ship_cache.zip"
