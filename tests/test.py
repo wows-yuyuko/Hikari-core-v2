@@ -19,7 +19,11 @@ async def start():
     set_hikari_config(use_broswer='chromium', http2=False, proxy='http://localhost:7890',
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL')
-    await command('me recent 7', False)
+    # await command('asia wose_sinus', False)
+    # await command('cn 用户＿11451414514 recent 90', False)
+    # await command('wws me', False)
+    await command('me ship 奥斯汀', False)
+    await command('wws me recent 7', False)
     # await command("公会战记录 cn 团子大家族 25", False)
     # await command("公会战记录 cn 团子大家族 25 1", False)
     # await command("公会战记录 me 25", False)
@@ -60,7 +64,7 @@ async def output_with_check_type(hikari_data: Hikari_Model, command: str):
     if isinstance(hikari_data.Output.Data, bytes):
         with open(command.replace(' ', '-') + '.html', 'w',encoding='utf-8') as f:
             f.write(hikari_data.template_content)
-        with open(command.replace(' ', '-') + '.png', 'wb') as f:
+        with open(command.replace(' ', '-') + '.jpg', 'wb') as f:
             f.write(hikari_data.Output.Data)
             print(f'渲染完成,用时{time.time() - start_time}')
     elif isinstance(hikari_data.Output.Data, str):

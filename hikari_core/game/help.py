@@ -93,6 +93,7 @@ async def async_update_ship_cache(hikari: Hikari_Model = Hikari_Model()):
     try:
         # 在线程池中执行阻塞操作
         loop = asyncio.get_event_loop()
+        # 定时任务这边直接下载
         result = await loop.run_in_executor(executor, update_ship_cache)
         if result:
             return hikari.success('更新战舰资源成功')
@@ -128,9 +129,7 @@ def update_ship_cache():
     base_path.mkdir(exist_ok=True, parents=True)
     zip_path = wows_temp / "ship_cache.zip"
     if not zip_path.exists():
-        logger.error('开始下载战舰图片资源压缩包(100MB)，等待时间较长！')
-        _download_file("https://v3-api.wows.shinoaki.com/nahida-static/ship_cache.zip", zip_path)
-        extract_zip(zip_path, wows_temp)
+        load_ship_cache_zip(wows_temp, zip_path)
     for shipK_list in get_all_shipList_server(False):
         write_ship_cache(base_path, shipK_list['shipTypeImage'])
         write_ship_cache(base_path, shipK_list['countryImage'])
@@ -141,6 +140,11 @@ def update_ship_cache():
         write_ship_cache(base_path, shipK_list['imgSmall'])
     logger.info("更新战舰资源完成")
 
+def load_ship_cache_zip(wows_temp : Path,zip_path: Path):
+    logger.info('开始下载战舰图片资源压缩包，等待时间较长！')
+    _download_file("https://v3-api.wows.shinoaki.com/nahida-static/ship_cache.zip", zip_path)
+    extract_zip(zip_path, wows_temp)
+    logger.info("更新战舰zip包资源完成")
 
 def write_ship_cache(file_dir: Path, ship_url: str):
     """
