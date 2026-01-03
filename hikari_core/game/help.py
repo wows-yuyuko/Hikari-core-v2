@@ -17,7 +17,7 @@ from ..HttpClient_Pool import get_client_default, recreate_client_default
 from ..data_source import __version__, template_path
 from ..model import Hikari_Model
 from ..moudle.publicAPI import get_all_shipList_server
-from ..utils import get_cache_file
+from hikari_core.cache_utils import get_cache_file
 
 executor = ThreadPoolExecutor()
 

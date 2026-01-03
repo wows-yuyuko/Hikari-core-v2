@@ -6,19 +6,18 @@
 
 import asyncio
 import hashlib
-import os
 import tempfile
 import time
 from pathlib import Path
 from PIL import Image
-from typing import Union, Optional, List, Dict, Any
+from typing import Optional, List, Dict
 import logging
 import gc
 import io
 
 from playwright.async_api import async_playwright, Browser, Page
 
-from hikari_core.utils import get_cache_file
+from hikari_core.cache_utils import get_cache_file
 
 # 日志配置
 logging.basicConfig(
@@ -30,13 +29,30 @@ logger = logging.getLogger(__name__)
 
 class minimal_screens_hot_service:
     """极简截图服务 - 专注启动速度和内存优化"""
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    @classmethod
+    async def get_instance(cls):
+        """获取单例实例（推荐使用这个方法）"""
+        if cls._instance is None:
+            cls._instance = minimal_screens_hot_service()
+            await cls._instance.start()
+        return cls._instance
 
     def __init__(self):
+        if hasattr(self, '_initialized') and self._initialized:
+            return
         self.browser: Optional[Browser] = None
         self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
-        self.temp_dir = get_cache_file() / "wows_temp" / "browser_temp"
+        self.temp_dir = get_cache_file() / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
-
+        self.gc_count = 100
         # 内存监控
         self.last_gc = time.time()
         self.request_count = 0
@@ -411,7 +427,7 @@ class minimal_screens_hot_service:
         now = time.time()
 
         # 每50个请求强制GC一次
-        if self.request_count % 50 == 0:
+        if self.request_count % self.gc_count == 0:
             gc.collect()
             self.last_gc = now
             logger.debug("强制垃圾回收完成")

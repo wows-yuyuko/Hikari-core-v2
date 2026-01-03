@@ -1,7 +1,10 @@
 import time
+import os
 from typing import List, Optional, Protocol, Union, runtime_checkable
 
 from pydantic import BaseModel, Field
+
+from hikari_core.cache_utils import get_cache_file
 
 
 @runtime_checkable

@@ -1,23 +1,18 @@
-import os.path
 import time
 import traceback
-
+import os
 import jinja2
-from pathlib import Path
-from apscheduler.schedulers.background import BackgroundScheduler
 from jinja2.exceptions import UndefinedError
 from loguru import logger
 from playwright.async_api import Error as playwright_Error
 from pydantic import ValidationError
 
+from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .analyze import analyze_command
 from .command_select import *  # noqa: F403
-from .config import hikari_config, set_hikari_config  # noqa:F401
+from .config import hikari_config  # noqa:F401
 from .data_source import set_render_params, template_path
-from .game.help import update_template, update_ship_cache,update_ship_cache_cron
-from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .model import Hikari_Model, Input_Model, UserInfo_Model
-from .utils import get_cache_file
 
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path), enable_async=True)
 env.globals.update(
@@ -137,39 +132,6 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
         return Hikari_Model().error(f'Hikari-core顶层错误，请检查log\n{e}')
 
 
-update_template()
-update_ship_cache()
-scheduler = BackgroundScheduler(timezone='Asia/Shanghai')
-scheduler.add_job(update_template, 'cron', hour='4,12')
-scheduler.add_job(update_ship_cache_cron, 'cron', day_of_week='thu', hour=8, minute=0)
-scheduler.start()
-
-
-# logger.add(
-#    'hikari-core-logs/error.log',
-#    rotation='00:00',
-#    retention='1 week',
-#    diagnose=False,
-#    level='ERROR',
-#    encoding='utf-8',
-# )
-# logger.add(
-#    'hikari-core-logs/info.log',
-#    rotation='00:00',
-#    retention='1 week',
-#    diagnose=False,
-#    level='INFO',
-#    encoding='utf-8',
-# )
-# logger.add(
-#    'hikari-core-logs/warning.log',
-#    rotation='00:00',
-#    retention='1 week',
-#    diagnose=False,
-#    level='WARNING',
-#    encoding='utf-8',
-# )
-
 def find_and_modify_shipinfo(data, target_key="shipInfo"):
     """
     深度搜索并修改 shipInfo 节点
@@ -178,9 +140,10 @@ def find_and_modify_shipinfo(data, target_key="shipInfo"):
         data: 嵌套数据结构
         target_key: 要搜索的键名，默认 "shipInfo"
     """
-    def recursive_modify(obj, path=""):
 
-        wows_temp = get_cache_file() / "wows_temp" / "ship_cache"
+    def recursive_modify(obj, path=""):
+        from hikari_core.cache_utils import get_cache_file
+        wows_temp = get_cache_file() / "ship_cache"
         if isinstance(obj, dict):
             # 如果找到目标键
             if target_key in obj:
@@ -212,3 +175,28 @@ def find_and_modify_shipinfo(data, target_key="shipInfo"):
 
     recursive_modify(data)
     return data
+
+# logger.add(
+#    'hikari-core-logs/error.log',
+#    rotation='00:00',
+#    retention='1 week',
+#    diagnose=False,
+#    level='ERROR',
+#    encoding='utf-8',
+# )
+# logger.add(
+#    'hikari-core-logs/info.log',
+#    rotation='00:00',
+#    retention='1 week',
+#    diagnose=False,
+#    level='INFO',
+#    encoding='utf-8',
+# )
+# logger.add(
+#    'hikari-core-logs/warning.log',
+#    rotation='00:00',
+#    retention='1 week',
+#    diagnose=False,
+#    level='WARNING',
+#    encoding='utf-8',
+# )

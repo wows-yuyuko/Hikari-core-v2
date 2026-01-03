@@ -10,8 +10,6 @@ import tempfile
 from .browser import get_new_page
 from .minimal_screens_hot_service import minimal_screens_hot_service
 
-_screens_hot_service = None
-_screens_hot_service_status = False
 
 TEMPLATES_PATH = str(Path(__file__).parent / 'templates')
 
@@ -121,11 +119,8 @@ async def html_to_pic(  # noqa: PLR0913
     if 'file:' not in template_path:
         raise Exception('template_path 应该为 file:///path/to/template')
     if use_browser == 'chromium':
-        global _screens_hot_service
-        if _screens_hot_service is None:
-            _screens_hot_service = minimal_screens_hot_service()
-            await _screens_hot_service.start()
-        return await _screens_hot_service.screenshot(html,viewport=kwargs['viewport'])
+        hot_service = await minimal_screens_hot_service.get_instance()
+        return await hot_service.screenshot(html_content=html,viewport=kwargs['viewport'])
     # 火狐的走默认
     async with get_new_page(use_browser, **kwargs) as page:
         await page.goto(template_path)
@@ -166,12 +161,9 @@ async def html_to_pic_by_gif(  # noqa: PLR0913
     if 'file:' not in template_path:
         raise Exception('template_path 应该为 file:///path/to/template')
     if use_browser == 'chromium':
-        global _screens_hot_service
-        if _screens_hot_service is None:
-            _screens_hot_service = minimal_screens_hot_service()
-            await _screens_hot_service.start()
         # 计算截图次数
-        return await _screens_hot_service.screenshot_gif_img(html, fps=fps, duration=duration)
+        hot_service = await minimal_screens_hot_service.get_instance()
+        return await hot_service.screenshot_gif_img(html_content=html,fps=fps, duration=duration)
     raise Exception('gif仅支持chrome（chromium）内核')
 
 

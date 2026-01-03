@@ -1,10 +1,11 @@
+from pathlib import Path
 from typing import Optional
 
 from loguru import logger
 from pydantic import BaseModel
+from apscheduler.schedulers.background import BackgroundScheduler
 
-from hikari_core import get_cache_file
-
+_scheduler = BackgroundScheduler(timezone='Asia/Shanghai')
 
 class Config_Model(BaseModel):
     proxy: Optional[str] = None
@@ -13,7 +14,6 @@ class Config_Model(BaseModel):
     auto_rendering: bool = True
     auto_image: bool = True
     use_broswer: Optional[str] = 'chromium'
-    game_path: Optional[str] = f'{get_cache_file()}/game'
     yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com'
     yuyuko_type: Optional[str] = 'BOT'
     local_test: bool = False
@@ -29,7 +29,7 @@ def set_hikari_config(  # noqa: PLR0913
         auto_rendering: bool = True,
         auto_image: bool = True,
         use_broswer: Optional[str] = 'chromium',
-        game_path: Optional[str] = f'{get_cache_file()}/game',
+        game_path: Optional[str] = '',
         yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com',
         yuyuko_type: Optional[str] = 'BOT',
         local_test: bool = False,
@@ -53,8 +53,21 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.auto_rendering = auto_rendering
     hikari_config.auto_image = auto_image
     hikari_config.use_broswer = use_broswer
-    hikari_config.game_path = game_path
     hikari_config.yuyuko_url = yuyuko_url
     hikari_config.yuyuko_type = yuyuko_type
     hikari_config.local_test = local_test
+    # 为空则使用默认路径
+    from hikari_core.cache_utils import get_cache_file,initial_cache_file
+    if game_path == '':
+        initial_cache_file(get_cache_file())
+    else:
+        initial_cache_file(Path(game_path))
     logger.info(f'当前hikari-core配置\n{hikari_config}')
+    from hikari_core.game.help import update_template, update_ship_cache,update_ship_cache_cron
+    update_template()
+    update_ship_cache()
+    logger.info(f"启动定时任务")
+    _scheduler.add_job(update_template, 'cron', hour='4,12')
+    _scheduler.add_job(update_ship_cache_cron, 'cron', day_of_week='thu', hour=8, minute=0)
+    _scheduler.start()
+
