@@ -2,159 +2,290 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title></title>
+    <title>战舰选择</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f7fa;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            padding: 20px;
+        }
+
+        .main-content {
+            width: 720px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid #e1e8ed;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #008272 0%, #00a896 100%);
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .timer {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .timer-number {
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .timer-text {
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .header-content h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .header-content p {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .table-container {
+            padding: 0;
+        }
+
+        .table-style {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .table-style thead {
+            background: #f8fafc;
+        }
+
+        .table-style th {
+            padding: 14px 12px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #475569;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .table-style td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+
+        .table-style tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .index-cell {
+            font-weight: 600;
+            color: #008272;
+            background: rgba(0, 130, 114, 0.08);
+            border-radius: 6px;
+            padding: 6px 10px;
+            display: inline-block;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .server-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .level-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #008272 0%, #00a896 100%);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .ship-type-icon {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+        }
+
+        .ship-name {
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .empty-name {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* 列宽调整 */
+        th:nth-child(1), td:nth-child(1) { width: 60px; }
+        th:nth-child(2), td:nth-child(2) { width: 80px; }
+        th:nth-child(3), td:nth-child(3) { width: 120px; }
+        th:nth-child(4), td:nth-child(4) { width: 160px; }
+        th:nth-child(5), td:nth-child(5) { width: 160px; }
+        th:nth-child(6), td:nth-child(6) { width: 160px; }
+
+        /* 内容对齐 */
+        .align-center {
+            text-align: center;
+        }
+
+        .align-left {
+            text-align: left;
+        }
+
+        /* 固定布局 */
+        .table-style {
+            table-layout: fixed;
+        }
+
+        .table-style td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ship-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Playwright截图优化 */
+        .screenshot-optimized {
+            transform: translateZ(0);
+            -webkit-font-smoothing: antialiased;
+            image-rendering: crisp-edges;
+        }
+
+        /* 警告标志 */
+        .warning-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 24px;
+            height: 24px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+        }
+    </style>
 </head>
-<style>
-    * {
-        padding: 0;
-        margin: 0;
-    }
-    .main-content {
-        width: 660px;
-        font-family: 'Microsoft YaHei';
-        font-family: "Microsoft YaHei";
-        font-size: 20px;
-        border-radius: 16px;
-        font-weight: bold;
-        background-color: #F2F2F2;
-    }
-    .header {
-        height: 80px;
-        display: flex;
-        line-height: 40px;
-    }
-    .sec {
-        margin: 15px;
-        height: 50px;
-        width: 50px;
-        text-align: center;
-        line-height: 50px;
-        border-radius: 30px;
-        border: #008272 3px solid;
-        font-weight: normal;
-    }
-    .ship-list {
-        display: flex;
-        flex-direction: column;
-        border-radius: 16px;
-    }
-    .ship-item {
-        display: flex;
-        height: 60px;
-        line-height: 60px;
-    }
-    .ship-inf {
-        flex: 1;
-        display: flex;
-    }
-    .index {
-        width: 60px;
-        text-align: center;
-        font-weight: bold;
-    }
-    .ship-level {
-        width: 40px;
-        text-align: center;
-        display: inline-block;
-    }
-    .ship-name {
-        text-align: center;
-        display: inline-block;
-    }
-    .ship-server-type {
-        width: 80px;
-        text-align: center;
-        display: inline-block;
-    }
-    .icon{
-        width: 40px;
-    }
-    .icon img {
-        display: block;
-        width: 30px;
-        height: 30px;
-        margin: 15px 0;
-    }
-</style>
-<style>
-    .table-style {
-        width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed;
-    }
-
-    .table-style th, .table-style td {
-        padding: 12px;
-        border: 1px solid #ddd;
-    }
-
-    .center-align {
-        text-align: center;
-    }
-
-    .img-text-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .img-text-wrapper img {
-        object-fit: cover;
-    }
-</style>
 <body>
-<div class="main-content">
+<div class="main-content screenshot-optimized">
+    <!-- 警告标志 -->
+    <div class="warning-badge">!</div>
+
+    <!-- 头部 -->
     <div class="header">
-        <div class="sec">20s</div>
-        <div class="header-text">
-            <div>存在多条名字相似的船</div>
-            <div>请在20秒内选择对应的序号</div>
+        <div class="timer">
+            <div class="timer-number">20</div>
+            <div class="timer-text">秒</div>
+        </div>
+        <div class="header-content">
+            <h1>发现多个相似名称的战舰</h1>
+            <p>请在20秒内选择正确的战舰序号</p>
         </div>
     </div>
-    <table class="table-style">
-        <colgroup>
-            <col style="width: 52px;">
-            <col style="width: 80px;">
-            <col style="width: 100px;">
-            <col style="width: 140px;">
-            <col style="width: 140px;">
-            <col style="width: 140px;">
-        </colgroup>
-        <thead>
-        <tr>
-            <th class="center-align">序</th>
-            <th class="center-align"><img src="https://v3-api.wows.shinoaki.com/nahida-static/server.png" width="20px" height="20px"></th>
-            <th>等级</th>
-            <th class="center-align center-align-name">战舰名称①</th>
-            <th class="center-align center-align-name">战舰名称②</th>
-            <th class="center-align center-align-name">战舰名称③</th>
-        </tr>
-        </thead>
+
+    <!-- 表格区域 -->
+    <div class="table-container">
+        <table class="table-style">
+            <thead>
+            <tr>
+                <th class="align-center">序号</th>
+                <th class="align-left">
+                    <div class="server-cell">
+                        <img src="https://v3-api.wows.shinoaki.com/nahida-static/server.png" width="18" height="18" alt="服务器">
+                        <span>服务器</span>
+                    </div>
+                </th>
+                <th class="align-left">等级/类型</th>
+                <th class="align-left">主名称</th>
+                <th class="align-left">别名①</th>
+                <th class="align-left">别名②</th>
+            </tr>
+            </thead>
+
         <tbody>
         {% for ship in data %}
             <tr>
-                <td class="center-align center-align-index"></td>
-                <td class="center-align">{{ ship['Ship_Server_Type'] }}</td>
-                <td>
-                    <div class="img-text-wrapper">
-                        <span class="ship-level-v2">{{ ship['Ship_Tier'] }}</span>
+                <td class="align-center"><span class="index-cell"></span></td>
+                <td class="align-left">
+                    <div class="server-cell">{{ ship['Ship_Server_Type'] }}</div>
+                </td>
+                <td class="align-left">
+                    <div class="level-cell">
+                        <span class="level-badge">{{ ship['Ship_Tier'] }}</span>
                         {% if ship['Ship_Type'] == 'Destroyer' %}
-                            <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_destroyer.png">
+                            <img class="ship-type-icon" src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_destroyer.png">
                         {% elif ship['Ship_Type'] == 'Cruiser' %}
-                            <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_cruiser.png">
+                            <img class="ship-type-icon" src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_cruiser.png">
                         {% elif ship['Ship_Type'] == 'Battleship' %}
-                            <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_battleship.png">
+                            <img class="ship-type-icon" src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_battleship.png">
                         {% elif ship['Ship_Type'] == 'AirCarrier' %}
-                            <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_aircarrier.png">
+                            <img class="ship-type-icon" src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_aircarrier.png">
                         {% elif ship['Ship_Type'] == 'Submarine' %}
-                            <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_submarine.png">
+                            <img class="ship-type-icon" src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_submarine.png">
                         {% endif %}
                     </div>
                 </td>
-                <td class="center-align">{{ ship['Ship_Name_Cn'] }}</td>
-                <td class="center-align">{{ ship['Ship_Name_Cn360'] }}</td>
-                <td class="center-align">{{ ship['ship_Name_Ru'] }}</td>
-            </tr>
+                <td class="align-left">
+                    <div class="ship-name">{{ ship['Ship_Name_Cn'] }}</div>
+                </td>
+                <td class="align-left">
+                    <div class="ship-name">{{ ship['Ship_Name_Cn360'] }}</div>
+                </td>
+                <td class="align-left">
+                    <div class="ship-name empty-name">{{ ship['ship_Name_Ru'] }}</div>
+                </td>
         {% endfor %}
 
         </tbody>

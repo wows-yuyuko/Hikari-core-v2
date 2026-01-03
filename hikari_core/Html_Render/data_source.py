@@ -125,7 +125,7 @@ async def html_to_pic(  # noqa: PLR0913
         if _screens_hot_service is None:
             _screens_hot_service = minimal_screens_hot_service()
             await _screens_hot_service.start()
-        return await _screens_hot_service.screenshot(html)
+        return await _screens_hot_service.screenshot(html,viewport=kwargs['viewport'])
     # 火狐的走默认
     async with get_new_page(use_browser, **kwargs) as page:
         await page.goto(template_path)

@@ -189,7 +189,7 @@ class minimal_screens_hot_service:
             except:
                 await route.fulfill(status=404)
 
-    async def screenshot(self, html_content: str, session_id: str = None) -> bytes:
+    async def screenshot(self, html_content: str, session_id: str = None, **kwargs) -> bytes:
         """核心截图方法 - 优化执行流程"""
         self.request_count += 1
 
@@ -223,6 +223,9 @@ class minimal_screens_hot_service:
 
             # 4. 智能等待渲染
             await self._smart_wait(page)
+            # 根据元素尺寸调整视口
+            view = kwargs["viewport"]
+            await page.set_viewport_size(view)
 
             # 5. 快速截图
             screenshot_start = time.time()
