@@ -15,6 +15,7 @@ async def start():
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
                       game_path='')
+    await command('测试监控', False)
     # await command('asia wose_sinus', False)
     # await command('cn 用户＿11451414514 recent 90', False)
     await command('me ship 大', False)

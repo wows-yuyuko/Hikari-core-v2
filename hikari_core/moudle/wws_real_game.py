@@ -66,7 +66,7 @@ async def get_latest_info(server, account_id):
 
 def get_last_info(account_id):
     try:
-        listen_data_path = f'{get_cache_file_str('real_game')}/account_data'
+        listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
         if not os.path.exists(listen_data_path):
             os.mkdir(listen_data_path)
         with open(f'{listen_data_path}/{account_id}.json', 'rb') as f:
@@ -78,7 +78,7 @@ def get_last_info(account_id):
 
 def write_latest_info(account_id, data):
     try:
-        listen_data_path = f'{get_cache_file_str('real_game')}/account_data'
+        listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
         if not os.path.exists(listen_data_path):
             os.mkdir(listen_data_path)
         with open(f'{listen_data_path}/{account_id}.json', 'w', encoding='utf-8') as f:
@@ -93,10 +93,10 @@ def jsonDiff(a, b):
 
 
 def get_config():
-    listen_data_path = f'{get_cache_file_str('real_game')}/account_data'
+    listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
     if not os.path.exists(listen_data_path):
         os.mkdir(listen_data_path)
-    listen_config_path = f'{get_cache_file_str('real_game')}/listen_config.json'
+    listen_config_path = f'{get_cache_file_str("real_game")}/listen_config.json'
     if not os.path.exists(listen_config_path):
         with open(listen_config_path, 'w') as f:
             f.write(orjson.dumps({}).decode())
@@ -106,10 +106,10 @@ def get_config():
 
 
 def write_config(config):
-    listen_data_path = f'{get_cache_file_str('real_game')}/account_data'
+    listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
     if not os.path.exists(listen_data_path):
         os.mkdir(listen_data_path)
-    listen_config_path = f'{get_cache_file_str('real_game')}/listen_config.json'
+    listen_config_path = f'{get_cache_file_str("real_game")}/listen_config.json'
     if not os.path.exists(listen_config_path):
         with open(listen_config_path, 'w') as f:
             f.write(orjson.dumps({}).decode())
@@ -121,7 +121,7 @@ def write_config(config):
 async def get_diff_ship(hikari: Hikari_Model):  # noqa: PLR0915
     """查询最新一轮监控信息"""
     try:
-        listen_data_path = f'{get_cache_file_str('real_game')}/account_data'
+        listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
         config = get_config()
         account_id_list, account_list, send_list = [], [], []
         # 获取监控列表，去重
@@ -294,10 +294,10 @@ async def delete_listen_list(hikari: Hikari_Model):
 
 async def reset_config(hikari: Hikari_Model):
     try:
-        listen_data_path = f'{get_cache_file_str('real_game')}/account_data'
+        listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
         shutil.rmtree(listen_data_path, ignore_errors=True)
         os.mkdir(listen_data_path)
-        listen_config_path = f'{get_cache_file_str('real_game')}/listen_config.json'
+        listen_config_path = f'{get_cache_file_str("real_game")}/listen_config.json'
         os.remove(listen_config_path)
         with open(listen_config_path, 'w') as f:
             f.write(orjson.dumps({}).decode())
