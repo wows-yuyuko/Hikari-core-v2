@@ -123,20 +123,18 @@ def update_template():
         return False
 
 def update_ship_cache_cron():
-    wows_temp = get_cache_file() / "wows_temp"
-    base_path = wows_temp / "ship_cache"
+    base_path = get_cache_file() / "ship_cache"
     base_path.mkdir(exist_ok=True, parents=True)
-    zip_path = wows_temp / "ship_cache.zip"
-    load_ship_cache_zip(wows_temp, zip_path)
+    zip_path = get_cache_file() / "ship_cache.zip"
+    load_ship_cache_zip(get_cache_file(), zip_path)
 
 def update_ship_cache():
     logger.info('开始更新战舰资源')
-    wows_temp = get_cache_file() / "wows_temp"
-    base_path = wows_temp / "ship_cache"
+    base_path = get_cache_file() / "ship_cache"
     base_path.mkdir(exist_ok=True, parents=True)
-    zip_path = wows_temp / "ship_cache.zip"
+    zip_path = get_cache_file() / "ship_cache.zip"
     if not zip_path.exists():
-        load_ship_cache_zip(wows_temp, zip_path)
+        load_ship_cache_zip(get_cache_file(), zip_path)
     for shipK_list in get_all_shipList_server(False):
         write_ship_cache(base_path, shipK_list['shipTypeImage'])
         write_ship_cache(base_path, shipK_list['countryImage'])
