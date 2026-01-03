@@ -3,7 +3,7 @@ from typing import Optional
 from loguru import logger
 from pydantic import BaseModel
 
-from .data_source import dir_path
+from hikari_core import get_cache_file
 
 
 class Config_Model(BaseModel):
@@ -13,7 +13,7 @@ class Config_Model(BaseModel):
     auto_rendering: bool = True
     auto_image: bool = True
     use_broswer: Optional[str] = 'chromium'
-    game_path: Optional[str] = f'{dir_path}/game'
+    game_path: Optional[str] = f'{get_cache_file()}/game'
     yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com'
     yuyuko_type: Optional[str] = 'BOT'
     local_test: bool = False
@@ -29,7 +29,7 @@ def set_hikari_config(  # noqa: PLR0913
         auto_rendering: bool = True,
         auto_image: bool = True,
         use_broswer: Optional[str] = 'chromium',
-        game_path: Optional[str] = f'{dir_path}/game',
+        game_path: Optional[str] = f'{get_cache_file()}/game',
         yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com',
         yuyuko_type: Optional[str] = 'BOT',
         local_test: bool = False,
@@ -43,7 +43,7 @@ def set_hikari_config(  # noqa: PLR0913
         auto_rendering (bool): 自动填充模板，默认启用
         auto_image (bool): 是否自动渲染，默认启用，若auto_rending未启用则该项配置无效
         use_broswer (str): chromium/firefox，默认chromium，性能大约为firefox三倍
-        game_path (str):缓存文件夹路径，推荐设置在bot目录下，不配置默认为core目录下game
+        game_path (str):缓存文件夹路径，推荐设置在bot目录下，不配置默认为当前项目的data/wows-yuyuko目录下
         yuyuko_url (str):yuyuko请求地址
     """
     global hikari_config  # noqa: PLW0602

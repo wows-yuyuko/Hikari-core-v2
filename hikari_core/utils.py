@@ -17,7 +17,9 @@ from loguru import logger
 from .data_source import template_path
 
 def get_cache_file() -> Path:
-    return Path(os.getcwd()) / "data" / "wows-yuyuko"
+    dir_path = Path(os.getcwd()) / "data" / "wows-yuyuko"
+    dir_path.mkdir(exist_ok=True)
+    return dir_path
 
 def startup():
     try:
