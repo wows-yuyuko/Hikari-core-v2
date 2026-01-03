@@ -6,6 +6,9 @@ from pydantic import BaseModel
 from apscheduler.schedulers.background import BackgroundScheduler
 
 _scheduler = BackgroundScheduler(timezone='Asia/Shanghai')
+# 启动时只执行一次
+_initial_scheduler = True
+
 
 class Config_Model(BaseModel):
     proxy: Optional[str] = None
@@ -57,17 +60,23 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.yuyuko_type = yuyuko_type
     hikari_config.local_test = local_test
     # 为空则使用默认路径
-    from hikari_core.cache_utils import get_cache_file,initial_cache_file
+    from hikari_core.cache_utils import get_cache_file, initial_cache_file
     if game_path == '':
         initial_cache_file(get_cache_file())
     else:
         initial_cache_file(Path(game_path))
     logger.info(f'当前hikari-core配置\n{hikari_config}')
-    from hikari_core.game.help import update_template, update_ship_cache,update_ship_cache_cron
-    update_template()
-    update_ship_cache()
-    logger.info(f"启动定时任务")
-    _scheduler.add_job(update_template, 'cron', hour='4,12')
-    _scheduler.add_job(update_ship_cache_cron, 'cron', day_of_week='thu', hour=8, minute=0)
-    _scheduler.start()
-
+    global _initial_scheduler
+    if _initial_scheduler:
+        logger.info("初始化任务....")
+        from hikari_core.game.help import update_template, update_ship_cache, update_ship_cache_cron
+        logger.info("执行初始模板更新...")
+        update_template()
+        logger.info("执行初始缓存更新...")
+        update_ship_cache()
+        logger.info(f"启动定时任务")
+        _scheduler.add_job(update_template, 'cron', hour='4,12')
+        _scheduler.add_job(update_ship_cache_cron, 'cron', day_of_week='thu', hour=8, minute=0)
+        _scheduler.start()
+        logger.info("初始化任务结束....")
+        _initial_scheduler = False
