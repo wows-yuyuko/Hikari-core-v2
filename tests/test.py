@@ -1,54 +1,42 @@
 import asyncio
-import sys
 import time
-from pathlib import Path
 
-dir_path = Path(__file__).parent.parent
-sys.path.append(f'{dir_path}')
-
-from hikari_core import Hikari_Model, callback_hikari, init_hikari, set_hikari_config  # noqa: E402
+from hikari_core import Hikari_Model, callback_hikari, init_hikari  # noqa: E402
+from hikari_core.config import set_hikari_config
 
 platform = 'QQ'
 platform_id = '2622749113'
 group_id = '967546463'
-
 
 async def start():
     global start_time
     start_time = time.time()
     set_hikari_config(use_broswer='chromium', http2=False, proxy='http://localhost:7890',
                       local_test=True,
-                      token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL')
+                      token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
+                      game_path='')
     # await command('asia wose_sinus', False)
     # await command('cn 用户＿11451414514 recent 90', False)
-    # await command('wws me', False)
-    await command('me ship 奥斯汀', False)
-    await command('wws me recent 7', False)
+    await command('me ship 大', False)
+    # await command('me', False)
+    # await command('wws me recent 7', False)
     # await command("公会战记录 cn 团子大家族 25", False)
-    # await command("公会战记录 cn 团子大家族 25 1", False)
-    # await command("公会战记录 me 25", False)
-    # await command("公会战记录 me 25 1", False)
-    # await command("asia _nahida", True)
     # await command("wws查询绑定 me", True)
-    # await command("me ship 大和", True)
-    # await command("wws me sx", True)
-    # await command("wws me sd", True)
-    # await command("clan asia YU_RI", True)
-    # await command("战舰排行榜 cn 大和", True)
-    # await command("封号记录 国服 西行寺雨季", True)
-    # await command("公会战排行榜 20", True)
-    # # 以下指令不抛出异常，特殊情况特殊测试
+    # await command("me sx", False)
+    # await command("me sd", False)
+    # await command('me clan', False)
+    # await command("战舰排行榜 cn 大和", False)
+    # await command("封号记录 国服 西行寺雨季", False)
     # await command("me ship 无比 recent 2024-05-30", False)
-    # await command("wws me recent 3", False)
-    # await command("wws me recents 10", False)
+    # await command("公会战排行榜 20", False)
 
 
 async def command(command_text: str, is_err: bool):
-    hikari_data = await init_hikari(platform, platform_id, command_text, group_id)
+    hikari_data = await init_hikari(platform=platform,PlatformId= platform_id, command_text=str(command_text), GroupId=group_id)
     if hikari_data.Status == 'success':
         await output_with_check_type(hikari_data, command_text)
     elif hikari_data.Status == 'wait':
-        await output_with_check_type(hikari_data, command_text)
+        await output_with_check_type(hikari_data, command_text + 'select')
         hikari_data.Input.Select_Index = 2
         hikari_data = await callback_hikari(hikari_data)
         await output_with_check_type(hikari_data, command_text)
