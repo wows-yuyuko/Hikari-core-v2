@@ -13,11 +13,10 @@ import orjson
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
+from hikari_core.cache_utils import get_cache_file, get_cache_file_str
 from ..HttpClient_Pool import get_client_default, recreate_client_default
 from ..data_source import __version__, template_path
 from ..model import Hikari_Model
-from ..moudle.publicAPI import get_all_shipList_server
-from hikari_core.cache_utils import get_cache_file
 
 executor = ThreadPoolExecutor()
 
@@ -135,15 +134,32 @@ def update_ship_cache():
     zip_path = get_cache_file() / "ship_cache.zip"
     if not zip_path.exists():
         load_ship_cache_zip(get_cache_file(), zip_path)
-    for shipK_list in get_all_shipList_server(False):
-        write_ship_cache(base_path, shipK_list['shipTypeImage'])
-        write_ship_cache(base_path, shipK_list['countryImage'])
-        write_ship_cache(base_path, shipK_list['imgSmall'])
-    for shipK_list in get_all_shipList_server(True):
-        write_ship_cache(base_path, shipK_list['shipTypeImage'])
-        write_ship_cache(base_path, shipK_list['countryImage'])
-        write_ship_cache(base_path, shipK_list['imgSmall'])
+        get_all_ship_cache_hash_json(get_cache_file_str())
+    # 加载本地json
+    with open(get_cache_file() / "ship_cache_hash.json", "rb") as f:
+        ship_hash_local_json = orjson.loads(f.read())
+    ship_hash_new_json = get_all_ship_cache_hash_json(get_cache_file_str())
+    local_dict = {item["key"]: item["value"] for item in ship_hash_local_json}
+    remote_dict = {item["key"]: item["value"] for item in ship_hash_new_json}
+    files_to_download = []
+    for filename, remote_hash in remote_dict.items():
+        if filename not in local_dict or local_dict[filename] != remote_hash:
+            files_to_download.append(filename)
+    for filename in files_to_download:
+        write_ship_cache(base_path,f"https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/{filename}")
     logger.info("更新战舰资源完成")
+
+def get_all_ship_cache_hash_json(dir: str):
+    try:
+        file_json = Path(dir) / 'ship_cache_hash.json'
+        url = f'https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/ship_cache_hash.json'
+        with httpx.Client() as client:
+            resp = client.get(url, timeout=20)
+            with open(file_json, 'wb') as f:
+                f.write(resp.content)
+            return orjson.loads(resp.content)
+    except Exception:
+        return None
 
 def load_ship_cache_zip(wows_temp : Path,zip_path: Path):
     logger.info('开始下载战舰图片资源压缩包，等待时间较长！')
@@ -171,8 +187,8 @@ def write_ship_cache(file_dir: Path, ship_url: str):
         file_path = file_dir / file_name
 
         # 检查文件是否存在
-        if os.path.exists(file_path):
-            return True
+        # if os.path.exists(file_path):
+        #     return True
         logger.info(f"开始下载: {file_name}")
         success = _download_file(ship_url, file_path)
         return success

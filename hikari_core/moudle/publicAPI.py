@@ -3,6 +3,7 @@ import gzip
 import traceback
 from asyncio.exceptions import TimeoutError
 from base64 import b64encode
+from pathlib import Path
 from typing import List
 
 import httpx
@@ -134,21 +135,6 @@ async def get_all_shipList(hikari: Hikari_Model):
     except PoolTimeout:
         await recreate_client_yuyuko()
         return
-    except Exception:
-        return None
-
-
-def get_all_shipList_server(is_ru: bool):
-    try:
-        url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
-        s_server = 'ru' if is_ru else 'asia'
-        params = {'server': s_server, 'country': '', 'level': '', 'shipName': '', 'shipType': '', 'groupType': 'default'}
-        with httpx.Client() as client:
-            resp = client.get(url, params=params, timeout=20)
-            result = orjson.loads(resp.content)
-            if result['code'] == 200 and result['data']:
-                return result['data']
-        return None
     except Exception:
         return None
 
