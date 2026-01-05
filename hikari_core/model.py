@@ -1,7 +1,10 @@
 import time
+import os
 from typing import List, Optional, Protocol, Union, runtime_checkable
 
 from pydantic import BaseModel, Field
+
+from hikari_core.cache_utils import get_cache_file
 
 
 @runtime_checkable
@@ -17,50 +20,51 @@ class UserInfo_Model(BaseModel):
 
 
 class Ship_Model(BaseModel):
-    Ship_Server_Type: Optional[str]
-    Ship_Nation: Optional[str]
-    Ship_Tier: Optional[int]
-    Ship_Type: Optional[str]
-    Ship_Name_Cn: Optional[str]
-    Ship_Name_Cn360: Optional[str]
-    Ship_Name_English: Optional[str]
-    ship_Name_Numbers: Optional[str]
-    ship_Name_Ru: Optional[str]
-    Ship_Id: Optional[int]
+    Ship_Server_Type: Optional[str] = None
+    Ship_Nation: Optional[str] = None
+    Ship_Tier: Optional[int] = None
+    Ship_Type: Optional[str] = None
+    Ship_Name_Cn: Optional[str] = None
+    Ship_Name_Cn360: Optional[str] = None
+    Ship_Name_English: Optional[str] = None
+    ship_Name_Numbers: Optional[str] = None
+    ship_Name_Ru: Optional[str] = None
+    Ship_Id: Optional[int] = None
 
 
 class Input_Model(BaseModel):
     Command_Text: Optional[str] = ''  # 输入的指令,请提前去除wws
-    Command_List: Optional[List]
+    Command_List: Optional[List] = None
     Search_Type: Optional[int] = 3  # 1:me  2:@  3:server+name or default
-    Platform: Optional[str]
-    PlatformId: Optional[str]
-    Server: Optional[str]
-    AccountName: Optional[str]
-    AccountId: Optional[int]
-    ClanName: Optional[str]
-    ClanId: Optional[int]
+    Platform: Optional[str] = None
+    PlatformId: Optional[str] = None
+    Server: Optional[str] = None
+    AccountName: Optional[str] = None
+    AccountId: Optional[int] = None
+    ClanName: Optional[str] = None
+    ClanId: Optional[int] = None
     CwSeasonId: Optional[int] = 0
     Recent_Day: Optional[int] = 0
     Recent_Date: Optional[str] = time.strftime('%Y-%m-%d', time.localtime())
-    Select_Index: Optional[int]
-    Select_Data: Optional[List]
+    Select_Index: Optional[int] = None
+    Select_Data: Optional[List] = None
     ShipInfo: Ship_Model = Ship_Model()
 
 
 class Output_Model(BaseModel):
-    Yuyuko_Code: Optional[int]
+    Yuyuko_Code: Optional[int] = None
     Data_Type: str = Field('str', description='返回的类型')
     Data: Union[str, int, bytes] = Field('初始化', description='返回的数据')
-    Template: Optional[str]
-    Width: Optional[int]
-    Height: Optional[int]
+    Template: Optional[str] = None
+    Width: Optional[int] = None
+    Height: Optional[int] = None
 
 
 class Hikari_Model(BaseModel):
     Status: str = 'init'  # init:初始化 success:请求成功  failed:请求成功但API有错误或空返回  error:异常及本地错误
     UserInfo: UserInfo_Model = UserInfo_Model()
     Function: Func = None
+    template_content: str = ''
     Input: Input_Model = Input_Model()
     Output: Output_Model = Output_Model()
 

@@ -1,19 +1,17 @@
 import time
 import traceback
-
+import os
 import jinja2
-from apscheduler.schedulers.background import BackgroundScheduler
 from jinja2.exceptions import UndefinedError
 from loguru import logger
 from playwright.async_api import Error as playwright_Error
 from pydantic import ValidationError
 
+from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .analyze import analyze_command
 from .command_select import *  # noqa: F403
-from .config import hikari_config, set_hikari_config  # noqa:F401
+from .config import hikari_config  # noqa:F401
 from .data_source import set_render_params, template_path
-from .game.help import update_template
-from .Html_Render import html_to_pic
 from .model import Hikari_Model, Input_Model, UserInfo_Model
 
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path), enable_async=True)
@@ -26,11 +24,11 @@ env.globals.update(
 
 
 async def init_hikari(
-    platform: str,
-    PlatformId: str,
-    command_text: str = None,
-    GroupId: str = None,
-    Ignore_List=[],  # noqa: B006
+        platform: str,
+        PlatformId: str,
+        command_text: str = None,
+        GroupId: str = None,
+        Ignore_List=[],  # noqa: B006
 ) -> Hikari_Model:
     """Hikari初始化
 
@@ -95,17 +93,22 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
     """
     try:
         if (
-            hikari.Status in ['success', 'wait']
-            and hikari_config.auto_rendering
-            and hikari.Output.Template
-            and (isinstance(hikari.Output.Data, dict) or isinstance(hikari.Output.Data, list))  # noqa: PLR1701
+                hikari.Status in ['success', 'wait']
+                and hikari_config.auto_rendering
+                and hikari.Output.Template
+                and (isinstance(hikari.Output.Data, dict) or isinstance(hikari.Output.Data, list))  # noqa: PLR1701
         ):
             template = env.get_template(hikari.Output.Template)
+            # 获取全部的 shipInfo节点
             if hikari.Status == 'success':
-                template_data = await set_render_params(hikari.Output.Data)
+                # 对 shipInfo节点进行修改 使用本地文件来渲染
+                template_data = await set_render_params(find_and_modify_shipinfo(hikari.Output.Data))
             elif hikari.Status == 'wait':
                 template_data = await set_render_params(hikari.Input.Select_Data)
             content = await template.render_async(template_data)
+            # 测试模式下才赋值给模板内容
+            if hikari_config.local_test:
+                hikari.template_content = content
             hikari.Output.Data = content
             hikari.Output.Data_Type = type(hikari.Output.Data)
 
@@ -129,10 +132,49 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
         return Hikari_Model().error(f'Hikari-core顶层错误，请检查log\n{e}')
 
 
-update_template()
-scheduler = BackgroundScheduler(timezone='Asia/Shanghai')
-scheduler.add_job(update_template, 'cron', hour='4,12')
-scheduler.start()
+def find_and_modify_shipinfo(data, target_key="shipInfo"):
+    """
+    深度搜索并修改 shipInfo 节点
+
+    Args:
+        data: 嵌套数据结构
+        target_key: 要搜索的键名，默认 "shipInfo"
+    """
+
+    def recursive_modify(obj, path=""):
+        from hikari_core.cache_utils import get_cache_file
+        wows_temp = get_cache_file() / "ship_cache"
+        if isinstance(obj, dict):
+            # 如果找到目标键
+            if target_key in obj:
+                ship_info = obj[target_key]
+                if isinstance(ship_info, dict):
+                    # 处理字典形式：{ship_id: ship_data, ...}
+                    if "shipTypeImage" in ship_info and "imgSmall" in ship_info and "countryImage" in ship_info:
+                        # 获取 shipTypeImage 和 imgSmall 的文件名
+                        ship_type_image_filename = wows_temp / os.path.basename(ship_info["shipTypeImage"])
+                        img_small_filename = wows_temp / os.path.basename(ship_info["imgSmall"])
+                        country_image_filename = wows_temp / os.path.basename(ship_info["countryImage"])
+                        if ship_type_image_filename.exists():
+                            ship_info["shipTypeImage"] = f"file:///{ship_type_image_filename.as_posix()}"
+
+                        if img_small_filename.exists():
+                            ship_info["imgSmall"] = f"file:///{img_small_filename.as_posix()}"
+
+                        if country_image_filename.exists():
+                            ship_info["countryImage"] = f"file:///{country_image_filename.as_posix()}"
+
+            # 递归搜索所有键值对
+            for key, value in list(obj.items()):
+                recursive_modify(value, f"{path}.{key}" if path else key)
+
+        elif isinstance(obj, list):
+            # 递归搜索列表元素
+            for i, item in enumerate(obj):
+                recursive_modify(item, f"{path}[{i}]")
+
+    recursive_modify(data)
+    return data
 
 # logger.add(
 #    'hikari-core-logs/error.log',

@@ -5,6 +5,7 @@ import orjson
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
+from ..config import hikari_config
 from ..HttpClient_Pool import get_client_yuyuko, recreate_client_yuyuko
 from ..model import Hikari_Model
 from .publicAPI import get_AccountIdByName
@@ -22,7 +23,7 @@ async def get_RecentsInfo(hikari: Hikari_Model) -> Hikari_Model:
                     return hikari.error(f'{hikari.Input.AccountId}')
         else:
             return hikari.error('当前请求状态错误')
-        url = 'https://recent.wows.shinoaki.com:8890/api/wows/recents/day/info'
+        url = f'{hikari_config.yuyuko_url}/api/wows/recents/day/info'
         if hikari.Input.Search_Type == 3:
             params = {
                 'server': hikari.Input.Server,

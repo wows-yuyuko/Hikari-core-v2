@@ -1,7 +1,7 @@
 from loguru import logger
 
 from .browser import get_browser, get_new_page, shutdown_browser  # noqa: F401
-from .data_source import capture_element, html_to_pic, template_to_html, template_to_pic, text_to_pic  # noqa: F401
+from .data_source import capture_element, html_to_pic, template_to_html, template_to_pic, text_to_pic, html_to_pic_by_gif  # noqa: F401
 
 
 async def init(**kwargs):
