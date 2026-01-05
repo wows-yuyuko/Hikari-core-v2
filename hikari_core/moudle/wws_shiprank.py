@@ -59,7 +59,7 @@ async def search_ShipRank_Yuyuko(hikari: Hikari_Model):
         url = f'{hikari_config.yuyuko_url}/api/upload/numbers/data/v2/upload/ship/rank'
         params = {'server': hikari.Input.Server, 'shipId': int(hikari.Input.ShipInfo.Ship_Id)}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=10)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:
             hikari.set_template_info('ship-rank.html', 1300, 100)
@@ -82,7 +82,7 @@ async def search_ShipRank_Numbers(hikari: Hikari_Model):
     try:
         client_default = await get_client_default()
         number_url = f'{number_url_homes[hikari.Input.Server]}/ship/{hikari.Input.ShipInfo.Ship_Id},{hikari.Input.ShipInfo.ship_Name_Numbers}'
-        resp = await client_default.get(number_url, timeout=10)
+        resp = await client_default.get(number_url, timeout=20)
         soup = BeautifulSoup(resp.content, 'html.parser')
         data = soup.select('tr[class="cells-middle"]')
         infoList = await set_ShipRank_Numbers(data, hikari.Input.Server, hikari.Input.ShipInfo.Ship_Id)
@@ -107,7 +107,7 @@ async def post_ShipRank(data):
     try:
         url = f'{hikari_config.yuyuko_url}/api/upload/numbers/data/upload/ship/rank'
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.post(url, json=data, timeout=10)
+        resp = await client_yuyuko.post(url, json=data, timeout=20)
         result = orjson.loads(resp.content)
         logger.success(result)
     except (TimeoutError, ConnectTimeout):
@@ -122,7 +122,7 @@ async def search_cn_rank(hikari: Hikari_Model):
     try:
         url = f'{hikari_config.yuyuko_url}/public/rank/ship/cn/{int(hikari.Input.ShipInfo.Ship_Id)}/0?page=1&desc=true'
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, timeout=10)
+        resp = await client_yuyuko.get(url, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:
             hikari.set_template_info('ship-rank.html', 1300, 100)

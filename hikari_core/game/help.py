@@ -16,11 +16,11 @@ async def get_help(hikari: Hikari_Model):
     try:
         url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/version.json'
         client_default = await get_client_default()
-        resp = await client_default.get(url, timeout=10)
+        resp = await client_default.get(url, timeout=20)
         result = orjson.loads(resp.content)
         latest_version = result['latest_version']
         url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/wws_help.txt'
-        resp = await client_default.get(url, timeout=10)
+        resp = await client_default.get(url, timeout=20)
         result = resp.text
         result = f"""帮助列表                                                当前版本{__version__}  最新版本{latest_version}\n{result}"""
         data = {'text': result}
@@ -42,7 +42,7 @@ async def check_version(hikari: Hikari_Model):
     try:
         url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/version.json'
         client_default = await get_client_default()
-        resp = await client_default.get(url, timeout=10)
+        resp = await client_default.get(url, timeout=20)
         result = orjson.loads(resp.content)
         match, msg = False, '发现新版本'
         for each in result['data']:

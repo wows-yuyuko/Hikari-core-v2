@@ -19,7 +19,7 @@ async def get_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
         url = f'{hikari_config.yuyuko_url}/api/user/platform/bind/list'
         params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=10)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['message'] == 'success':
             if result['data']:
@@ -55,7 +55,7 @@ async def set_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
         url = f'{hikari_config.yuyuko_url}/api/user/platform/switch/bind'
         params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId, 'accountId': hikari.Input.AccountId}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.post(url, json=params, timeout=10)
+        resp = await client_yuyuko.post(url, json=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['message'] == 'success':
             return hikari.success('绑定成功')
@@ -83,7 +83,7 @@ async def set_special_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
         url = f'{hikari_config.yuyuko_url}/api/user/platform/switch/bind'
         params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId, 'accountId': hikari.Input.AccountId}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.post(url, json=params, timeout=10)
+        resp = await client_yuyuko.post(url, json=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['message'] == 'success':
             return hikari.success('绑定成功')
@@ -170,7 +170,7 @@ async def delete_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
             url = f'{hikari_config.yuyuko_url}/api/user/platform/remove/bind'
             params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId, 'accountId': hikari.Input.AccountId}
             client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-            resp = await client_yuyuko.request('DELETE', url=url, json=params, timeout=10)
+            resp = await client_yuyuko.request('DELETE', url=url, json=params, timeout=20)
             result = orjson.loads(resp.content)
             if result['code'] == 200 and result['message'] == 'success':
                 return hikari.success(
@@ -207,7 +207,7 @@ async def get_DefaultBindInfo(hikari: Hikari_Model, platformType, platformId):
             'platformId': platformId,
         }
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=10)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['message'] == 'success':
             if result['data']:

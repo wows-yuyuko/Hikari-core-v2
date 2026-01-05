@@ -28,7 +28,7 @@ async def get_nation_list(hikari: Hikari_Model):
         msg = ''
         url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/nation/list'
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, timeout=10)
+        resp = await client_yuyuko.get(url, timeout=20)
         result = orjson.loads(resp.content)
         for nation in result['data']:
             msg: str = msg + f"{nation['cn']}：{nation['nation']}\n"
@@ -53,7 +53,7 @@ async def get_ship_name(hikari: Hikari_Model):
         }
         url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=10)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['data']:
             for ship in result['data']:
@@ -83,7 +83,7 @@ async def get_ship_byName(hikari: Hikari_Model) -> List:
         url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
         params = {'country': '', 'level': '', 'shipName': shipname, 'shipType': '', 'groupType': 'default'}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=10)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
         List, select_List = [], []
         if result['code'] == 200 and result['data']:
@@ -124,7 +124,7 @@ async def get_all_shipList(hikari: Hikari_Model):
         url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
         params = {'country': '', 'level': '', 'shipName': '', 'shipType': '', 'groupType': 'default'}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=10)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:
             return result['data']
@@ -142,7 +142,7 @@ async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> s
         url = f'{hikari_config.yuyuko_url}/public/wows/account/search/{server}/user'
         params = {'userName': name, 'one': True}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.post(url, json=params, timeout=10)
+        resp = await client_yuyuko.post(url, json=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:
             return int(result['data'][0]['accountId'])
@@ -166,7 +166,7 @@ async def get_ClanIdByName(hikari: Hikari_Model, server: str, tag: str):
             'tag': tag,
         }
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=10)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:
             return result['data']
@@ -270,13 +270,13 @@ async def get_MyShipRank_Numbers(url, server) -> int:
     try:
         data = None
         client_default = await get_client_default()
-        resp = await client_default.get(url, timeout=10)
+        resp = await client_default.get(url, timeout=20)
         if resp.content:
             result = orjson.loads(resp.content)
             page_url = str(result['url']).replace('\\', '')
             nickname = str(result['nickname'])
             my_rank_url = f'{number_url_homes[server]}{page_url}'
-            resp = await client_default.get(my_rank_url, timeout=10)
+            resp = await client_default.get(my_rank_url, timeout=20)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data = soup.select_one(f'tr[data-nickname="{nickname}"]').select_one('td').string
         if data and data.isdigit():
@@ -301,7 +301,7 @@ async def post_MyShipRank_yuyuko(hikari: Hikari_Model, accountId, ranking, serve
             'shipId': int(shipId),
         }
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        await client_yuyuko.post(url, json=post_data, timeout=10)
+        await client_yuyuko.post(url, json=post_data, timeout=20)
         return
     except PoolTimeout:
         await recreate_client_yuyuko()
