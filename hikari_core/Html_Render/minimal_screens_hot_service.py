@@ -52,7 +52,7 @@ class minimal_screens_hot_service:
         self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
         self.temp_dir = get_cache_file() / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
-        self.gc_count = 100
+        self.gc_count = 1000
         # 内存监控
         self.last_gc = time.time()
         self.request_count = 0
