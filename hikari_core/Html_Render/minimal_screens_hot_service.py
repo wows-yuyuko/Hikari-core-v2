@@ -15,6 +15,7 @@ from loguru import logger
 from PIL import Image
 from playwright.async_api import async_playwright, Browser, Page
 
+
 from hikari_core.cache_utils import get_cache_file
 
 class minimal_screens_hot_service:
@@ -38,6 +39,7 @@ class minimal_screens_hot_service:
         if hasattr(self, '_initialized') and self._initialized:
             return
         self.browser: Optional[Browser] = None
+        self.user_browser =  None
         self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
         self.temp_dir = get_cache_file() / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
@@ -47,13 +49,21 @@ class minimal_screens_hot_service:
         self.request_count = 0
 
     async def start(self):
+        from hikari_core.config import hikari_config
         """极速启动浏览器 - 优化启动参数"""
-        start_time = time.time()
+        self.user_browser = hikari_config.use_broswer
         self.playwright = await async_playwright().start()
+        if hikari_config.use_broswer == 'chromium':
+            await self.chromium()
+        else:
+            await self.firefox()
+
+    async def chromium(self):
+        browser_path = minimal_screens_hot_service.setup_playwright(browser="chromium")
+        logger.info(f"使用浏览器: {browser_path}")
         try:
+            start_time = time.time()
             # 使用最小的启动参数
-            chromium_path = minimal_screens_hot_service.setup_playwright(browser="chromium")
-            logger.info(f"使用浏览器: {chromium_path}")
             self.browser = await self.playwright.chromium.launch(
                 headless=True,
                 args=[
@@ -78,7 +88,7 @@ class minimal_screens_hot_service:
                 handle_sighup=False,
                 # 超时设置
                 timeout=30000,
-                executable_path=chromium_path
+                executable_path=browser_path
             )
 
             elapsed = time.time() - start_time
@@ -92,13 +102,54 @@ class minimal_screens_hot_service:
                 self.browser = await self.playwright.chromium.launch(
                     headless=True,
                     args=['--no-sandbox', '--disable-dev-shm-usage'],
-                    timeout=30000
+                    timeout=30000,executable_path=browser_path
                 )
                 logger.info("使用最小参数启动成功")
                 return True
             except Exception as e2:
                 logger.error(f"回退启动也失败: {e2}")
                 return False
+    async def firefox(self):
+        start_time = time.time()
+        # 使用最小的启动参数
+        browser_path = minimal_screens_hot_service.setup_playwright(browser="firefox")
+        try:
+            logger.info(f"使用浏览器: {browser_path}")
+            self.browser = await self.playwright.firefox.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',  # 截图不需要GPU加速
+                ],
+                # 关键：关闭信号处理，加速启动
+                handle_sigint=False,
+                handle_sigterm=False,
+                handle_sighup=False,
+                # 超时设置
+                timeout=30000,
+                executable_path=browser_path
+            )
+
+            elapsed = time.time() - start_time
+            logger.info(f"浏览器启动完成，耗时: {elapsed:.2f}秒")
+            return True
+
+        except Exception as e:
+            logger.error(f"浏览器启动失败: {e}")
+            # 尝试回退方案
+            try:
+                self.browser = await self.playwright.firefox.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-dev-shm-usage'],
+                    timeout=30000,executable_path=browser_path
+                )
+                logger.info("使用最小参数启动成功")
+                return True
+            except Exception as e2:
+                logger.error(f"回退启动也失败: {e2}")
+                return False
+
 
     async def create_page(self, session_id: str = None) -> Page:
         """创建优化页面 - 快速轻量"""
@@ -187,7 +238,6 @@ class minimal_screens_hot_service:
         """极简资源处理 - 允许所有必要资源"""
         request = route.request
         resource_type = request.resource_type
-
         try:
             await route.continue_()
         except:
@@ -377,13 +427,11 @@ class minimal_screens_hot_service:
         try:
             # 1. 等待基本加载
             await page.wait_for_load_state('load', timeout=5000)
-
             # 2. 检查自定义就绪标志
             await page.wait_for_function(
                 "window.__screenshot_ready === true",
                 timeout=3000
             )
-
             # 3. 等待图片加载（如果有）
             await page.wait_for_function(
                 """
@@ -397,19 +445,6 @@ class minimal_screens_hot_service:
 
             # 4. 微等待确保渲染稳定
             await asyncio.sleep(0.1)
-
-            # 5. 执行用户JS（如果有异步操作）
-            await page.evaluate("""
-                                // 触发可能的异步渲染
-                                if (window.__renderComplete) {
-                                    return window.__renderComplete();
-                                }
-                                return Promise.resolve();
-                                """)
-
-            # 6. 最终微等待
-            await asyncio.sleep(0.05)
-
         except Exception as e:
             logger.debug(f"智能等待超时/中断: {e}")
             # 即使等待失败也继续，可能页面已经可用
@@ -522,7 +557,7 @@ class minimal_screens_hot_service:
         # 2. 创建目录
         browsers_path.mkdir(parents=True, exist_ok=True)
         # 3. 设置环境变量（永久生效）
-        env_file = browsers_path / ".env"
+        env_file = browsers_path / f".{browser}-env"
         if env_file.exists():
             return minimal_screens_hot_service.find_executable(browser, browsers_path)
         with open(env_file, 'w') as f:
