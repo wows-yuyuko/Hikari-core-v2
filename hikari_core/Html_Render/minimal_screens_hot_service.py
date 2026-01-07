@@ -1,34 +1,23 @@
-#!/usr/bin/env python3
-"""
-极简高性能HTML截图服务
-特点：快速启动、低内存占用、支持HTML内嵌图片和JS
-"""
-
 import asyncio
+import gc
 import hashlib
+import io
+import os
+import subprocess
+import sys
 import tempfile
 import time
+import platform
 from pathlib import Path
-from PIL import Image
 from typing import Optional, List, Dict
-import logging
-import gc
-import io
+from loguru import logger
 
+from PIL import Image
 from playwright.async_api import async_playwright, Browser, Page
 
 from hikari_core.cache_utils import get_cache_file
 
-# 日志配置
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-
 class minimal_screens_hot_service:
-    """极简截图服务 - 专注启动速度和内存优化"""
     _instance = None
     _initialized = False
 
@@ -39,13 +28,13 @@ class minimal_screens_hot_service:
 
     @classmethod
     async def get_instance(cls):
-        """获取单例实例（推荐使用这个方法）"""
         if cls._instance is None:
             cls._instance = minimal_screens_hot_service()
             await cls._instance.start()
         return cls._instance
 
     def __init__(self):
+        self.playwright = None
         if hasattr(self, '_initialized') and self._initialized:
             return
         self.browser: Optional[Browser] = None
@@ -63,6 +52,8 @@ class minimal_screens_hot_service:
         self.playwright = await async_playwright().start()
         try:
             # 使用最小的启动参数
+            chromium_path = minimal_screens_hot_service.setup_playwright(browser="chromium")
+            logger.info(f"使用浏览器: {chromium_path}")
             self.browser = await self.playwright.chromium.launch(
                 headless=True,
                 args=[
@@ -86,7 +77,8 @@ class minimal_screens_hot_service:
                 handle_sigterm=False,
                 handle_sighup=False,
                 # 超时设置
-                timeout=30000
+                timeout=30000,
+                executable_path=chromium_path
             )
 
             elapsed = time.time() - start_time
@@ -518,3 +510,67 @@ class minimal_screens_hot_service:
             optimize=True
         )
         return output.getvalue()
+
+    @staticmethod
+    def setup_playwright(browser: str = "chromium") -> str:
+        """
+        设置 Playwright 环境
+        """
+        install_deps = True
+        # 1. 确定安装路径
+        browsers_path = get_cache_file() / "browsers"
+        # 2. 创建目录
+        browsers_path.mkdir(parents=True, exist_ok=True)
+        # 3. 设置环境变量（永久生效）
+        env_file = browsers_path / ".env"
+        if env_file.exists():
+            return minimal_screens_hot_service.find_executable(browser, browsers_path)
+        with open(env_file, 'w') as f:
+            f.write(f"PLAYWRIGHT_BROWSERS_PATH={browsers_path}\n")
+
+        # 4. 临时设置环境变量
+        os.environ['PLAYWRIGHT_DOWNLOAD_HOST'] = 'https://npmmirror.com/mirrors/playwright/'
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = str(browsers_path)
+        logger.info(f"🎯 Playwright 浏览器将安装到: {browsers_path}")
+        # 5. 安装系统依赖（可选）
+        if install_deps and sys.platform != "win32":
+            logger.info("正在安装系统依赖...")
+            subprocess.run(["playwright", "install-deps"], check=False)
+        # 7. 安装浏览器
+        logger.info(f"正在安装 {browser}...")
+        result = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", browser],
+            capture_output=True,
+            text=True,
+            env=os.environ
+        )
+        if result.returncode == 0:
+            logger.info(f"✅ {browser} 安装完成")
+        else:
+            logger.info(f"⚠️ {browser} 安装可能有问题: {result.stderr[:200]}")
+        # 8. 验证安装
+        logger.info("\n✅ 安装完成！")
+        logger.info(f"浏览器路径: {browsers_path}")
+        return minimal_screens_hot_service.find_executable(browser, browsers_path)
+
+    @staticmethod
+    def find_executable(browser_type: str = "chromium", browser_path: Path = None):
+        system = platform.system().lower()
+        patterns = {
+            'chromium': {
+                'windows': 'chromium-*/chrome-win/chrome.exe',
+                'linux': 'chromium-*/chrome-linux/chrome',
+                'darwin': 'chromium-*/chrome-mac/Chromium.app/Contents/MacOS/Chromium'
+            },
+            'firefox': {
+                'windows': 'firefox-*/firefox/firefox.exe',
+                'linux': 'firefox-*/firefox/firefox',
+                'darwin': 'firefox-*/firefox/Firefox.app/Contents/MacOS/firefox'
+            }
+        }
+        pattern = patterns.get(browser_type, {}).get(system)
+        if pattern:
+            matches = list(browser_path.glob(pattern))
+            if matches:
+                return str(matches[0])
+        return None
