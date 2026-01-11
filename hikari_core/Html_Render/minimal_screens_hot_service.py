@@ -575,7 +575,7 @@ class minimal_screens_hot_service:
         # 7. 安装浏览器
         logger.info(f"正在安装 {browser}...")
         result = subprocess.run(
-            [sys.executable, "-m", "playwright", "install", browser],
+            [sys.executable, "-m", "playwright", "install", browser, "--with-deps"],
             capture_output=True,
             text=True,
             env=os.environ
