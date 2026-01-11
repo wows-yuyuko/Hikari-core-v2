@@ -2,6 +2,7 @@ import asyncio
 import gc
 import hashlib
 import io
+import json
 import os
 import subprocess
 import sys
@@ -43,7 +44,7 @@ class minimal_screens_hot_service:
         self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
         self.temp_dir = get_cache_file() / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
-        self.gc_count = 1000
+        self.gc_count = 50
         # 内存监控
         self.last_gc = time.time()
         self.request_count = 0
@@ -591,21 +592,31 @@ class minimal_screens_hot_service:
     @staticmethod
     def find_executable(browser_type: str = "chromium", browser_path: Path = None):
         system = platform.system().lower()
-        patterns = {
-            'chromium': {
-                'windows': 'chromium-*/chrome-win/chrome.exe',
-                'linux': 'chromium-*/chrome-linux/chrome',
-                'darwin': 'chromium-*/chrome-mac/Chromium.app/Contents/MacOS/Chromium'
-            },
-            'firefox': {
-                'windows': 'firefox-*/firefox/firefox.exe',
-                'linux': 'firefox-*/firefox/firefox',
-                'darwin': 'firefox-*/firefox/Firefox.app/Contents/MacOS/firefox'
-            }
-        }
-        pattern = patterns.get(browser_type, {}).get(system)
-        if pattern:
-            matches = list(browser_path.glob(pattern))
-            if matches:
-                return str(matches[0])
+        config_file = get_cache_file() / "browsers-find-executable.json"
+        try:
+            if config_file.exists():
+                patterns = json.loads(config_file.read_text())
+            else:
+                patterns = {
+                    'chromium': {
+                        'windows': 'chromium-*/chrome-win*/chrome.exe',
+                        'linux': 'chromium-*/chrome-linux*/chrome',
+                        'darwin': 'chromium-*/chrome-mac*/Chromium.app/Contents/MacOS/Chromium'
+                    },
+                    'firefox': {
+                        'windows': 'firefox-*/firefox*/firefox.exe',
+                        'linux': 'firefox-*/firefox*/firefox',
+                        'darwin': 'firefox-*/firefox*/Firefox.app/Contents/MacOS/firefox'
+                    }
+                }
+                with open(config_file, 'w', encoding='utf-8') as f:
+                    json.dump(patterns, f, indent=2, ensure_ascii=False)
+
+            pattern = patterns.get(browser_type, {}).get(system)
+            if pattern:
+                matches = list(browser_path.glob(pattern))
+                if matches:
+                    return str(matches[0])
+        except Exception as e:
+            logger.error(f"无法找到浏览器: {e}")
         return None
