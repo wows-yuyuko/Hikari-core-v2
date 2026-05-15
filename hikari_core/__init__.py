@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .analyze import analyze_command
 from .command_select import *  # noqa: F403
-from .config import hikari_config  # noqa:F401
+from .config import hikari_config, set_hikari_config  # noqa:F401 set_hikari_config为外部程序引用
 from .data_source import set_render_params, template_path
 from .model import Hikari_Model, Input_Model, UserInfo_Model
 
