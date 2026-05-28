@@ -1,738 +1,841 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8">
-		<title></title>
-	</head>
-  <style>
-*{
-  padding: 0;
-  margin: 0;
-}
-body{
-  color: #4e4e4e;
-  font-size: 26px;
-}
-.clan-main{
-  width: 1200px;
-  padding: 20px;
-  box-sizing: border-box;
-}
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <title></title>
+</head>
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+    }
 
+    body {
+        font-size: 24px;
+        font-family: "Microsoft YaHei Bold", "Microsoft YaHei", sans-serif;
+    }
 
-/* 顶部信息 */
-.clan-name{
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
+    {% if data['avatar']['poster']['status'] == 2 %}
+        .main-content {
+            background: url("{{ data['avatar']['poster']['data'] }}") no-repeat;
+            background-position: center;
+            background-size: cover;
+            min-height: 100vh;
+        }
+    {% endif %}
 
-.clan-name>div:nth-child(1),.clan-name>div:nth-child(3){
-  text-align: center;
-  width: 120px;
-}
+    .main-content {
+        width: 1200px;
+    }
 
-.clan-name>div:nth-child(3)>div:nth-child(1){
-  background-color: rgb(233, 233, 233);
-  border-radius: 50px;
-  font-weight: bold;
-}
+    .page-box {
+        width: 1200px;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        box-sizing: border-box;
+    }
 
-.clan-name>div:nth-child(3)>div:nth-child(2){
-  font-size: 16px;
-  padding-top: 8px;
-  color: rgb(129, 129, 129);
-}
-
-.clan-name>div:nth-child(2){
-  text-align: center;
-}
-
-.clan-name>div:nth-child(2)>div:nth-child(1){
-  font-size: 36px;
-  font-weight: bold;
-}
-.clan-name>div:nth-child(2)>div:nth-child(2){
-  font-size: 36px;
-}
-
-
-
-
-/* 进度条 */
-.progress-bar{
-  background-color: rgb(218, 218, 218);
-  border-radius: 50px;
-  position: relative;
-  margin-bottom: 10px;
-}
-.progress-bar>div:nth-child(2){
-  font-weight: bold;
-  color: white;
-  text-align: center;
-  padding: 5px;
-  position: relative;
-}
-
-.progress-bar>div:nth-child(1){
-  height: 100%;
-  width: 50%;
-  border-radius: 50px;
-  position: absolute;
-  background: aquamarine;
-}
-
-
-/* 时间信息 */
-.date{
-  margin-bottom: 10px;
-  text-align: center;
-  font-size: 18px;
-  color: rgb(129, 129, 129);
-}
-
-/* 总体信息 */
-.overall-info{
-  display: flex;
-  margin-bottom: 10px;
-}
-.overall-info>div:nth-child(1){
-  flex-grow: 3;
-}
-.overall-info>div:nth-child(2),.overall-info>div:nth-child(3){
-  flex-grow: 2;
-}
-
-.data-group{
-  width: 0;
-  text-align: center;
-}
-.data-group>div:nth-child(2){
-  display: flex;
-}
-.data-group>div:nth-child(2)>div{
-  flex-grow: 1;
-  width: 0;
-  background-color: #f1f1f1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 80px;
-  border-radius: 10px;
-  margin-right: 10px;
-}
-.data-group>div:nth-child(1){
-  height: 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background-color: #f1f1f1;
-  border-radius: 10px;
-  margin-bottom: 10px;
-}
-.data-group>div:nth-child(2)>div>div:nth-child(1){
-  color: rgb(129, 129, 129);
-  padding-bottom: 3px;
-}
-.data-group>div:nth-child(2)>div>div:nth-child(2){
-  font-weight: bold;
-}
-
-.clan-rank{
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgb(129, 129, 129);
-}
-.clan-rank>span{
-  font-size: 32px;
-  font-weight: bold;
-  padding-left: 20px;
-}
-
-.clan-info{
-  font-size: 28px;
-  color: rgb(129, 129, 129);
-}
-.clan-info>div:nth-child(2){
-  padding-top: 10px;
-  font-weight: bold;
-}
-
-/* 分组名 */
-.group-name{
-  display: flex;
-  justify-content: center;
-  margin-bottom: 15px;
-  margin-top: 25px;
-}
-.group-name>div{
-  width: 70%;
-  background-color: #d4d4d4;
-  text-align: center;
-  font-size: 28px;
-  font-weight: bold;
-  padding: 5px;
-  border-radius: 50px;
-}
-
-/* 赛季信息 */
-.clan-rank-table{
-  background-color: #f1f1f1;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-.clan-rank-table>div:nth-child(1){
-  display: flex;
-  justify-content: space-between;
-  padding: 0 40px 5px 40px;
-  font-size: 24px;
-}
-.rank-num{
-  font-size: 24px;
-  color: rgb(129, 129, 129);
-}
-.rank-num>span{
-  font-size: 28px;
-  font-weight: bold;
-  padding-left: 20px;
-}
-
-.color-line>div{
-  background-color: red;
-  height: 2px;
-}
-.tr-flex{
-  display: flex;
-  justify-content: space-between;
-  padding-left: 40px;
-}
-.tr-flex>div{
-  flex-grow: 2;
-  width: 0;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  /* text-align: center; */
-}
-.tr-flex>div:nth-child(1),
-.tr-flex>div:nth-child(2),
-.tr-flex>div:nth-child(3){
-  flex-grow: 1;
-}
-.table-title{
-  background-color: #d4d4d4;
-  border-radius: 4px;
-  color: #4e4e4e;
-}
-.table-data{
-  font-weight: bold;
-}
-.group-lev{
-  padding-right: 50px;
-  display: flex;
-  justify-content: space-between;
-}
-.group-lev>div:nth-child(1){
-  display: flex;
-}
-.group-lev>div:nth-child(1)>div{
-  width:10px;
-  background-color: red;
-  margin-right: 5px;
-  border-radius: 10px;
-}
-
-/* 军团设施 */
-.clan-facilities{
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.clan-facilities>div{
-  flex-grow: 1;
-  width: 0;
-}
-.facilities-item{
-  background-color: #f1f1f1;
-  border-radius: 10px;
-  padding: 20px 50px;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  box-sizing: border-box;
-}
-.facilities-item>div:nth-child(1){
-  font-weight: bold;
-  font-size: 26px;
-  padding-right: 40px;
-}
-.facilities-item>div:nth-child(2) {
-  /* flex-grow: 1; */
-}
-.facilities-item-info{
-  /* display: flex; */
-}
-.facilities-item-info>div:nth-child(1){
-  /* width: 140px; */
-}
-.facilities-item-info>div:nth-child(2){
-  padding-left: 20px;
-  font-size: 22px;
-  font-weight: bold;
-  padding-bottom: 5px;
-}
-
-.echart-div{
-  height: 400px;
-  width: 100%;
-}
-
-.pr {
-  display: flex;
-  height: 50px;
-  font-weight: bold;
-  line-height: 60px;
-  padding: 0 80px;
-}
-
-.pr-bar-bg {
-  position: relative;
-  flex: 1;
-  line-height: 40px;
-  background-color: #A6A6A6;
-  height: 40px;
-  border-radius: 20px;
-  margin-top: 5px;
-  text-align: center;
-  color: #FFFFFF;
-}
-
-.pr-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 40px;
-  z-index: 1;
-  border-radius: 20px;
-}
-
-.pr-number {
-  z-index: 99;
-  position: absolute;
-  left: 0px;
-  right: 0px;
-  font-size: 20px;
-  font-weight: bold;
-}
-.footer {
-		margin-top: 30px;
-		text-align: center;
-		font-weight: bold;
-		font-size: 18px;
-		color: #909399;
-		margin-bottom: 20px;
-	}
-  </style>
-	<body>
-		<div class="clan-main">
-      <!-- 顶部名称信息 -->
-      <div class="clan-name">
-        <div></div>
-        <div>
-          <div style="color:{{ data['colorRgb'] }};">[{{ data['tag'] }}]</div>
-          <div>{{ data['name'] }}</div>
-        </div>
-        <div>
-          <div class="server">{{ data['server'] }}</div>
-          <div>Clan ID: {{ data['clanId'] }}</div>
-        </div>
-      </div>
-      <!-- 进度条信息 -->
-      <div class="pr">
-					<!-- 动态设置长度及颜色，填写PR即可 -->
-					<div class="pr-bar-bg">
-						<span class="pr-number">{{ data['userStatisticsInfo']['pr']['details']['pr'] }}&nbsp;&nbsp;&nbsp;&nbsp;<span
-								class="pr-text"></span></span>
-						<div class="pr-bar"></div>
-					</div>
-				</div>
-      <!-- 时间信息 -->
-      <div class="date">
-        <div>创建时间：{{ time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(abs(data['createdAt']/1000)))}}</div>
-        <div>数据更新：{{ time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) }}</div>
-      </div>
-      <!-- 总体信息 -->
-      <div class="overall-info">
-        <!-- 第一列 -->
-        <div class="data-group">
-          <div >
-            <div class="clan-rank">军团排名 <span>{{ data['userStatisticsInfo']['rank'] }}</span></div>
-          </div>
-          <div>
-            <div>
-              <div>军团活跃度</div>
-              <div>{{ data['userStatisticsInfo']['vitality'] }}%</div>
-            </div>
-            <div>
-              <div>军团成员</div>
-              <div>{{ data['membersCount'] }}/{{ data['maxMembersCount'] }}</div>
-            </div>
-          </div>
-        </div>
-        <!-- 第二列 -->
-        <div class="data-group">
-          <div class="clan-info" style="margin-left:10px;margin-right:10px;">
-            <div>总体胜率</div>
-            <div style="color: {{ data['userStatisticsInfo']['winsData']['color'] }};">{{ data['userStatisticsInfo']['winsPercentage'] }}%</div>
-          </div>
-          <div>
-            <div>
-              <div>人均在团</div>
-              <div>{{ '%d' | format(data['userStatisticsInfo']['avgTimeInTheGroup']) }}天</div>
-            </div>
-            <div>
-              <div>人均经验</div>
-              <div>{{ data['userStatisticsInfo']['expPerBattle'] }}</div>
-            </div>
-          </div>
-        </div>
-        <!-- 第三列 -->
-        <div class="data-group">
-          <div class="clan-info">
-            <div>场均</div>
-            <div style="color: {{ data['userStatisticsInfo']['damageData']['color'] }};">{{ data['userStatisticsInfo']['damagePerBattle'] }}</div>
-          </div>
-          <div>
-            <div>
-              <div>人均战斗</div>
-              <div>{{ '%.1f' | format(data['userStatisticsInfo']['battlesCount']) }}场</div>
-            </div>
-            <div style="margin-right: 0px;">
-              <div>日均战斗</div>
-              <div>暂无数据</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 分组名称 -->
-      <div class="group-name">
-        <div>军团战斗</div>
-      </div>
-      <!-- 赛季信息 -->
-      <div class="clan-rank-table">
-        <div>
-          <div>S{{ data['clanLeagueInfo']['lastSeason'] }}赛季摘要</div>
-          <div class="rank-num">服务器排名<span>暂无数据</span></div>
-        </div>
-        <div class="color-line"><div></div></div>
-        <div class="tr-flex table-title">
-          <div style="flex: 3;">队伍</div><div style="flex: 3;">场次</div><div style="flex: 4;">胜场</div><div style="flex: 6;">当前段位</div><div style="flex: 6;">最高段位</div>
-        </div>
-        {% if data['clanLeagueInfo']['battle'] %}
-          {% if data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha'] and data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['battlesCount'] != 0 %}
-          <div class="tr-flex table-data">
-            <div style="flex: 3;">Alpha</div>
-            <div style="flex: 3;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['battlesCount'] }}</div>
-            <div style="flex: 4;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['winsCount'] }}(<span style="color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['winsData']['color'] }};">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['wins'] }}%</span>)</div>
-            <div style="flex: 6;"><div class="group-lev"><div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['leagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['leagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['divisionName'] }}</span></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['divisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['currentWinningStreak'] }}连胜)</span></div></div>
-            <div style="flex: 6;"><div class="group-lev"><div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxLeagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxLeagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxDivisionName'] }}</span></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxPositionDivisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['longestWinningStreak'] }}连胜)</span></div></div>
-          </div>
-          {% endif %}
-          {% if data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo'] and data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['battlesCount'] != 0 %}
-          <div class="tr-flex table-data">
-            <div style="flex: 3;">Bravo</div>
-            <div style="flex: 3;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['battlesCount'] }}</div>
-            <div style="flex: 4;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['winsCount'] }}(<span style="color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['winsData']['color'] }};">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['wins'] }}%</span>)</div>
-            <div style="flex: 6;"><div class="group-lev"><div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['leagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['leagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['divisionName'] }}</span></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['divisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['currentWinningStreak'] }}连胜)</span></div></div>
-            <div style="flex: 6;"><div class="group-lev"><div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxLeagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxLeagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxDivisionName'] }}</span></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxPositionDivisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['longestWinningStreak'] }}连胜)</span></div></div>
-          </div>
-          {% endif %}
+    /* ===== 顶部头像区域 ===== */
+    .page-header {
+        border-radius: 24px;
+        height: 240px;
+        margin: 10px 0 24px;
+        display: flex;
+        justify-content: flex-start;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        {% if data['avatar']['banner']['status'] == 2 %}
+            background: url("{{ data['avatar']['banner']['data'] }}") no-repeat;
+            background-position: center;
+            background-size: 100%;
+        {% else %}
+            background: linear-gradient(135deg, rgba(100, 140, 200, 0.4) 0%, rgba(140, 180, 220, 0.25) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         {% endif %}
-      </div>
+    }
 
-      <!-- 分组名称 -->
-      <div class="group-name">
-        <div>军团设施</div>
-      </div>
-      <!-- 设施信息 -->
-      <div class="clan-facilities">
-        <div>
-          <div class="facilities-item" style="margin-right: 5px;">
-            <div>折扣</div>
-            <div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][3]['fullLevelColor'] }};">{{ data['buildingsInfos'][3]['level'] }}/{{ data['buildingsInfos'][3]['maxLevel'] }}</span>级干船坞</div>
-                <div>I-X级战舰战后维护费用<span style="color:{{ data['buildingsInfos'][3]['fullLevelColor'] }};">{{ data['buildingsInfos'][3]['buff']['buff'] }}</span></div>
-              </div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][7]['fullLevelColor'] }};">{{ data['buildingsInfos'][7]['level'] }}/{{ data['buildingsInfos'][7]['maxLevel'] }}</span>级造船厂</div>
-                <div>I-X级科研发战舰花费<span style="color:{{ data['buildingsInfos'][7]['fullLevelColor'] }};">{{ data['buildingsInfos'][7]['buff']['buff'] }}</span></div>
-              </div>
+    .avatar-header {
+        filter: drop-shadow(6px 6px 10px rgba(0, 0, 0, 0.25));
+        margin-left: -20px;
+        margin-right: 10px;
+        margin-top: 12px;
+        border-radius: 18px;
+        width: 200px;
+        height: 200px;
+        opacity: 0.95;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        {% if data['avatar']['avatar']['status'] == 2 %}
+            background: url("{{ data['avatar']['avatar']['data'] }}") no-repeat;
+            background-position: center;
+            background-size: 100%;
+        {% else %}
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        {% endif %}
+    }
+
+    .masking-header {
+        display: flex;
+        justify-content: flex-start;
+        height: 220px;
+        width: auto;
+        margin-top: 10px;
+        margin-left: 10px;
+        gap: 15px;
+        border-radius: 20px;
+        padding-left: 36px;
+        background: transparent;
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        border: 1px solid rgba(220, 230, 255, 0.4);
+    }
+
+    .user-info {
+        font-weight: bolder;
+        line-height: 1.3;
+        font-size: 40px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        display: inline-block;
+    }
+
+    .user-info .mirage-text {
+        {% if data['avatar']['colorName']['status'] == 2 %}
+            background: {{ data['avatar']['colorName']['data'] }};
+            background-size: 200% 200%;
+            color: transparent;
+            -webkit-background-clip: text;
+            animation: ran-7e872de5 3s linear infinite;
+        {% endif %}
+    }
+
+    .user-sign-time,
+    .user-server {
+        color: #1a1a1a;
+        font-size: 22px;
+        font-weight: 600;
+        font-family: "Microsoft YaHei UI Light", serif;
+    }
+
+    .user-signature {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 30px;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 20px;
+        margin-top: 6px;
+        font-size: 22px;
+    }
+
+    .clan-user-server {
+        margin: 5px;
+        text-align: left;
+        font-size: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        flex-direction: column;
+        font-weight: bold;
+        flex-grow: 1;
+        justify-content: center;
+    }
+
+    /* ===== 毛玻璃卡片通用 ===== */
+    .glass-card,.user-signature {
+        background: rgba(255, 255, 255, 0.22);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+    }
+
+    .glass-card-dark {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        margin-bottom: 16px;
+    }
+
+    /* ===== PR 条 ===== */
+    .pr {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 32px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+        height: 80px;
+        background: linear-gradient(135deg, rgba(100, 80, 180, 0.25) 0%, rgba(60, 120, 220, 0.25) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .pr-number {
+        font-size: 38px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        color: #3a3a3a;
+    }
+
+    /* ===== 时间信息 ===== */
+    .date-info {
+        text-align: center;
+        font-size: 20px;
+        color: #6a6a6a;
+        padding: 12px 0;
+        margin-bottom: 16px;
+    }
+
+    /* ===== 总体数据 ===== */
+    .stats-overview {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .stats-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .stats-main {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 24px 16px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.22);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .stats-main .label {
+        font-size: 22px;
+        color: #6a6a6a;
+        margin-bottom: 4px;
+    }
+
+    .stats-main .value {
+        font-size: 38px;
+        font-weight: bold;
+    }
+
+    .stats-sub {
+        display: flex;
+        gap: 10px;
+    }
+
+    .stats-sub > div {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 16px 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .stats-sub .sub-label {
+        font-size: 18px;
+        color: #7a7a7a;
+    }
+
+    .stats-sub .sub-value {
+        font-size: 26px;
+        font-weight: bold;
+        margin-top: 3px;
+    }
+
+    /* ===== 分组标题 ===== */
+    .section-title {
+        display: flex;
+        justify-content: center;
+        margin: 8px 0 14px;
+    }
+
+    .section-title > div {
+        width: 55%;
+        text-align: center;
+        font-size: 26px;
+        font-weight: bold;
+        padding: 8px 0;
+        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #4a4a4a;
+    }
+
+    /* ===== 赛季表格 ===== */
+    .season-card {
+        padding: 16px 20px;
+    }
+
+    .season-header {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 30px 10px;
+        font-size: 22px;
+        color: #5a5a5a;
+    }
+
+    .season-header .rank-num {
+        color: #7a7a7a;
+    }
+
+    .season-header .rank-num span {
+        font-size: 26px;
+        font-weight: bold;
+        color: #3a3a3a;
+        padding-left: 16px;
+    }
+
+    .divider {
+        height: 1px;
+        background: rgba(0, 0, 0, 0.08);
+        margin-bottom: 8px;
+    }
+
+    .table-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 30px;
+    }
+
+    .table-header {
+        color: #5a5a5a;
+        font-size: 22px;
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 8px;
+        margin: 4px 30px 4px;
+        padding: 6px 30px;
+    }
+
+    .table-data {
+        font-weight: bold;
+        font-size: 23px;
+    }
+
+    .table-row > div {
+        text-align: center;
+    }
+
+    .group-lev {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .group-lev > div:first-child {
+        display: flex;
+        align-items: center;
+    }
+
+    .group-lev > div:first-child > div {
+        width: 8px;
+        height: 8px;
+        margin-right: 5px;
+        border-radius: 10px;
+    }
+
+    /* ===== 设施 ===== */
+    .facilities-row {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .facilities-row > div {
+        flex: 1;
+    }
+
+    .facility-card {
+        padding: 20px 30px;
+        display: flex;
+        align-items: flex-start;
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    .facility-card .facility-label {
+        font-weight: bold;
+        font-size: 24px;
+        padding-right: 30px;
+        flex-shrink: 0;
+        min-width: 60px;
+    }
+
+    .facility-card .facility-content {
+        flex: 1;
+    }
+
+    .facility-item-row {
+        padding: 4px 0;
+        font-size: 21px;
+    }
+
+    .facility-item-row .level {
+        font-weight: bold;
+    }
+
+    .desc-card {
+        padding: 18px 30px;
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .desc-card .desc-label {
+        font-weight: bold;
+        font-size: 24px;
+        flex-shrink: 0;
+        width: 140px;
+    }
+
+    .desc-card .desc-text {
+        white-space: pre-wrap;
+        flex: 1;
+        font-size: 21px;
+    }
+
+    /* ===== 图表 ===== */
+    .chart-card {
+        padding: 20px;
+    }
+
+    .echart-div {
+        height: 400px;
+        width: 100%;
+    }
+
+    /* ===== Footer ===== */
+    .footer {
+        margin-top: 24px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 18px;
+        color: #909399;
+        margin-bottom: 20px;
+    }
+
+    @keyframes ran-7e872de5 {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+            text-shadow: 0 0 10px currentColor;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+</style>
+<body>
+<div class="main-content">
+    <div class="page-box">
+        <!-- ===== 顶部头像区域 ===== -->
+        <div class="page-header">
+            <div class="masking-header">
+                <div class="avatar-header"></div>
+                <div class="clan-user-server">
+                    <div class="user-info">
+                        <span>[{{ data['tag'] }}]</span>
+                        <span class="mirage-text">{{ data['name'] }}</span>
+                    </div>
+                    <div class="user-sign-time">创建时间: {{ time.strftime('%Y-%m-%d %H:%M',time.localtime(abs(data['createdAt']/1000))) }}</div>
+                    <div class="user-server">服务器: {{ data['server'] }} / Clan ID: {{ data['clanId'] }}</div>
+                </div>
             </div>
-          </div>
         </div>
-        <div>
-          <div class="facilities-item" style="margin-left: 5px;">
-            <div>加成</div>
-            <div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][1]['fullLevelColor'] }};">{{ data['buildingsInfos'][1]['level'] }}/{{ data['buildingsInfos'][1]['maxLevel'] }}</span>级煤炭港</div>
-                <div>获得的煤炭数量<span style="color:{{ data['buildingsInfos'][1]['fullLevelColor'] }};">{{ data['buildingsInfos'][1]['buff']['buff'] }}</span></div>
-              </div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][9]['fullLevelColor'] }};">{{ data['buildingsInfos'][9]['level'] }}/{{ data['buildingsInfos'][9]['maxLevel'] }}</span>级钢铁港</div>
-                <div>获得的钢铁数量<span style="color:{{ data['buildingsInfos'][9]['fullLevelColor'] }};">{{ data['buildingsInfos'][9]['buff']['buff'] }}</span></div>
-              </div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][6]['fullLevelColor'] }};">{{ data['buildingsInfos'][6]['level'] }}/{{ data['buildingsInfos'][6]['maxLevel'] }}</span>级研究所</div>
-                <div>获得的研究点<span style="color:{{ data['buildingsInfos'][6]['fullLevelColor'] }};">{{ data['buildingsInfos'][6]['buff']['buff'] }}</span></div>
-              </div>
+
+        {% if data['description'] %}
+            <div class="user-signature" style="margin-bottom: 16px;">{{ data['description'] }}</div>
+        {% endif %}
+
+        <!-- ===== PR 条 ===== -->
+        <div class="pr">
+            <span class="pr-number">{{ data['userStatisticsInfo']['pr']['details']['pr'] }}&nbsp;&nbsp;&nbsp;<span class="pr-text"></span></span>
+        </div>
+
+        <!-- ===== 时间信息 ===== -->
+        <div class="date-info glass-card-dark" style="padding: 10px 0;">
+            <div>数据更新: {{ time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())) }}</div>
+        </div>
+
+        <!-- ===== 总体数据 ===== -->
+        <div class="stats-overview">
+            <div class="stats-col">
+                <div class="stats-main">
+                    <div class="label">军团排名</div>
+                    <div class="value">{{ data['userStatisticsInfo']['rank'] }}</div>
+                </div>
+                <div class="stats-sub">
+                    <div>
+                        <div class="sub-label">军团活跃度</div>
+                        <div class="sub-value">{{ data['userStatisticsInfo']['vitality'] }}%</div>
+                    </div>
+                    <div>
+                        <div class="sub-label">军团成员</div>
+                        <div class="sub-value">{{ data['membersCount'] }}/{{ data['maxMembersCount'] }}</div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="clan-facilities">
-        <div>
-          <div class="facilities-item" style="margin-right: 5px;">
-            <div>收入</div>
-            <div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][0]['fullLevelColor'] }};">{{ data['buildingsInfos'][0]['level'] }}/{{ data['buildingsInfos'][0]['maxLevel'] }}</span>级学院</div>
-                <div>每场战斗获得的指挥官经验<span style="color:{{ data['buildingsInfos'][0]['fullLevelColor'] }};">{{ data['buildingsInfos'][0]['buff']['buff'] }}</span></div>
-              </div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][12]['fullLevelColor'] }};">{{ data['buildingsInfos'][12]['level'] }}/{{ data['buildingsInfos'][12]['maxLevel'] }}</span>级军事学院</div>
-                <div>I-X级每场战斗获得的经验<span style="color:{{ data['buildingsInfos'][12]['fullLevelColor'] }};">{{ data['buildingsInfos'][12]['buff']['buff'] }}</span></div>
-              </div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][2]['fullLevelColor'] }};">{{ data['buildingsInfos'][2]['level'] }}/{{ data['buildingsInfos'][2]['maxLevel'] }}</span>级设计局</div>
-                <div>I-X级每场战斗获得的全局经验<span style="color:{{ data['buildingsInfos'][2]['fullLevelColor'] }};">{{ data['buildingsInfos'][2]['buff']['buff'] }}</span></div>
-              </div>
+            <div class="stats-col">
+                <div class="stats-main">
+                    <div class="label">总体胜率</div>
+                    <div class="value" style="color: {{ data['userStatisticsInfo']['winsData']['color'] }};">{{ data['userStatisticsInfo']['winsPercentage'] }}%</div>
+                </div>
+                <div class="stats-sub">
+                    <div>
+                        <div class="sub-label">人均在团</div>
+                        <div class="sub-value">{{ '%d' | format(data['userStatisticsInfo']['avgTimeInTheGroup']) }}天</div>
+                    </div>
+                    <div>
+                        <div class="sub-label">人均经验</div>
+                        <div class="sub-value">{{ data['userStatisticsInfo']['expPerBattle'] }}</div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-        <div>
-          <div class="facilities-item" style="margin-left: 5px;">
-            <div>设施</div>
-            <div>
-            <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][10]['fullLevelColor'] }};">{{ data['buildingsInfos'][10]['level'] }}/{{ data['buildingsInfos'][10]['maxLevel'] }}</span>级特殊项目机构</div>
-                <div>超级战舰加成</div>
-              </div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][11]['fullLevelColor'] }};">{{ data['buildingsInfos'][11]['level'] }}/{{ data['buildingsInfos'][11]['maxLevel'] }}</span>级金库</div>
-                <!--div>提供每个礼包<span>"超级补给箱"</span>的机会</div-->
-              </div>
-              <div class="facilities-item-info">
-                <div><span style="font-weight:bold;color:{{ data['buildingsInfos'][4]['fullLevelColor'] }};">{{ data['buildingsInfos'][4]['level'] }}/{{ data['buildingsInfos'][4]['maxLevel'] }}</span>级军官俱乐部</div>
-                <!--div>容纳人数：<span style="color:{{ data['buildingsInfos'][4]['fullLevelColor'] }};">{{ data['buildingsInfos'][4]['buff']['buff'] }}</span></div-->
-              </div>
+            <div class="stats-col">
+                <div class="stats-main">
+                    <div class="label">场均</div>
+                    <div class="value" style="color: {{ data['userStatisticsInfo']['damageData']['color'] }};">{{ data['userStatisticsInfo']['damagePerBattle'] }}</div>
+                </div>
+                <div class="stats-sub">
+                    <div>
+                        <div class="sub-label">人均战斗</div>
+                        <div class="sub-value">{{ '%.1f' | format(data['userStatisticsInfo']['battlesCount']) }}场</div>
+                    </div>
+                    <div>
+                        <div class="sub-label">日均战斗</div>
+                        <div class="sub-value">暂无数据</div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
 
+        <!-- ===== 军团战斗 ===== -->
+        <div class="section-title">
+            <div>军团战斗</div>
+        </div>
+        <div class="season-card glass-card">
+            <div class="season-header">
+                <div>S{{ data['clanLeagueInfo']['lastSeason'] }}赛季摘要</div>
+                <div class="rank-num">服务器排名<span>暂无数据</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="table-row table-header">
+                <div style="flex: 3;">队伍</div>
+                <div style="flex: 3;">场次</div>
+                <div style="flex: 4;">胜场</div>
+                <div style="flex: 6;">当前段位</div>
+                <div style="flex: 6;">最高段位</div>
+            </div>
+            {% if data['clanLeagueInfo']['battle'] %}
+                {% if data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha'] and data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['battlesCount'] != 0 %}
+                <div class="table-row table-data">
+                    <div style="flex: 3;">Alpha</div>
+                    <div style="flex: 3;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['battlesCount'] }}</div>
+                    <div style="flex: 4;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['winsCount'] }}(<span style="color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['winsData']['color'] }};">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['wins'] }}%</span>)</div>
+                    <div style="flex: 6;">
+                        <div class="group-lev">
+                            <div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['leagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['leagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['divisionName'] }}</span></div>
+                            <span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['divisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['currentWinningStreak'] }}连胜)</span>
+                        </div>
+                    </div>
+                    <div style="flex: 6;">
+                        <div class="group-lev">
+                            <div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxLeagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxLeagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxDivisionName'] }}</span></div>
+                            <span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['maxPositionDivisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['alpha']['longestWinningStreak'] }}连胜)</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo'] and data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['battlesCount'] != 0 %}
+                <div class="table-row table-data">
+                    <div style="flex: 3;">Bravo</div>
+                    <div style="flex: 3;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['battlesCount'] }}</div>
+                    <div style="flex: 4;">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['winsCount'] }}(<span style="color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['winsData']['color'] }};">{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['wins'] }}%</span>)</div>
+                    <div style="flex: 6;">
+                        <div class="group-lev">
+                            <div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['leagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['leagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['divisionName'] }}</span></div>
+                            <span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['divisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['currentWinningStreak'] }}连胜)</span>
+                        </div>
+                    </div>
+                    <div style="flex: 6;">
+                        <div class="group-lev">
+                            <div><div style="background-color:{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxLeagueName']['color'] }};"></div><span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxLeagueName']['buff'] }}{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxDivisionName'] }}</span></div>
+                            <span>{{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['maxPositionDivisionRating'] }} ({{ data['clanLeagueInfo']['dataMap'][data['latest_season']]['bravo']['longestWinningStreak'] }}连胜)</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
 
-      <div class="facilities-item">
-        <div style="width: 210px;">描述信息</div>
-        <div style="white-space: pre-wrap; ">{{ data['description'] }}</div>
-      </div>
+        <!-- ===== 军团设施 ===== -->
+        <div class="section-title">
+            <div>军团设施</div>
+        </div>
+        <div class="facilities-row">
+            <div>
+                <div class="facility-card glass-card">
+                    <div class="facility-label">折扣</div>
+                    <div class="facility-content">
+                        <div class="facility-item-row">
+                            <span class="level" style="color:{{ data['buildingsInfos'][3]['fullLevelColor'] }};">{{ data['buildingsInfos'][3]['level'] }}/{{ data['buildingsInfos'][3]['maxLevel'] }}</span>级干船坞
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">I-X级战舰战后维护费用<span style="color:{{ data['buildingsInfos'][3]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][3]['buff']['buff'] }}</span></div>
+                        <div class="facility-item-row" style="margin-top: 6px;">
+                            <span class="level" style="color:{{ data['buildingsInfos'][7]['fullLevelColor'] }};">{{ data['buildingsInfos'][7]['level'] }}/{{ data['buildingsInfos'][7]['maxLevel'] }}</span>级造船厂
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">I-X级科研发战舰花费<span style="color:{{ data['buildingsInfos'][7]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][7]['buff']['buff'] }}</span></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="facility-card glass-card">
+                    <div class="facility-label">加成</div>
+                    <div class="facility-content">
+                        <div class="facility-item-row">
+                            <span class="level" style="color:{{ data['buildingsInfos'][1]['fullLevelColor'] }};">{{ data['buildingsInfos'][1]['level'] }}/{{ data['buildingsInfos'][1]['maxLevel'] }}</span>级煤炭港
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">获得的煤炭数量<span style="color:{{ data['buildingsInfos'][1]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][1]['buff']['buff'] }}</span></div>
+                        <div class="facility-item-row" style="margin-top: 6px;">
+                            <span class="level" style="color:{{ data['buildingsInfos'][9]['fullLevelColor'] }};">{{ data['buildingsInfos'][9]['level'] }}/{{ data['buildingsInfos'][9]['maxLevel'] }}</span>级钢铁港
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">获得的钢铁数量<span style="color:{{ data['buildingsInfos'][9]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][9]['buff']['buff'] }}</span></div>
+                        <div class="facility-item-row" style="margin-top: 6px;">
+                            <span class="level" style="color:{{ data['buildingsInfos'][6]['fullLevelColor'] }};">{{ data['buildingsInfos'][6]['level'] }}/{{ data['buildingsInfos'][6]['maxLevel'] }}</span>级研究所
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">获得的研究点<span style="color:{{ data['buildingsInfos'][6]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][6]['buff']['buff'] }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="facilities-row">
+            <div>
+                <div class="facility-card glass-card">
+                    <div class="facility-label">收入</div>
+                    <div class="facility-content">
+                        <div class="facility-item-row">
+                            <span class="level" style="color:{{ data['buildingsInfos'][0]['fullLevelColor'] }};">{{ data['buildingsInfos'][0]['level'] }}/{{ data['buildingsInfos'][0]['maxLevel'] }}</span>级学院
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">每场战斗获得的指挥官经验<span style="color:{{ data['buildingsInfos'][0]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][0]['buff']['buff'] }}</span></div>
+                        <div class="facility-item-row" style="margin-top: 6px;">
+                            <span class="level" style="color:{{ data['buildingsInfos'][12]['fullLevelColor'] }};">{{ data['buildingsInfos'][12]['level'] }}/{{ data['buildingsInfos'][12]['maxLevel'] }}</span>级军事学院
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">I-X级每场战斗获得的经验<span style="color:{{ data['buildingsInfos'][12]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][12]['buff']['buff'] }}</span></div>
+                        <div class="facility-item-row" style="margin-top: 6px;">
+                            <span class="level" style="color:{{ data['buildingsInfos'][2]['fullLevelColor'] }};">{{ data['buildingsInfos'][2]['level'] }}/{{ data['buildingsInfos'][2]['maxLevel'] }}</span>级设计局
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">I-X级每场战斗获得的全局经验<span style="color:{{ data['buildingsInfos'][2]['fullLevelColor'] }};font-weight:bold;">{{ data['buildingsInfos'][2]['buff']['buff'] }}</span></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="facility-card glass-card">
+                    <div class="facility-label">设施</div>
+                    <div class="facility-content">
+                        <div class="facility-item-row">
+                            <span class="level" style="color:{{ data['buildingsInfos'][10]['fullLevelColor'] }};">{{ data['buildingsInfos'][10]['level'] }}/{{ data['buildingsInfos'][10]['maxLevel'] }}</span>级特殊项目机构
+                        </div>
+                        <div class="facility-item-row" style="color:#6a6a6a;">超级战舰加成</div>
+                        <div class="facility-item-row" style="margin-top: 6px;">
+                            <span class="level" style="color:{{ data['buildingsInfos'][11]['fullLevelColor'] }};">{{ data['buildingsInfos'][11]['level'] }}/{{ data['buildingsInfos'][11]['maxLevel'] }}</span>级金库
+                        </div>
+                        <div class="facility-item-row" style="margin-top: 6px;">
+                            <span class="level" style="color:{{ data['buildingsInfos'][4]['fullLevelColor'] }};">{{ data['buildingsInfos'][4]['level'] }}/{{ data['buildingsInfos'][4]['maxLevel'] }}</span>级军官俱乐部
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-      <!-- 赛季段位 -->
-      <div class="group-name">
-        <div>赛季段位</div>
-      </div>
-      <div class="facilities-item">
-        <div class="echart-div"></div>
-      </div>
+        <!-- ===== 赛季段位 ===== -->
+        <div class="section-title">
+            <div>赛季段位</div>
+        </div>
+        <div class="chart-card glass-card">
+            <div class="echart-div"></div>
+        </div>
 
-      <div class="footer">
-					<p>©西行寺雨季&nbsp;&nbsp;©本心</p>
-					<p>频道搜索”yuyuko”即可使用稳定的腾讯官方机器人~</p>
-					<p>Design By 冷眠 H5 Converted By missile-xuan</p>
-					<p>赞助鸣谢：科长、男人们的定远号、海上最速暴毙传说</p>
-			</div>
-
+        <!-- ===== Footer ===== -->
+        <div class="footer">
+            <p>频道搜索"yuyuko"即可使用稳定的腾讯官方机器人~</p>
+            <p>赞助鸣谢：科长、男人们的定远号、海上最速暴毙传说</p>
+        </div>
     </div>
-  </div>
-	</body>
+</div>
+</body>
 {% if template_path and template_path/"echarts.js" %}
 <script src="file:\\{{template_path}}/echarts.js"></script>
 {% else %}
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.3/dist/echarts.js"></script>
 {% endif %}
-	<script>
-  window.onload = function () {
-		drawChart();
-	};
-  description = [
-              {% for each in data['clanLeagueInfo']['alphaCharts'] %}
-                {% if each['source'] == each['maxSource']  %}
-                  '',
-                {% else %}
-                  '{{ each['leagueName']['buff'] }}{{ each['divisionName'] }}{{ each['divisionRating'] }}',
-                {% endif %}
-              {% endfor %}
-              ]
-  max_description = [
-              {% for each in data['clanLeagueInfo']['alphaCharts'] %}
-                '{{ each['maxLeagueName']['buff'] }}{{ each['maxDivisionName'] }}{{ each['maxPositionDivisionRating'] }}',
-              {% endfor %}
-              ]
-  function drawChart() {
-    var Chart = echarts.init(document.querySelector('.echart-div'));
-    var Option = {
-      animation: false,
-      xAxis: {
-        type: 'category',
-        data: [{% for each in data['clanLeagueInfo']['alphaCharts'] %}
-              {{ each['season'] }},
-              {% endfor %}]
-      },
-      yAxis: {
-        type: 'value',
-        interval: 100,
-        min: function(value){
-                return parseInt(value.min/100)*100;
-        },
-        max: function(value){
-                return parseInt(value.max/100 +1 )*100;
-        },
-        axisLabel: {
-          textStyle: {
-            fontSize: 20,
-            fontWeight:'bold',  
-        },
-      		formatter: function (value, index) {
-      		  const temp = {
-      		    1000:'青铜',
-      		    1300:'白银',
-      		    1600:'黄金',
-      		    1900:'白金',
-      		    2200:'紫金',
-      		  }
-      			return temp[value];
-      		}
-      	}
-      },
-      series: [
-        {
-          name: '结算分数',
-          data: [{% for each in data['clanLeagueInfo']['alphaCharts'] %}
-                  {{ each['source'] }},
-                {% endfor %}],
-          label: {
-            show: true,
-            position: 'bottom',
-            color:'red',
-            formatter(v){
-              return description[v.dataIndex] + ''
-            }
-          },
-          type: 'line',
-        },
-        {
-          name: '最高分数',
-          data: [{% for each in data['clanLeagueInfo']['alphaCharts'] %}
-                  {{ each['maxSource'] }},
-                {% endfor %}],
-          label: {
-            show: true,
-            position: 'top',
-            color:'blue',
-            formatter(v){
-              return max_description[v.dataIndex] + ''
-            }
-          },
-          type: 'line',
-        }
-      ],
-      legend: {
-        orient: 'horizontal',
-        x: 'center',
-        y: 'top',
-        itemGap: 5,
-        textStyle: {
-            fontSize: 20,      
-        },
-        data:['结算分数','最高分数'],
-        backgroundColor: 'rgba(0,0,0,0)',
-        borderColor: '#ccc',
-        borderWidth: 0, 
-        padding: 5, 
-        itemGap: 10,
-        itemWidth: 20, 
-        itemHeight: 14, 
-      }
-
-    };
-  Chart.setOption(Option);
-  }
-
-	// PR条颜色动态变化
-	let bar_bg_width = document.querySelector('.pr-bar-bg').clientWidth;
-	let pr_number = document.querySelector('.pr-number').innerText;
-	pr_number = parseInt(pr_number);
-	if (pr_number == 0) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#828282";
-		document.querySelector(".pr-text").innerText = "暂无数据";
-	} else if (pr_number < 750) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#F44336";
-		document.querySelector(".pr-text").innerText = "还需努力";
-	} else if (pr_number < 1100) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#FF9800";
-		document.querySelector(".pr-text").innerText = "低于平均";
-	} else if (pr_number < 1350) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#FFC107";
-		document.querySelector(".pr-text").innerText = "平均水平";
-		document.querySelector(".pr-number").style.color = "#303133";
-	} else if (pr_number < 1550) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#8BC34A";
-		document.querySelector(".pr-text").innerText = "好";
-	} else if (pr_number < 1750) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#4CAF50";
-		document.querySelector(".pr-text").innerText = "很好";
-	} else if (pr_number < 2100) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#00BCD4";
-		document.querySelector(".pr-text").innerText = "非常好";
-	} else if (pr_number < 2450) {
-		document.querySelector(".pr-bar").style.backgroundColor = "#9C27B0";
-		document.querySelector(".pr-text").innerText = "大佬水平";
-	} else {
-		document.querySelector(".pr-bar").style.backgroundColor = "#673AB7";
-		document.querySelector(".pr-text").innerText = "神佬水平";
-		pr_number = 2450; //防止pr条溢出
-	}
-
-	if (pr_number < 220 && pr_number > 0) {
-		pr_number = 220; //防止pr过低导致圆角异常
-	}
-	// PR条动态长度
-	let width = bar_bg_width * (pr_number / 2450);
-	document.querySelector('.pr-bar').style.width = width + "px";
-</script>
-
 <script>
-	// 服务器字体颜色自动填充
-	let server_name = document.querySelector(".server").innerText;
-	if (server_name == "asia") {
-		document.querySelector(".server").style.color = "#92D050";
-    document.querySelector(".server").innerText = "亚服";
-	} else if (server_name == "cn") {
-		document.querySelector(".server").style.color = "#BF9000";
-    document.querySelector(".server").innerText = "国服";
-	} else if (server_name == "eu") {
-		document.querySelector(".server").style.color = "#009664";
-    document.querySelector(".server").innerText = "欧服";
-	} else if (server_name == "na") {
-		document.querySelector(".server").style.color = "#6872C4";
-    document.querySelector(".server").innerText = "美服";
-	} else if (server_name == "ru") {
-		document.querySelector(".server").style.color = "#FF0000";
-    document.querySelector(".server").innerText = "俄服";
-	}
+    window.onload = function () {
+        drawChart();
+    };
+    description = [
+        {% for each in data['clanLeagueInfo']['alphaCharts'] %}
+            {% if each['source'] == each['maxSource']  %}
+                '',
+            {% else %}
+                '{{ each['leagueName']['buff'] }}{{ each['divisionName'] }}{{ each['divisionRating'] }}',
+            {% endif %}
+        {% endfor %}
+    ]
+    max_description = [
+        {% for each in data['clanLeagueInfo']['alphaCharts'] %}
+            '{{ each['maxLeagueName']['buff'] }}{{ each['maxDivisionName'] }}{{ each['maxPositionDivisionRating'] }}',
+        {% endfor %}
+    ]
+    function drawChart() {
+        var Chart = echarts.init(document.querySelector('.echart-div'));
+        var Option = {
+            animation: false,
+            xAxis: {
+                type: 'category',
+                data: [{% for each in data['clanLeagueInfo']['alphaCharts'] %}
+                    {{ each['season'] }},
+                {% endfor %}]
+            },
+            yAxis: {
+                type: 'value',
+                interval: 100,
+                min: function(value){
+                    return parseInt(value.min/100)*100;
+                },
+                max: function(value){
+                    return parseInt(value.max/100 +1 )*100;
+                },
+                axisLabel: {
+                    textStyle: {
+                        fontSize: 20,
+                        fontWeight:'bold',
+                    },
+                    formatter: function (value, index) {
+                        const temp = {
+                            1000:'青铜',
+                            1300:'白银',
+                            1600:'黄金',
+                            1900:'白金',
+                            2200:'紫金',
+                        }
+                        return temp[value];
+                    }
+                }
+            },
+            series: [
+                {
+                    name: '结算分数',
+                    data: [{% for each in data['clanLeagueInfo']['alphaCharts'] %}
+                        {{ each['source'] }},
+                    {% endfor %}],
+                    label: {
+                        show: true,
+                        position: 'bottom',
+                        color:'red',
+                        formatter(v){
+                            return description[v.dataIndex] + ''
+                        }
+                    },
+                    type: 'line',
+                },
+                {
+                    name: '最高分数',
+                    data: [{% for each in data['clanLeagueInfo']['alphaCharts'] %}
+                        {{ each['maxSource'] }},
+                    {% endfor %}],
+                    label: {
+                        show: true,
+                        position: 'top',
+                        color:'blue',
+                        formatter(v){
+                            return max_description[v.dataIndex] + ''
+                        }
+                    },
+                    type: 'line',
+                }
+            ],
+            legend: {
+                orient: 'horizontal',
+                x: 'center',
+                y: 'top',
+                itemGap: 5,
+                textStyle: {
+                    fontSize: 20,
+                },
+                data:['结算分数','最高分数'],
+                backgroundColor: 'rgba(0,0,0,0)',
+                borderColor: '#ccc',
+                borderWidth: 0,
+                padding: 5,
+                itemGap: 10,
+                itemWidth: 20,
+                itemHeight: 14,
+            }
+        };
+        Chart.setOption(Option);
+    }
+
+    // PR条颜色动态变化
+    let pr_number = document.querySelector('.pr-number').innerText;
+    pr_number = parseInt(pr_number);
+    if (pr_number == 0) {
+        document.querySelector(".pr").style.background = "rgba(130, 130, 130, 0.3)";
+        document.querySelector(".pr-text").innerText = "暂无数据";
+    } else if (pr_number < 750) {
+        document.querySelector(".pr").style.background = "rgba(244, 67, 54, 0.3)";
+        document.querySelector(".pr-text").innerText = "还需努力";
+    } else if (pr_number < 1100) {
+        document.querySelector(".pr").style.background = "rgba(255, 152, 0, 0.3)";
+        document.querySelector(".pr-text").innerText = "低于平均";
+    } else if (pr_number < 1350) {
+        document.querySelector(".pr").style.background = "rgba(255, 193, 7, 0.3)";
+        document.querySelector(".pr-text").innerText = "平均水平";
+        document.querySelector(".pr-number").style.color = "#303133";
+    } else if (pr_number < 1550) {
+        document.querySelector(".pr").style.background = "rgba(139, 195, 74, 0.3)";
+        document.querySelector(".pr-text").innerText = "好";
+    } else if (pr_number < 1750) {
+        document.querySelector(".pr").style.background = "rgba(76, 175, 80, 0.3)";
+        document.querySelector(".pr-text").innerText = "很好";
+    } else if (pr_number < 2100) {
+        document.querySelector(".pr").style.background = "rgba(0, 188, 212, 0.3)";
+        document.querySelector(".pr-text").innerText = "非常好";
+    } else if (pr_number < 2450) {
+        document.querySelector(".pr").style.background = "rgba(156, 39, 176, 0.3)";
+        document.querySelector(".pr-text").innerText = "大佬水平";
+    } else {
+        document.querySelector(".pr").style.background = "rgba(103, 58, 183, 0.3)";
+        document.querySelector(".pr-text").innerText = "神佬水平";
+    }
 </script>
 </html>

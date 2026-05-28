@@ -269,13 +269,48 @@ class minimal_screens_hot_service:
             # 3. 极速加载策略
             load_start = time.time()
 
+            # =========================
+            # 禁用动画（非常重要）
+            # =========================
+            await page.add_style_tag(content="""
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+                caret-color: transparent !important;
+            }
+            """)
+
             # 关键：使用最快加载模式
             await page.goto(
                 f"file://{temp_file}",
-                wait_until='domcontentloaded',  # 最快：DOM加载完成即可
+                wait_until='networkidle',
                 timeout=10000,  # 10秒超时
             )
 
+            # =========================
+            # 强制 reflow
+            # =========================
+            await page.evaluate("""
+                            () => {
+                                document.body.offsetHeight;
+                            }
+                            """)
+            # =========================
+            # 等待 compositor 提交两帧
+            # 解决半渲染问题
+            # =========================
+            await page.evaluate("""
+                            () => new Promise(resolve => {
+                                requestAnimationFrame(() => {
+                                    requestAnimationFrame(() => {
+                                        resolve();
+                                    });
+                                });
+                            })
+                            """)
+            await page.wait_for_timeout(100)
             load_time = time.time() - load_start
             logger.debug(f"页面加载: {load_time:.2f}s")
 
@@ -285,13 +320,20 @@ class minimal_screens_hot_service:
             view = kwargs["viewport"]
             await page.set_viewport_size(view)
 
+            await page.evaluate("""
+                                () => new Promise(resolve => {
+                                    requestAnimationFrame(() => {
+                                        requestAnimationFrame(resolve);
+                                    });
+                                })
+                                """)
             # 5. 快速截图
             screenshot_start = time.time()
             image_data = await page.screenshot(
                 type='jpeg',  # JPEG最快
                 quality=85,
                 full_page=True,  # 只截取可视区域
-                omit_background=True,
+                omit_background=False,
             )
 
             screenshot_time = time.time() - screenshot_start
