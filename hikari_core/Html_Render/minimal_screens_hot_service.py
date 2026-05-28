@@ -208,24 +208,23 @@ class minimal_screens_hot_service:
                     window.__screenshot_ready = true;
                 }, {once: true});
                 
-                // 3. 图片加载优化
+                // 3. 图片加载追踪（包括base64图片的解码）
+                window.__images_loaded = 0;
+                window.__images_total = 0;
                 document.addEventListener('DOMContentLoaded', () => {
                     const images = document.images;
-                    let loaded = 0;
-                    const total = images.length;
-                    
+                    window.__images_total = images.length;
+                    window.__images_loaded = 0;
+
                     for (let img of images) {
                         if (img.complete) {
-                            loaded++;
+                            window.__images_loaded++;
                         } else {
                             img.onload = img.onerror = () => {
-                                loaded++;
+                                window.__images_loaded++;
                             };
                         }
                     }
-                    
-                    window.__images_loaded = loaded;
-                    window.__images_total = total;
                 });
             })();
         """)
