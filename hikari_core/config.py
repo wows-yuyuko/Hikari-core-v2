@@ -73,7 +73,7 @@ def set_hikari_config(  # noqa: PLR0913
         logger.error(f'初始化数据目录失败: {e}')
     logger.info(f'当前hikari-core配置\n{hikari_config}')
     global _initial_scheduler
-    if _initial_scheduler:
+    if _initial_scheduler and local_test is not True:
         logger.info('初始化任务....')
         from hikari_core.game.help import update_ship_cache, update_ship_cache_cron, update_template
 
