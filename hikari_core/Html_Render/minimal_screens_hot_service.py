@@ -160,8 +160,13 @@ class minimal_screens_hot_service:
             page = self.context_pages[session_id]
             try:
                 if not page.is_closed():
-                    # 快速重置页面
-                    await page.evaluate("document.body.innerHTML = ''")
+                    # 快速重置页面（同时重置图片追踪标志，确保新页面背景图能被追踪）
+                    await page.evaluate("""
+                        document.body.innerHTML = '';
+                        window.__bg_images_tracked = false;
+                        window.__images_total = 0;
+                        window.__images_loaded = 0;
+                    """)
                     return page
             except:
                 del self.context_pages[session_id]
@@ -208,10 +213,13 @@ class minimal_screens_hot_service:
                     window.__screenshot_ready = true;
                 }, {once: true});
                 
-                // 3. 图片加载追踪（包括base64图片的解码）
+                // 3. 图片加载追踪（包括 <img> 和 CSS background-image）
                 window.__images_loaded = 0;
                 window.__images_total = 0;
-                document.addEventListener('DOMContentLoaded', () => {
+                window.__bg_images_tracked = false;
+
+                function __trackImages() {
+                    // 3a. 追踪 <img> 元素
                     const images = document.images;
                     window.__images_total = images.length;
                     window.__images_loaded = 0;
@@ -225,7 +233,46 @@ class minimal_screens_hot_service:
                             };
                         }
                     }
-                });
+
+                    // 3b. 追踪 CSS background-image（解决 page-header 等背景图丢失问题）
+                    if (window.__bg_images_tracked) return;
+                    window.__bg_images_tracked = true;
+                    try {
+                        const seen = new Set();
+                        // 仅扫描有 class 属性的元素，避免过度 getComputedStyle 调用
+                        const elements = document.querySelectorAll('[class]');
+                        for (const el of elements) {
+                            const bg = getComputedStyle(el).backgroundImage;
+                            if (!bg || bg === 'none') continue;
+                            const matches = bg.match(/url\(["']?([^"')]+)["']?\)/g);
+                            if (!matches) continue;
+                            for (const m of matches) {
+                                const urlMatch = m.match(/url\(["']?([^"')]+)["']?\)/);
+                                if (urlMatch && urlMatch[1] && !seen.has(urlMatch[1])) {
+                                    seen.add(urlMatch[1]);
+                                }
+                            }
+                        }
+                        if (seen.size > 0) {
+                            window.__images_total += seen.size;
+                            for (const imgUrl of seen) {
+                                const img = new Image();
+                                img.onload = img.onerror = () => {
+                                    window.__images_loaded++;
+                                };
+                                img.src = imgUrl;
+                            }
+                        }
+                    } catch(e) {
+                        // 静默失败，背景图追踪是尽力而为的
+                    }
+                }
+
+                if (document.readyState !== 'loading') {
+                    __trackImages();
+                } else {
+                    document.addEventListener('DOMContentLoaded', __trackImages);
+                }
             })();
         """)
 
