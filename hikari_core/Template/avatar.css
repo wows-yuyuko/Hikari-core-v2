@@ -1,0 +1,160 @@
+.page-header {
+    border-radius: 36px;
+    height: 300px;
+    margin: 50px 50px 30px;
+    display: flex;
+    justify-content: flex-start;
+    box-shadow: 0 5px 20px #252525;
+
+}
+
+.avatar-header {
+    filter: drop-shadow(9px 9px 12px rgba(0, 0, 0, 0.3));
+    margin-left: -25px;
+    margin-right: 10px;
+    margin-top: 15px;
+    border-radius: 20px;
+    width: 250px;
+    height: 250px;
+    opacity: 0.95;
+    box-shadow: 0 0 10px #484848;
+}
+
+.masking-header {
+    display: flex;
+    justify-content: flex-start;
+    height: 280px;
+    width: auto;
+    margin-top: 10px;
+    margin-left: 10px;
+    gap: 15px;
+    border-radius: 24px;
+    padding-left: 40px;
+    background: transparent;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border: 1px solid rgba(220, 230, 255, 0.5);
+    box-shadow: none;
+}
+
+.user-info {
+    font-weight: bolder;
+    line-height: 30px;
+    font-size: 45px;
+    padding: 18px 16px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.user-sign-time,
+.user-server {
+    color: #000000;
+    font-size: 25px;
+    font-weight: 600;
+
+    font-family: "Microsoft YaHei UI Light", serif;
+}
+
+.user-signature {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    gap: 10px;
+    width: auto;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 36px;
+    margin-top: 10px;
+    font-size: 25px;
+}
+
+.clan-user-server {
+    margin: 5px;
+    text-align: left;
+    font-size: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-direction: column;
+    font-weight: bold;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.user-info,
+.user-sign-time,
+.user-server,
+.user-signature {
+    opacity: 0.95;
+}
+
+
+.pr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 35px;
+    border-radius: 26px;
+    margin: 10px 50px;
+    height: 100px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+}
+
+.svg-waves {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70%;
+}
+
+.svg-waves svg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.wave-path {
+    fill: rgba(255, 255, 255, 0.2);
+    animation: wave-animation 3s ease-in-out infinite alternate;
+}
+
+.pr-number {
+    font-size: 44px;
+    font-weight: 600;
+    text-shadow: 0 0 4px currentColor, 0 0 8px rgba(255, 255, 255, 0.25),
+    0 0 15px rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    color: white;
+}
+
+@keyframes wave-animation {
+    0%, 100% {
+        d: path("M0,100 C150,200 350,0 500,100 L500,200 L0,200 Z");
+    }
+    50% {
+        d: path("M0,80 C150,180 350,-20 500,80 L500,200 L0,200 Z");
+    }
+}
+
+@keyframes ran-7e872de5 {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+        text-shadow: 0 0 10px currentColor;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}

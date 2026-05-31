@@ -1,0 +1,377 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.flex-2 {
+    flex: 2;
+}
+
+.flex-3 {
+    flex: 3;
+}
+
+.flex-4 {
+    flex: 4;
+}
+
+.flex-8 {
+    flex: 8;
+}
+
+.flex-10 {
+    flex: 10;
+}
+
+
+.chart-bar {
+    flex: 6;
+}
+
+.chart-pie {
+    flex: 4;
+}
+
+body {
+    /*font-family: "Microsoft YaHei UI Light", serif;*/
+    font-family: "Microsoft YaHei Bold", "Microsoft YaHei", sans-serif;
+}
+
+.page-box {
+    width: 1500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ship-header {
+    margin: -10px 400px 20px;
+    text-align: center;
+    font-size: 55px;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: break-all;
+    overflow: hidden;
+}
+
+.recnet-time {
+    text-align: center;
+    font-weight: normal;
+    margin-top: 20px;
+}
+
+.overview-change {
+    display: flex;
+    margin-top: 30px;
+    padding: 0 80px;
+    height: 450px;
+}
+
+.overview-change-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin: 0 20px;
+}
+
+.item-top {
+    flex: 5;
+    border-radius: 16px;
+}
+
+.item-bottom {
+    display: flex;
+    flex: 4;
+    margin-top: 20px;
+}
+
+.bottom-mini-item-left {
+    margin-right: 10px;
+}
+
+.bottom-mini-item-right {
+    margin-left: 10px;
+}
+
+.bottom-mini-item-left,
+.bottom-mini-item-right {
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    flex: 1;
+}
+
+.chart-box {
+    margin: 0 100px;
+    margin-top: 30px;
+    height: 400px;
+    display: flex;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.main-content, body {
+    width: 1500px;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+
+.one-background-color {
+    background: rgba(245, 240, 255, 0.3);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 2px solid rgba(180, 160, 230, 0.6);
+    box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
+}
+
+.three-background-color {
+    background: #D9D9D9;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 2px solid #C0C0C0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.two-background-color {
+    /* 基础毛玻璃背景 */
+    background: repeating-linear-gradient(
+            0deg,
+            rgba(255, 255, 255, 0.1) 0px,
+            rgba(255, 255, 255, 0.1) 2px,
+            transparent 2px,
+            transparent 8px
+    ),
+    rgba(255, 255, 255, 0.05);
+
+    /* 毛玻璃效果 */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    /* 边框 */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    /* 底部阴影效果 */
+    position: relative;
+    z-index: 1;
+}
+
+/* 添加底部阴影伪元素 */
+.two-background-color::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 5%;
+    right: 5%;
+    height: 8px;
+
+    /* 底部阴影渐变 */
+    background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.15) 0%,
+            rgba(0, 0, 0, 0.08) 50%,
+            transparent 100%
+    );
+
+    /* 模糊和变形增强立体感 */
+    filter: blur(4px);
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.item-top {
+    display: flex;
+    flex-direction: column;
+}
+
+.item-top div {
+    height: 120px;
+    text-align: center;
+    font-size: 60px;
+}
+
+.item-top-top {
+    color: black;
+    font-weight: normal;
+    line-height: 150px;
+}
+
+.item-top-bottom {
+    line-height: 90px;
+}
+
+
+.mini-item-top {
+    color: black;
+    font-weight: normal;
+    line-height: 135px;
+}
+
+.mini-item-bottom {
+    line-height: 45px;
+}
+
+.bottom-mini-item-left div,
+.bottom-mini-item-right div {
+    height: 95px;
+    text-align: center;
+    font-size: 35px;
+}
+
+.information-body {
+    margin: 30px 100px 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(173, 216, 230, 0.6);
+    border-radius: 16px;
+}
+
+.information-col {
+    height: 60px;
+    display: flex;
+    line-height: 60px;
+}
+
+.information-col-item {
+    flex: 1;
+    text-align: center;
+}
+
+.random-header {
+    margin: 0 400px;
+    margin-top: 30px;
+    height: 60px;
+    line-height: 60px;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.random-table-header .random-col-item {
+    line-height: 60px;
+}
+
+.footer {
+    margin-top: 30px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 24px;
+    color: #909399;
+    margin-bottom: 20px;
+}
+
+.frag-data {
+    display: flex;
+    margin: 30px 90px;
+}
+
+.frag-data-col {
+    display: flex;
+    flex: 1;
+    margin-bottom: 20px;
+}
+
+.frag-item {
+    flex: 1;
+    text-align: center;
+    /*background-color: #F2F2F2;*/
+    border-radius: 16px;
+    margin: 0 10px;
+}
+
+.frag-key,
+.frag-value {
+    height: 100px;
+    font-size: 35px;
+}
+
+.frag-key {
+    color: black;
+    font-weight: normal;
+    line-height: 120px;
+}
+
+.frag-value {
+    line-height: 80px;
+}
+
+.ship-col-item-ship {
+    overflow: hidden;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 0 0 0 15px;
+}
+
+.ship-name {
+    text-align: left;
+    margin-left: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+    width: 0;
+}
+
+.ship-data-col {
+    display: flex;
+    height: 90px;
+}
+
+.ship-information-col {
+    color: #606266;
+    height: 60px;
+    display: flex;
+}
+
+.ship-col-item {
+    line-height: 90px;
+    text-align: center;
+}
+
+.recent-battle-text-wins {
+    color: #8BC34A;
+}
+
+.recent-battle-text-lose {
+    color: #DD3B2FFF;
+}
+
+.recent-battle-text-tie {
+    color: #87CEEB;
+}
+
+.recent-time-header {
+    margin: 0 100px;
+    margin-top: 20px;
+    width: 200px;
+    height: 60px;
+    line-height: 60px;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.pr-change {
+    font-size: 0.7em;
+    color: #666;
+    vertical-align: super;
+}
+
+.damage-change {
+    font-size: 0.7em;
+    color: #666;
+    vertical-align: super;
+}
+
+.wins-change {
+    font-size: 0.7em;
+    color: #666;
+    vertical-align: super;
+}
