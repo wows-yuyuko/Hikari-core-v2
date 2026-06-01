@@ -55,7 +55,7 @@ async def search_rank(hikari: Hikari_Model):
         resp = await client_yuyuko.get(url, timeout=20)
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['data']:
-            hikari.set_template_info('ship-rank.html', 1300, 100)
+            hikari.set_template_info('ship-rank-v2.html', 1300, 100)
             result_data = {'data': result['data'], 'shipInfo': hikari.Input.ShipInfo.dict()}
             return hikari.success(result_data)
         else:
