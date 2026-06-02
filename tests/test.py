@@ -20,7 +20,7 @@ async def start():
     # await command('cn 用户＿11451414514 recent 90', False)
     # await command('me ship 大', False)
     # await command('战舰排行榜 cn 大和', False)
-    await command('me ship 大', False)
+    await command('asia nahida_official ship 大', False)
     # await command("公会战记录 cn 团子大家族 25", False)
     # await command("wws查询绑定 me", True)
     # await command("me sx", False)

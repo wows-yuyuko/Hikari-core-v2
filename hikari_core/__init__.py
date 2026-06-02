@@ -1,6 +1,8 @@
 import time
 import traceback
 import os
+from typing import Optional
+
 import jinja2
 from jinja2.exceptions import UndefinedError
 from loguru import logger
@@ -29,7 +31,7 @@ async def init_hikari(
         PlatformId: str,
         command_text: str = Field(default='', description='输入的指令'),
         GroupId: str = None,
-        Ignore_List= [],  # noqa: B006
+        Ignore_List: List | None = None, # noqa: B006
 ) -> Hikari_Model:
     """Hikari初始化
 
@@ -44,16 +46,17 @@ async def init_hikari(
     """
     return await output_hikari(await init_hikari_no_output(platform, PlatformId, command_text, GroupId, Ignore_List))
 
+
 async def init_hikari_no_output(
         platform: str,
         PlatformId: str,
         command_text: str = Field(default='', description='输入的指令'),
-        GroupId: str = None,
-        Ignore_List=None,  # noqa: B006
+        GroupId: str | None = None,
+        Ignore_List: List | None = None,  # noqa: B006
 ) -> Hikari_Model:
-    if Ignore_List is None:
-        Ignore_List = []
     try:
+        if Ignore_List is None:
+            Ignore_List = []
         hikari = Hikari_Model(UserInfo=UserInfo_Model(Platform=platform, PlatformId=PlatformId, GroupId=GroupId), Input=Input_Model(Command_Text=command_text))
         hikari = await analyze_command(hikari)
         if hikari.Status != 'init' or not hikari.Function:

@@ -36,7 +36,7 @@ shiptypes = [
     matching(('Battleship', '战列舰', '战列', 'BB'), 'Battleship'),
     matching(('Destroyer', '驱逐舰', '驱逐', 'DD'), 'Destroyer'),
     matching(('Submarine', '潜艇', 'SS'), 'Submarine'),
-    matching(('Auxiliary', '辅助航母', 'DD'), 'Auxiliary'),
+    matching(('Auxiliary', '辅助航母', 'CVE'), 'Auxiliary'),
     matching(('AirCarrier', '航空母舰', '航母', 'CV'), 'AirCarrier'),
 ]
 
