@@ -5,8 +5,9 @@ import jinja2
 from jinja2.exceptions import UndefinedError
 from loguru import logger
 from playwright.async_api import Error as playwright_Error
-from pydantic import ValidationError
+from pydantic import ValidationError, Field
 
+from .cache_utils import get_cache_file
 from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .analyze import analyze_command
 from .command_select import *  # noqa: F403
@@ -26,9 +27,9 @@ env.globals.update(
 async def init_hikari(
         platform: str,
         PlatformId: str,
-        command_text: str = None,
+        command_text: str = Field(default='', description='输入的指令'),
         GroupId: str = None,
-        Ignore_List=[],  # noqa: B006
+        Ignore_List= [],  # noqa: B006
 ) -> Hikari_Model:
     """Hikari初始化
 
@@ -42,11 +43,9 @@ async def init_hikari(
         Hikari_Model: 可通过Hikari.Status和Hikari.Output.Data内数据判断是否输出
     """
     try:
-        userinfo = UserInfo_Model(Platform=platform, PlatformId=PlatformId, GroupId=GroupId)
-        input = Input_Model(Command_Text=command_text)
-        hikari = Hikari_Model(UserInfo=userinfo, Input=input)
+        hikari = Hikari_Model(UserInfo=UserInfo_Model(Platform=platform, PlatformId=PlatformId, GroupId=GroupId), Input=Input_Model(Command_Text=command_text))
         hikari = await analyze_command(hikari)
-        if not hikari.Status == 'init' or not hikari.Function:
+        if hikari.Status != 'init' or not hikari.Function:
             return hikari
         if hikari.Function in Ignore_List:
             return hikari.error('该功能已被禁用')
@@ -105,6 +104,8 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
                 template_data = await set_render_params(find_and_modify_shipinfo(hikari.Output.Data))
             elif hikari.Status == 'wait':
                 template_data = await set_render_params(hikari.Input.Select_Data)
+            else:
+                template_data = {}
             content = await template.render_async(template_data)
             # 测试模式下才赋值给模板内容
             if hikari_config.local_test:
@@ -132,46 +133,36 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
         return Hikari_Model().error(f'Hikari-core顶层错误，请检查log\n{e}')
 
 
+# shipInfo 中需要替换为本地缓存路径的图片字段
+_SHIP_IMAGE_KEYS = ("shipTypeImage", "imgSmall", "countryImage")
+
+
 def find_and_modify_shipinfo(data, target_key="shipInfo"):
-    """
-    深度搜索并修改 shipInfo 节点
+    """深度搜索 shipInfo 节点，将远程图片 URL 替换为本地缓存路径。
 
     Args:
         data: 嵌套数据结构
         target_key: 要搜索的键名，默认 "shipInfo"
     """
+    wows_temp = get_cache_file() / "ship_cache"
 
-    def recursive_modify(obj, path=""):
-        from hikari_core.cache_utils import get_cache_file
-        wows_temp = get_cache_file() / "ship_cache"
+    def _replace_images(ship_info):
+        """将 shipInfo 中的图片 URL 替换为本地 file:// 路径（若缓存文件存在）。"""
+        for key in _SHIP_IMAGE_KEYS:
+            if key in ship_info:
+                local = wows_temp / str(os.path.basename(ship_info[key]))
+                if local.exists():
+                    ship_info[key] = f"file:///{local.as_posix()}"
+
+    def _recurse(obj):
         if isinstance(obj, dict):
-            # 如果找到目标键
-            if target_key in obj:
-                ship_info = obj[target_key]
-                if isinstance(ship_info, dict):
-                    # 处理字典形式：{ship_id: ship_data, ...}
-                    if "shipTypeImage" in ship_info and "imgSmall" in ship_info and "countryImage" in ship_info:
-                        # 获取 shipTypeImage 和 imgSmall 的文件名
-                        ship_type_image_filename = wows_temp / os.path.basename(ship_info["shipTypeImage"])
-                        img_small_filename = wows_temp / os.path.basename(ship_info["imgSmall"])
-                        country_image_filename = wows_temp / os.path.basename(ship_info["countryImage"])
-                        if ship_type_image_filename.exists():
-                            ship_info["shipTypeImage"] = f"file:///{ship_type_image_filename.as_posix()}"
-
-                        if img_small_filename.exists():
-                            ship_info["imgSmall"] = f"file:///{img_small_filename.as_posix()}"
-
-                        if country_image_filename.exists():
-                            ship_info["countryImage"] = f"file:///{country_image_filename.as_posix()}"
-
-            # 递归搜索所有键值对
-            for key, value in list(obj.items()):
-                recursive_modify(value, f"{path}.{key}" if path else key)
-
+            if target_key in obj and isinstance(obj[target_key], dict):
+                _replace_images(obj[target_key])
+            for value in obj.values():
+                _recurse(value)
         elif isinstance(obj, list):
-            # 递归搜索列表元素
-            for i, item in enumerate(obj):
-                recursive_modify(item, f"{path}[{i}]")
+            for item in obj:
+                _recurse(item)
 
-    recursive_modify(data)
+    _recurse(data)
     return data

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 @runtime_checkable
 class Func(Protocol):
-    async def __call__(self, **kwargs):
+    async def __call__(self, hikari: 'Hikari_Model'):
         ...
 
 
@@ -31,7 +31,7 @@ class ShipInfo(dict):
 
 
 class Input_Model(BaseModel):
-    Command_Text: str = Field(default='', description='输入的指令,请提前去除wws') # 输入的指令,请提前去除wws
+    Command_Text: str = Field(default='', description='输入的指令,请提前去除wws')  # 输入的指令,请提前去除wws
     Command_List: List[str] = Field(default_factory=list)
     Search_Type: Optional[int] = 3  # 1:me  2:@  3:server+name or default
     Platform: Optional[str] = None
@@ -60,13 +60,12 @@ class Output_Model(BaseModel):
 
 class Hikari_Model(BaseModel):
     Status: str = 'init'  # init:初始化 success:请求成功  failed:请求成功但API有错误或空返回  error:异常及本地错误
-    StatusText: Optional[str] = 'init'  # 默认走图片渲染模式
+    StatusText: str = 'init'  # 默认走图片渲染模式
     UserInfo: UserInfo_Model = UserInfo_Model()
-    Function: Optional[Func] = None
-    template_content: str = ''
-    Input: Input_Model = Input_Model()
-    Output: Output_Model = Output_Model()
-
+    Function: Func = Field(default=None, description='当前请求的函数')
+    template_content: str = Field(default='', description='模板内容')
+    Input: Input_Model = Field(default=Input_Model(), description='输入数据')
+    Output: Output_Model = Field(default=Output_Model(), description='输出数据')
     class Config:
         arbitrary_types_allowed = True
 
