@@ -42,6 +42,17 @@ async def init_hikari(
     Returns:
         Hikari_Model: 可通过Hikari.Status和Hikari.Output.Data内数据判断是否输出
     """
+    return await output_hikari(await init_hikari_no_output(platform, PlatformId, command_text, GroupId, Ignore_List))
+
+async def init_hikari_no_output(
+        platform: str,
+        PlatformId: str,
+        command_text: str = Field(default='', description='输入的指令'),
+        GroupId: str = None,
+        Ignore_List=None,  # noqa: B006
+) -> Hikari_Model:
+    if Ignore_List is None:
+        Ignore_List = []
     try:
         hikari = Hikari_Model(UserInfo=UserInfo_Model(Platform=platform, PlatformId=PlatformId, GroupId=GroupId), Input=Input_Model(Command_Text=command_text))
         hikari = await analyze_command(hikari)
@@ -50,7 +61,7 @@ async def init_hikari(
         if hikari.Function in Ignore_List:
             return hikari.error('该功能已被禁用')
         hikari: Hikari_Model = await hikari.Function(hikari)
-        return await output_hikari(hikari)
+        return hikari
     except ValidationError:
         logger.error(traceback.format_exc())
         return Hikari_Model().error('参数校验错误，请联系开发者确认入参是否符合Model')
