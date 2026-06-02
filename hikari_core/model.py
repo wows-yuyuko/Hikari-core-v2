@@ -1,10 +1,7 @@
 import time
-import os
 from typing import List, Optional, Protocol, Union, runtime_checkable, Any
 
 from pydantic import BaseModel, Field
-
-from hikari_core.cache_utils import get_cache_file
 
 
 @runtime_checkable
@@ -61,6 +58,7 @@ class Output_Model(BaseModel):
 
 class Hikari_Model(BaseModel):
     Status: str = 'init'  # init:初始化 success:请求成功  failed:请求成功但API有错误或空返回  error:异常及本地错误
+    StatusText: Optional[str] = 'init' # 默认走图片渲染模式
     UserInfo: UserInfo_Model = UserInfo_Model()
     Function: Optional[Func] = None
     template_content: str = ''
