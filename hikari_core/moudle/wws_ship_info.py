@@ -8,21 +8,21 @@ from loguru import logger
 from ..config import hikari_config
 from ..HttpClient_Pool import get_client_yuyuko, recreate_client_yuyuko
 from ..model import Hikari_Model
-from .publicAPI import check_yuyuko_cache, get_AccountIdByName, get_MyShipRank_yuyuko, get_ship_byName
+from .publicAPI import check_yuyuko_cache, get_AccountIdByName, get_ship_byName
 
 
 async def get_ShipInfo(hikari: Hikari_Model) -> Hikari_Model:  # noqa: PLR0915
     """查询单船水表"""
     try:
         if hikari.Status == 'init':
-            shipList = await get_ship_byName(hikari)
-            if shipList:
-                if len(shipList) < 2:
-                    hikari.Input.ShipInfo = shipList[0]
+            ship_list = await get_ship_byName(hikari)
+            if ship_list:
+                if len(ship_list) < 2:
+                    hikari.Input.ShipInfo = ship_list[0]
                 else:
-                    hikari.Input.Select_Data = shipList
+                    hikari.Input.Select_Data = ship_list
                     hikari.set_template_info('select-ship-v3.html', 680, 100)
-                    return hikari.wait(shipList)
+                    return hikari.wait(ship_list)
             else:
                 return hikari.failed('找不到船，请确认船名是否正确，可以使用【wws 查船名】查询船只中英文')
         elif hikari.Status == 'wait':
@@ -49,11 +49,11 @@ async def get_ShipInfo(hikari: Hikari_Model) -> Hikari_Model:  # noqa: PLR0915
 
         url = f'{hikari_config.yuyuko_url}/public/wows/account/ship/info'
         if hikari.Input.Search_Type == 3:
-            params = {'server': hikari.Input.Server, 'accountId': hikari.Input.AccountId, 'shipId': hikari.Input.ShipInfo.Ship_Id}
+            params = {'server': hikari.Input.Server, 'accountId': hikari.Input.AccountId, 'shipId': hikari.Input.ShipInfo.shipId}
         else:
-            params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId, 'shipId': hikari.Input.ShipInfo.Ship_Id}
+            params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId, 'shipId': hikari.Input.ShipInfo.shipId}
 
-        ranking = await get_MyShipRank_yuyuko(hikari, params)
+
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
@@ -62,7 +62,7 @@ async def get_ShipInfo(hikari: Hikari_Model) -> Hikari_Model:  # noqa: PLR0915
         if result['code'] == 200 and result['data']:
             if result['data']['typeInfo']['PVP']['battle'] or result['data']['typeInfo']['RANK_SOLO']['battle']:
                 hikari.set_template_info('wws-ship.html', 800, 100)
-                result['data']['shipRank'] = ranking
+                result['data']['shipRank'] = result['data']['rank']
                 return hikari.success(result['data'])
             else:
                 return hikari.failed('查询不到战绩数据')

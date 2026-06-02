@@ -13,19 +13,19 @@ from ..model import Hikari_Model
 async def roll_ship(hikari: Hikari_Model):
     """roll船出港"""
     try:
-        if not hikari.Input.ShipInfo.Ship_Nation:
-            hikari.Input.ShipInfo.Ship_Nation = ''
-        if not hikari.Input.ShipInfo.Ship_Tier:
-            hikari.Input.ShipInfo.Ship_Tier = ''
-        if not hikari.Input.ShipInfo.Ship_Type:
-            hikari.Input.ShipInfo.Ship_Type = ''
+        if not hikari.Input.ShipInfo.country:
+            hikari.Input.ShipInfo.country = ''
+        if not hikari.Input.ShipInfo.level:
+            hikari.Input.ShipInfo.level = ''
+        if not hikari.Input.ShipInfo.shipType:
+            hikari.Input.ShipInfo.shipType = ''
         params = {
             'accountId': hikari.UserInfo.PlatformId,
             'server': hikari.UserInfo.Platform,
-            'county': hikari.Input.ShipInfo.Ship_Nation,
-            'level': hikari.Input.ShipInfo.Ship_Tier,
+            'county': hikari.Input.ShipInfo.country,
+            'level': hikari.Input.ShipInfo.level,
             'shipName': '',
-            'shipType': hikari.Input.ShipInfo.Ship_Type,
+            'shipType': hikari.Input.ShipInfo.shipType,
         }
         url = f'{hikari_config.yuyuko_url}/public/wows/roll/ship/roll'
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)

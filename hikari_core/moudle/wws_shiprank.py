@@ -50,7 +50,7 @@ async def get_ShipRank(hikari: Hikari_Model):
 
 async def search_rank(hikari: Hikari_Model):
     try:
-        url = f'{hikari_config.yuyuko_url}/public/rank/yuyuko_ship/{hikari.Input.Server}?shipId={hikari.Input.ShipInfo.Ship_Id}&page=1'
+        url = f'{hikari_config.yuyuko_url}/public/rank/yuyuko_ship/{hikari.Input.Server}?shipId={hikari.Input.ShipInfo.shipId}&page=1'
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, timeout=20)
         result = orjson.loads(resp.content)

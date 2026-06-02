@@ -299,10 +299,10 @@
 <div class="page-box">
     <div class="title-header">
         <div class="ship-tier">
-            {{ data['shipInfo']['Ship_Tier'] }}
+            {{ data['shipInfo']['levelStr'] }}
         </div>
         <div class="ship-name">
-            {{ data['shipInfo']['Ship_Name_Cn'] }}
+            {{ data['shipInfo']['nameCn'] }}
         </div>
     </div>
 
@@ -401,19 +401,5 @@
         <p>github:wows-yuyuko</p>
     </div>
 </div>
-
-<script>
-    (function () {
-        var levelNumber = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
-        var levelRoma = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "★"];
-        var tierEl = document.querySelector('.ship-tier');
-        if (tierEl) {
-            var idx = levelNumber.indexOf(tierEl.innerText.trim());
-            if (idx >= 0) {
-                tierEl.innerText = levelRoma[idx];
-            }
-        }
-    })();
-</script>
 </body>
 </html>

@@ -329,7 +329,7 @@
         </div>
 
         <div class="auth-status">
-            {%if data['auth'] %}
+            {% if data['auth'] %}
                 <span>授权状态：</span><span style="color: #47A123; font-weight: bold;">已授权</span>
             {% else %}
                 <span>授权状态：</span><span style="color: #E60000; font-weight: bold;">未授权</span>
@@ -345,11 +345,11 @@
                     <div style="flex: 1;"></div>
                     <div class="inbox-col">
                         <span class="mini-title">圣诞箱中</span>
-                        <span class="inbox">{{ data['count']}}</span>
+                        <span class="inbox">{{ data['count'] }}</span>
                     </div>
                     <div class="in-port-col">
                         <span class="mini-title" style="color: #DF9B2D;">已拥有</span>
-                        <span class="in-port">{{ data['have']}}</span>
+                        <span class="in-port">{{ data['have'] }}</span>
                     </div>
                     <div style="flex: 1;"></div>
                 </div>
@@ -376,7 +376,7 @@
             <div class="box-info">
                 <span>概率：</span><span style="color: #E60000; font-weight: bold;">{{ dataMap['probability'] }}%</span>
                 <span>&nbsp;总船只：</span><span style="color: black; font-weight: bold;">{{ dataMap['count'] }}</span>
-                <span >&nbsp;已拥有：</span><span style="color: #92D050; font-weight: bold;">{{ dataMap['rare'] }}</span>
+                <span>&nbsp;已拥有：</span><span style="color: #92D050; font-weight: bold;">{{ dataMap['rare'] }}</span>
             </div>
             <div class="rare-info">
             {% for shipList in dataMap['data'] %}
@@ -386,12 +386,13 @@
                 {% if shipList['status'] == 1 %}
                     <div class="ship-item" style="color: black;">
                 {% endif %}
-                    <span class="level">{{ shipList['ship']['levelStr'] }}</span>&nbsp;
-                    <span class="ship-name">{{ shipList['ship']['nameCn'] }}</span>
-                </div>
-            {% endfor %}
+            <span class="level">{{ shipList['ship']['levelStr'] }}</span>&nbsp;
+            <span class="ship-name">{{ shipList['ship']['nameCn'] }}</span>
             </div>
+            {% endfor %}
+        </div>
         {% endfor %}
+        </div>
     </div>
 </div>
 <script>

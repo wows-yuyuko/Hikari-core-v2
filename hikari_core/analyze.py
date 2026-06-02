@@ -135,13 +135,13 @@ async def extract_with_function(hikari: Hikari_Model) -> Hikari_Model:  # noqa: 
                         hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
                         if hikari.Input.Server:
                             hikari.Input.AccountName = str(hikari.Input.Command_List[0])
-                            hikari.Input.ShipInfo.Ship_Name_Cn = str(hikari.Input.Command_List[1])
+                            hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[1])
                         else:
                             return hikari.error('服务器参数输入错误')
                     else:
                         return hikari.error('您似乎准备用服务器+昵称查询单船战绩，请检查参数是否缺少或溢出，以空格分隔，顺序不限')
                 elif len(hikari.Input.Command_List) == 1:
-                    hikari.Input.ShipInfo.Ship_Name_Cn = str(hikari.Input.Command_List[0])
+                    hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[0])
                 else:
                     return hikari.error('您似乎准备用me或@查询单船战绩，请检查参数是否缺少或溢出，以空格分隔，顺序不限')
         elif hikari.Function in [get_BindInfo, set_BindInfo, set_special_BindInfo, change_BindInfo, delete_BindInfo]:
@@ -193,22 +193,22 @@ async def extract_with_function(hikari: Hikari_Model) -> Hikari_Model:  # noqa: 
                 else:
                     return hikari.error('您似乎准备用游戏昵称查询，请检查参数中是否包含服务器和游戏昵称，以空格分隔，顺序不限')
         elif hikari.Function in [get_ship_name, roll_ship]:
-            hikari.Input.ShipInfo.Ship_Nation, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, nations)
-            if not hikari.Input.ShipInfo.Ship_Nation and hikari.Function == get_ship_name:
+            hikari.Input.ShipInfo.country, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, nations)
+            if not hikari.Input.ShipInfo.country and hikari.Function == get_ship_name:
                 return hikari.error('请检查国家名是否正确')
 
-            hikari.Input.ShipInfo.Ship_Type, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, shiptypes)
-            if not hikari.Input.ShipInfo.Ship_Type and hikari.Function == get_ship_name:
+            hikari.Input.ShipInfo.shipType, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, shiptypes)
+            if not hikari.Input.ShipInfo.shipType and hikari.Function == get_ship_name:
                 return hikari.error('请检查船只类别是否正确')
 
-            hikari.Input.ShipInfo.Ship_Tier, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, levels)
-            if not hikari.Input.ShipInfo.Ship_Tier and hikari.Function == get_ship_name:
+            hikari.Input.ShipInfo.level, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, levels)
+            if not hikari.Input.ShipInfo.level and hikari.Function == get_ship_name:
                 return hikari.error('请检查船只等级是否正确')
         elif hikari.Function in [get_ShipRank]:
             if len(hikari.Input.Command_List) == 2:
                 hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
                 if hikari.Input.Server:
-                    hikari.Input.ShipInfo.Ship_Name_Cn = str(hikari.Input.Command_List[0])
+                    hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[0])
                 else:
                     return hikari.error('服务器名输入错误')
             else:

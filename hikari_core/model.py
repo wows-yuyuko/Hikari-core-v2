@@ -1,6 +1,6 @@
 import time
 import os
-from typing import List, Optional, Protocol, Union, runtime_checkable
+from typing import List, Optional, Protocol, Union, runtime_checkable, Any
 
 from pydantic import BaseModel, Field
 
@@ -18,19 +18,18 @@ class UserInfo_Model(BaseModel):
     PlatformId: str = '2622749113'
     GroupId: Optional[str] = None
 
+class ShipInfo(dict):
+    """支持属性访问的字典"""
 
-class Ship_Model(BaseModel):
-    Ship_Server_Type: Optional[str] = None
-    Ship_Nation: Optional[str] = None
-    Ship_Tier: Optional[int] = None
-    Ship_Type: Optional[str] = None
-    Ship_Name_Cn: Optional[str] = None
-    Ship_Name_Cn360: Optional[str] = None
-    Ship_Name_English: Optional[str] = None
-    ship_Name_Numbers: Optional[str] = None
-    ship_Name_Ru: Optional[str] = None
-    Ship_Id: Optional[int] = None
+    def __getattr__(self, name):
+        return self.get(name)
 
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def __deepcopy__(self, memo):
+        """支持深度复制"""
+        return ShipInfo(self.copy())
 
 class Input_Model(BaseModel):
     Command_Text: Optional[str] = ''  # 输入的指令,请提前去除wws
@@ -48,7 +47,7 @@ class Input_Model(BaseModel):
     Recent_Date: Optional[str] = time.strftime('%Y-%m-%d', time.localtime())
     Select_Index: Optional[int] = None
     Select_Data: Optional[List] = None
-    ShipInfo: Ship_Model = Ship_Model()
+    ShipInfo: Any = Field(default_factory=ShipInfo)
 
 
 class Output_Model(BaseModel):

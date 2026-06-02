@@ -22,7 +22,7 @@ from ..HttpClient_Pool import (
     recreate_client_wg,
     recreate_client_yuyuko,
 )
-from ..model import Hikari_Model, Ship_Model
+from ..model import Hikari_Model, ShipInfo
 
 
 async def get_nation_list(hikari: Hikari_Model):
@@ -47,10 +47,10 @@ async def get_ship_name(hikari: Hikari_Model):
     msg = ''
     try:
         params = {
-            'country': hikari.Input.ShipInfo.Ship_Nation,
-            'level': hikari.Input.ShipInfo.Ship_Tier,
+            'country': hikari.Input.ShipInfo.country,
+            'level': hikari.Input.ShipInfo.level,
             'shipName': '',
-            'shipType': hikari.Input.ShipInfo.Ship_Type,
+            'shipType': hikari.Input.ShipInfo.shipType,
             'groupType': 'default',
         }
         url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
@@ -73,9 +73,9 @@ async def get_ship_name(hikari: Hikari_Model):
         logger.error(traceback.format_exc())
         return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
 
-async def find_ship_name(hikari: Hikari_Model):
+async def get_ship_byName(hikari: Hikari_Model) -> List:
     try:
-        ship_name = hikari.Input.ShipInfo.Ship_Name_Cn
+        ship_name = hikari.Input.ShipInfo.nameCn
         ship_name_select_index = None
         result = ship_name.split('.')
         if len(result) == 2 and result[1].isdigit():
@@ -86,65 +86,25 @@ async def find_ship_name(hikari: Hikari_Model):
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = orjson.loads(resp.content)
-        if result['code'] == 200 and result['data']:
+        if result.get('code') == 200 and result.get('data'):
             code_data = result['data']
-            if ship_name_select_index and ship_name_select_index <= len(code_data):
-                return code_data[ship_name_select_index - 1]
-            else:
-                return code_data
-        else:
-            return None
-    except PoolTimeout:
-        await recreate_client_yuyuko()
-        return
-    except Exception:
-        return None
+            # 转换为 ShipInfo 对象列表
+            ship_list = []
+            for ship_dict in code_data:
+                ship_list.append(ShipInfo(ship_dict))
+            # 如果指定了序号选择
+            if ship_name_select_index and ship_name_select_index <= len(ship_list):
+                return [ship_list[ship_name_select_index - 1]]
 
-async def get_ship_byName(hikari: Hikari_Model) -> List:
-    try:
-        shipname = hikari.Input.ShipInfo.Ship_Name_Cn
-        shipname_select_index = None
-        result = shipname.split('.')
-        if len(result) == 2 and result[1].isdigit():
-            shipname = result[0]
-            shipname_select_index = int(result[1])
-        url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
-        params = {'country': '', 'level': '', 'shipName': shipname, 'shipType': '', 'groupType': 'default'}
-        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=20)
-        result = orjson.loads(resp.content)
-        List, select_List = [], []
-        if result['code'] == 200 and result['data']:
-            for each in result['data']:
-                List.append(
-                    Ship_Model(
-                        Ship_Server_Type=each['serverType'],
-                        Ship_Nation=each['country'],
-                        Ship_Tier=each['level'],
-                        Ship_Type=each['shipType'],
-                        Ship_Name_Cn=each['nameCn'],
-                        Ship_Name_Cn360=each['nameCn360'],
-                        Ship_Name_English=each['nameEnglish'],
-                        ship_Name_Numbers=each['nameNumbers'],
-                        ship_Name_Ru=each['nameRu'],
-                        Ship_Id=each['shipId'],
-                    )
-                )
-            if shipname_select_index and shipname_select_index <= len(List):
-                select_List.append(List[shipname_select_index - 1])
-                return select_List
-            else:
-                return List
+            return ship_list
         else:
-            return None
-    except (TimeoutError, ConnectTimeout):
-        logger.warning(traceback.format_exc())
+            return []
     except PoolTimeout:
         await recreate_client_yuyuko()
-        return
+        return []
     except Exception:
-        logger.error(traceback.format_exc())
-        return None
+        return []
+
 
 
 async def get_all_shipList(hikari: Hikari_Model):
@@ -259,81 +219,4 @@ async def get_wg_info(params, key, url):
         return
     except Exception:
         logger.error(f'wg请求异常,请配置代理后尝试,上报url：{url}')
-        return
-
-
-async def get_MyShipRank_yuyuko(hikari: Hikari_Model, params) -> int:
-    try:
-        url = f'{hikari_config.yuyuko_url}/api/upload/numbers/data/upload/user/ship/rank'
-        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=5)
-        result = orjson.loads(resp.content)
-        if result['code'] == 200 and result['data']:
-            if result['data']['ranking']:
-                return result['data']['ranking']
-            elif not result['data']['ranking'] and not result['data']['serverId'] == 'cn':
-                ranking = await get_MyShipRank_Numbers(result['data']['httpUrl'], result['data']['serverId'])
-                if ranking:
-                    await post_MyShipRank_yuyuko(
-                        hikari,
-                        result['data']['accountId'],
-                        ranking,
-                        result['data']['serverId'],
-                        result['data']['shipId'],
-                    )
-                return ranking
-            else:
-                return None
-        else:
-            return None
-    except PoolTimeout:
-        await recreate_client_yuyuko()
-        return None
-    except Exception:
-        logger.error(traceback.format_exc())
-        return None
-
-
-async def get_MyShipRank_Numbers(url, server) -> int:
-    try:
-        data = None
-        client_default = await get_client_default()
-        resp = await client_default.get(url, timeout=20)
-        if resp.content:
-            result = orjson.loads(resp.content)
-            page_url = str(result['url']).replace('\\', '')
-            nickname = str(result['nickname'])
-            my_rank_url = f'{number_url_homes[server]}{page_url}'
-            resp = await client_default.get(my_rank_url, timeout=20)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            data = soup.select_one(f'tr[data-nickname="{nickname}"]').select_one('td').string
-        if data and data.isdigit():
-            return data
-        else:
-            return None
-    except PoolTimeout:
-        await recreate_client_default()
-        return None
-    except Exception:
-        logger.error(traceback.format_exc())
-        return None
-
-
-async def post_MyShipRank_yuyuko(hikari: Hikari_Model, accountId, ranking, serverId, shipId):
-    try:
-        url = f'{hikari_config.yuyuko_url}/api/upload/numbers/data/upload/user/ship/rank'
-        post_data = {
-            'accountId': int(accountId),
-            'ranking': int(ranking),
-            'serverId': serverId,
-            'shipId': int(shipId),
-        }
-        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        await client_yuyuko.post(url, json=post_data, timeout=20)
-        return
-    except PoolTimeout:
-        await recreate_client_yuyuko()
-        return
-    except Exception:
-        logger.error(traceback.format_exc())
         return

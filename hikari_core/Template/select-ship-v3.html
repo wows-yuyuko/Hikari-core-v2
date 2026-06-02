@@ -134,26 +134,26 @@
         {% for ship in data %}
             <tr>
                 <td class="center-align center-align-index"></td>
-                <td class="center-align">{{ ship['Ship_Server_Type'] }}</td>
+                <td class="center-align">{{ ship['serverType'] }}</td>
                 <td>
                     <div class="img-text-wrapper">
-                        <span class="ship-level-v2">{{ ship['Ship_Tier'] }}</span>
-                        {% if ship['Ship_Type'] == 'Destroyer' %}
+                        <span class="ship-level-v2">{{ ship['levelStr'] }}</span>
+                        {% if ship['shipType'] == 'Destroyer' %}
                             <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_destroyer.png">
-                        {% elif ship['Ship_Type'] == 'Cruiser' %}
+                        {% elif ship['shipType'] == 'Cruiser' %}
                             <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_cruiser.png">
-                        {% elif ship['Ship_Type'] == 'Battleship' %}
+                        {% elif ship['shipType'] == 'Battleship' %}
                             <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_battleship.png">
-                        {% elif ship['Ship_Type'] == 'AirCarrier' %}
+                        {% elif ship['shipType'] == 'AirCarrier' %}
                             <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_aircarrier.png">
-                        {% elif ship['Ship_Type'] == 'Submarine' %}
+                        {% elif ship['shipType'] == 'Submarine' %}
                             <img src="https://hikari-resource.oss-cn-shanghai.aliyuncs.com/shipType_Icon/icon_sunk_submarine.png">
                         {% endif %}
                     </div>
                 </td>
-                <td class="center-align">{{ ship['Ship_Name_Cn'] }}</td>
-                <td class="center-align">{{ ship['Ship_Name_Cn360'] }}</td>
-                <td class="center-align">{{ ship['ship_Name_Ru'] }}</td>
+                <td class="center-align">{{ ship['nameCn'] }}</td>
+                <td class="center-align">{{ ship['nameCn360'] }}</td>
+                <td class="center-align">{{ ship['nameEnglish'] }}</td>
             </tr>
         {% endfor %}
 
@@ -180,14 +180,6 @@
         } else if (i%2 == 0) {
             arr_information[i].style.backgroundColor = "#E4E4E4";
         }
-    }
-</script>
-<script>
-    let ship_level_doc = document.getElementsByClassName('ship-level-v2');
-    let level_number = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
-    let level_roma = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "★"];
-    for(let k=0;k<ship_level_doc.length;k++) {
-        ship_level_doc[k].innerText = level_roma[level_number.indexOf(ship_level_doc[k].innerText)];
     }
 </script>
 </html>
