@@ -175,28 +175,3 @@ def find_and_modify_shipinfo(data, target_key="shipInfo"):
 
     recursive_modify(data)
     return data
-
-# logger.add(
-#    'hikari-core-logs/error.log',
-#    rotation='00:00',
-#    retention='1 week',
-#    diagnose=False,
-#    level='ERROR',
-#    encoding='utf-8',
-# )
-# logger.add(
-#    'hikari-core-logs/info.log',
-#    rotation='00:00',
-#    retention='1 week',
-#    diagnose=False,
-#    level='INFO',
-#    encoding='utf-8',
-# )
-# logger.add(
-#    'hikari-core-logs/warning.log',
-#    rotation='00:00',
-#    retention='1 week',
-#    diagnose=False,
-#    level='WARNING',
-#    encoding='utf-8',
-# )

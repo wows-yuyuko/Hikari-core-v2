@@ -15,6 +15,7 @@ class UserInfo_Model(BaseModel):
     PlatformId: str = '2622749113'
     GroupId: Optional[str] = None
 
+
 class ShipInfo(dict):
     """支持属性访问的字典"""
 
@@ -28,9 +29,10 @@ class ShipInfo(dict):
         """支持深度复制"""
         return ShipInfo(self.copy())
 
+
 class Input_Model(BaseModel):
-    Command_Text: Optional[str] = ''  # 输入的指令,请提前去除wws
-    Command_List: Optional[List] = None
+    Command_Text: str = Field(default='', description='输入的指令,请提前去除wws') # 输入的指令,请提前去除wws
+    Command_List: List[str] = Field(default_factory=list)
     Search_Type: Optional[int] = 3  # 1:me  2:@  3:server+name or default
     Platform: Optional[str] = None
     PlatformId: Optional[str] = None
@@ -49,8 +51,8 @@ class Input_Model(BaseModel):
 
 class Output_Model(BaseModel):
     Yuyuko_Code: Optional[int] = None
-    Data_Type: str = Field('str', description='返回的类型')
-    Data: Union[str, int, bytes] = Field('初始化', description='返回的数据')
+    Data_Type: str = Field(default='', description='返回的数据类型')
+    Data: Union[str, int, bytes, List[Any]] = Field(default=None, description='返回的数据')
     Template: Optional[str] = None
     Width: Optional[int] = None
     Height: Optional[int] = None
@@ -58,7 +60,7 @@ class Output_Model(BaseModel):
 
 class Hikari_Model(BaseModel):
     Status: str = 'init'  # init:初始化 success:请求成功  failed:请求成功但API有错误或空返回  error:异常及本地错误
-    StatusText: Optional[str] = 'init' # 默认走图片渲染模式
+    StatusText: Optional[str] = 'init'  # 默认走图片渲染模式
     UserInfo: UserInfo_Model = UserInfo_Model()
     Function: Optional[Func] = None
     template_content: str = ''
