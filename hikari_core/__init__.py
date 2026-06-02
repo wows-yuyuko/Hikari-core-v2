@@ -69,7 +69,7 @@ async def callback_hikari(hikari: Hikari_Model) -> Hikari_Model:
         Hikari_Model: 可通过Hikari.Status和Hikari.Output.Data内数据判断是否输出
     """
     try:
-        if not hikari.Status == 'wait':
+        if hikari.Status != 'wait':
             return hikari.error('当前请求状态错误，请确认是否为wait')
         if not hikari.Function:
             return hikari.error('缺少请求方法')
