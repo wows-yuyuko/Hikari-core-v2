@@ -73,6 +73,32 @@ async def get_ship_name(hikari: Hikari_Model):
         logger.error(traceback.format_exc())
         return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
 
+async def find_ship_name(hikari: Hikari_Model):
+    try:
+        ship_name = hikari.Input.ShipInfo.Ship_Name_Cn
+        ship_name_select_index = None
+        result = ship_name.split('.')
+        if len(result) == 2 and result[1].isdigit():
+            ship_name = result[0]
+            ship_name_select_index = int(result[1])
+        url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
+        params = {'country': '', 'level': '', 'shipName': ship_name, 'shipType': '', 'groupType': 'default'}
+        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
+        resp = await client_yuyuko.get(url, params=params, timeout=20)
+        result = orjson.loads(resp.content)
+        if result['code'] == 200 and result['data']:
+            code_data = result['data']
+            if ship_name_select_index and ship_name_select_index <= len(code_data):
+                return code_data[ship_name_select_index - 1]
+            else:
+                return code_data
+        else:
+            return None
+    except PoolTimeout:
+        await recreate_client_yuyuko()
+        return
+    except Exception:
+        return None
 
 async def get_ship_byName(hikari: Hikari_Model) -> List:
     try:

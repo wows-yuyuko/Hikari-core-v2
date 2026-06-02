@@ -21,6 +21,7 @@ _client_default: AsyncClient = None
 
 async def create_client_yuyuko() -> AsyncClient:
     global _client_yuyuko
+    # base数据支持 添加 Base64UserInfoImg
     _client_yuyuko = httpx.AsyncClient(
         headers={
             'Authorization': hikari_config.token,

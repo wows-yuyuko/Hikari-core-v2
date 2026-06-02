@@ -1,419 +1,181 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
-<head>
-    <meta charset="utf-8">
-    <title></title>
-</head>
-<style>
-    * {
-        padding: 0;
-        margin: 0;
-    }
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<link rel="stylesheet" href="css.css" />
+	</head>
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+		}
 
-    body {
-        width: 1300px;
-        font-family: "Microsoft YaHei", sans-serif;
-        font-weight: bold;
-        background: linear-gradient(180deg, #0f0f1a 0%, #1a1a30 50%, #141428 100%);
-        color: #e0e0e0;
-    }
+		.flex-2 {
+			flex: 2;
+		}
 
-    .page-box {
-        width: 1300px;
-        display: flex;
-        flex-direction: column;
-        padding-bottom: 30px;
-    }
+		.flex-3 {
+			flex: 3;
+		}
 
-    /* ===== Title Header ===== */
-    .title-header {
-        text-align: center;
-        height: 110px;
-        line-height: 110px;
-        font-size: 50px;
-        margin-bottom: 25px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
+		.flex-5 {
+			flex: 5;
+		}
 
-    .ship-tier {
-        display: inline-block;
-        width: 68px;
-        height: 68px;
-        line-height: 68px;
-        background: linear-gradient(135deg, #ffd700, #ffaa00);
-        color: #1a1a2e;
-        border-radius: 14px;
-        font-size: 36px;
-        margin-right: 14px;
-        vertical-align: middle;
-    }
+		.flex-10 {
+			flex: 10;
+		}
 
-    .ship-name {
-        display: inline-block;
-        color: #ffffff;
-        vertical-align: middle;
-    }
+		.main-content {
+			width: 2160px;
+			font-size: 30px;
+			font-family: 'Microsoft YaHei';
+			font-family: "Microsoft YaHei";
+			font-weight: bold;
+		}
 
-    /* ===== Rank List ===== */
-    .rank-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin: 0 30px;
-    }
+		.page-box {
+			width: 2160px;
+			display: flex;
+			flex-direction: column;
+		}
 
-    /* ===== Top 10 Rank Row ===== */
-    .rank-row {
-        display: flex;
-        align-items: stretch;
-        height: 90px;
-        border-radius: 16px;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-    }
+		.ship-level {
+			display: inline-block;
+			text-align: center;
+			margin-right: 60px;
+		}
 
-    .rank-row.rank-1 {
-        border-color: rgba(255, 215, 0, 0.5);
-        box-shadow: 0 0 18px rgba(255, 215, 0, 0.12);
-    }
+		.ship-name {
+			display: inline-block;
+		}
 
-    .rank-row.rank-2 {
-        border-color: rgba(192, 192, 192, 0.35);
-        box-shadow: 0 0 14px rgba(192, 192, 192, 0.08);
-    }
+		.page-header {
+			text-align: center;
+			font-size: 55px;
+			height: 120px;
+			line-height: 120px;
+		}
 
-    .rank-row.rank-3 {
-        border-color: rgba(205, 127, 50, 0.35);
-        box-shadow: 0 0 14px rgba(205, 127, 50, 0.08);
-    }
 
-    .player-section {
-        flex: 0 0 530px;
-        display: flex;
-        align-items: center;
-        padding: 5px;
-        gap: 10px;
-    }
+		.rank-header {
+			margin: 0px 50px;
+			display: flex;
+			text-align: center;
+			color: #008272;
+			font-weight: normal;
+			height: 100px;
+			line-height: 100px;
+			border-bottom: #008272 solid 5px;
+		}
 
-    .player-glass {
-        display: flex;
-        align-items: center;
-        flex: 1;
-        height: 100%;
-        border-radius: 12px;
-        padding: 0 10px;
-        gap: 12px;
-        background-position: center;
-        background-size: cover;
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        border: 1px solid rgba(220, 230, 255, 0.25);
-        position: relative;
-        isolation: isolate;
-    }
+		.rank-header .hest-frag,
+		.rank-header .ar-frag,
+		.rank-header .max-ar-frag {
+			line-height: 50px;
+		}
 
-    /* 遮罩层：有背景图时覆盖一层暗色半透明底，确保文字清晰 */
-    .player-glass.has-banner::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.35);
-        z-index: -1;
-    }
+		.rank-item {
+			margin: 0px 50px;
+			display: flex;
+			text-align: center;
+			height: 80px;
+			line-height: 80px;
+		}
+		.player-name {
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+		}
+		.footer {
+			margin-top: 30px;
+			text-align: center;
+			font-weight: bold;
+			font-size: 24px;
+			color: #909399;
+			margin-bottom: 20px;
+		}
+	</style>
+	<body>
+		<div class="main-content">
+			<div class="page-box">
+				<div class="page-header">
+					<div class="ship-level">
+						{{ data['shipInfo']['Ship_Tier'] }}
+					</div>
+					<div class="ship-name">
+						{{ data['shipInfo']['Ship_Name_Cn'] }}
+					</div>
+				</div>
+				<div class="rank-header">
+					<div class="ranks flex-2 col">排名</div>
+					<div class="player-name flex-10 col">ID</div>
+					<div class="battles flex-2 col">场次</div>
+					<div class="pr flex-3 col">PR</div>
+					<div class="wins flex-3 col">胜率</div>
+					<div class="frag flex-2 col">击杀</div>
+					<div class="hest-frag flex-2 col">最多击杀</div>
+					<div class="avg-dmg flex-5 col">场均</div>
+					<div class="max-dmg flex-5 col">最大伤害</div>
+					<div class="xp flex-3 col">经验</div>
+					<div class="max-xp flex-3 col">最大经验</div>
+					<div class="ar-frag flex-2 col">击落飞机</div>
+					<div class="max-ar-frag flex-2 col">最大击落</div>
+				</div>
+				{% for rank in data['data'] %}
+				<div class="rank-item">
+					{% if rank['index'] %}
+					<div class="ranks flex-2 col">{{ rank['index'] }}</div>
+					{% else %}
+					<div class="ranks flex-2 col">{{ rank['sortValue'] }}</div>
+					{% endif %}
+					{% if rank['tag'] != null %}
+					<div class="player-name flex-10 col">[{{ rank['tag'] }}]{{ rank['userName'] }}</div>
+					{% else %}
+					<div class="player-name flex-10 col">{{ rank['userName'] }}</div>
+					{% endif %}
+					<div class="battles flex-2 col">{{ rank['battles'] }}</div>
+					<div class="pr flex-3 col" style="color: {{ rank['prColor'] }};">{{ rank['pr'] }}</div>
+					<div class="wins flex-3 col" style="color: {{ rank['winsColor'] }};">{{ rank['wins'] }}%</div>
+					<div class="frag flex-2 col" style="color: {{ rank['fragsColor'] }};">{{ rank['frags'] }}</div>
+					<div class="hest-frag flex-2 col">{{ rank['maxFrags'] }}</div>
+					<div class="avg-dmg flex-5 col" style="color: {{ rank['damageColor'] }};">{{ rank['damage'] }}</div>
+					<div class="max-dmg flex-5 col">{{ rank['maxDamage'] }}</div>
+					<div class="xp flex-3 col">{{ rank['xp'] }}</div>
+					<div class="max-xp flex-3 col">{{ rank['maxXp'] }}</div>
+					<div class="ar-frag flex-2 col" style="color: {{ rank['planesDestroyedColor'] }};">{{ rank['planesDestroyed'] }}</div>
+					<div class="max-ar-frag flex-2 col">{{ rank['maxPlanesDestroyed'] }}</div>
+				</div>
+				{% endfor %}
+				
+				<div class="footer">
+					<p>©西行寺雨季&nbsp;&nbsp;©本心</p>
+					<p>频道搜索”yuyuko”即可使用稳定的腾讯官方机器人~</p>
+					<p>Design By 冷眠 H5 Converted By C1ystal</p>
+					<p>赞助鸣谢：科长、男人们的定远号、海上最速暴毙传说</p>
+				</div>
 
-    .rank-badge {
-        flex-shrink: 0;
-        width: 56px;
-        height: 56px;
-        line-height: 56px;
-        text-align: center;
-        border-radius: 14px;
-        font-size: 24px;
-        font-weight: bold;
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.6);
-    }
-
-    .rank-row.rank-1 .rank-badge {
-        background: linear-gradient(135deg, #ffd700, #ffb300);
-        color: #1a1a2e;
-        font-size: 16px;
-        box-shadow: 0 0 14px rgba(255, 215, 0, 0.3);
-    }
-
-    .rank-row.rank-2 .rank-badge {
-        background: linear-gradient(135deg, #e8e8e8, #b0b0b0);
-        color: #1a1a2e;
-        font-size: 16px;
-        box-shadow: 0 0 10px rgba(192, 192, 192, 0.25);
-    }
-
-    .rank-row.rank-3 .rank-badge {
-        background: linear-gradient(135deg, #e0a060, #b87333);
-        color: #fff;
-        font-size: 16px;
-        box-shadow: 0 0 10px rgba(205, 127, 50, 0.25);
-    }
-
-    .player-avatar {
-        width: 62px;
-        height: 62px;
-        border-radius: 14px;
-        background-position: center;
-        background-size: cover;
-        flex-shrink: 0;
-        background-color: #2a2a3e;
-        filter: drop-shadow(4px 4px 6px rgba(0, 0, 0, 0.3));
-        box-shadow: 0 0 6px rgba(72, 72, 72, 0.4);
-    }
-
-    .player-name {
-        font-weight: bolder;
-        font-size: 20px;
-        color: #fff;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        flex-grow: 1;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-    }
-
-    .player-glass .player-avatar,
-    .player-glass .player-name {
-        z-index: 1;
-        position: relative;
-    }
-
-    .stats-section {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        padding: 0 15px;
-    }
-
-    .stat-col {
-        flex: 1;
-        text-align: center;
-    }
-
-    .stat-label {
-        font-size: 14px;
-        color: rgba(255, 255, 255, 0.45);
-        margin-bottom: 2px;
-    }
-
-    .stat-value {
-        font-size: 24px;
-        color: #fff;
-    }
-
-    /* ===== Compact Row (11-30) ===== */
-    .rank-list-compact {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin: 0 30px;
-    }
-
-    .rank-row-compact {
-        display: flex;
-        align-items: center;
-        height: 46px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        padding: 0 10px;
-        gap: 10px;
-    }
-
-    .rank-row-compact:nth-child(odd) {
-        background: rgba(255, 255, 255, 0.04);
-    }
-
-    .rank-row-compact .compact-badge {
-        flex-shrink: 0;
-        width: 28px;
-        text-align: center;
-        font-size: 16px;
-        color: rgba(255, 255, 255, 0.4);
-    }
-
-    .rank-row-compact .compact-avatar {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background-position: center;
-        background-size: cover;
-        flex-shrink: 0;
-        background-color: #2a2a3e;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .rank-row-compact .compact-name {
-        flex: 1;
-        font-size: 16px;
-        color: #ccc;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .rank-row-compact .compact-stats {
-        flex: 0 0 480px;
-        display: flex;
-        text-align: center;
-    }
-
-    .rank-row-compact .compact-stat {
-        flex: 1;
-        font-size: 16px;
-        color: #bbb;
-    }
-
-    .section-title {
-        margin: 25px 30px 10px;
-        font-size: 22px;
-        color: rgba(255, 255, 255, 0.35);
-        padding-left: 10px;
-        border-left: 3px solid rgba(255, 215, 0, 0.4);
-    }
-
-    /* ===== Footer ===== */
-    .footer {
-        margin-top: 35px;
-        text-align: center;
-        font-size: 20px;
-        color: rgba(255, 255, 255, 0.25);
-    }
-
-    .footer p {
-        margin-bottom: 4px;
-    }
-</style>
-<body>
-<div class="page-box">
-    <div class="title-header">
-        <div class="ship-tier">
-            {{ data['shipInfo']['Ship_Tier'] }}
-        </div>
-        <div class="ship-name">
-            {{ data['shipInfo']['Ship_Name_Cn'] }}
-        </div>
-    </div>
-
-    {% set rank_list = data['data']['value'] %}
-
-    {% if rank_list %}
-    <!-- Top 10 -->
-    <div class="rank-list">
-        {% for rank in rank_list[:10] %}
-        {% set rank_num = loop.index %}
-        <div class="rank-row {% if rank_num == 1 %}rank-1{% elif rank_num == 2 %}rank-2{% elif rank_num == 3 %}rank-3{% endif %}">
-            <div class="player-section">
-                <div class="rank-badge">
-                    {% if rank_num == 1 %}1st
-                    {% elif rank_num == 2 %}2nd
-                    {% elif rank_num == 3 %}3rd
-                    {% else %}{{ rank_num }}
-                    {% endif %}
-                </div>
-                <div class="player-glass {% if rank['userInfo']['avatar']['banner']['status'] > 0 %}has-banner{% endif %}"
-                     {% if rank['userInfo']['avatar']['banner']['status'] > 0 %}
-                     style="background-image: url('{{ rank['userInfo']['avatar']['banner']['data'] }}');"
-                     {% endif %}
-                >
-                    <div class="player-avatar"
-                         {% if rank['userInfo']['avatar']['avatar']['status'] == 2 %}
-                         style="background-image: url('{{ rank['userInfo']['avatar']['avatar']['data'] }}');"
-                         {% else %}
-                         style="background-image: url('{{ rank['userInfo']['dogTag'] }}');"
-                         {% endif %}
-                    ></div>
-                    <div class="player-name">
-                        {% if rank['userInfo']['clanInfo']['tag'] %}
-                        <span style="color: {{ rank['userInfo']['clanInfo']['color'] }}; font-size: 16px;">[{{ rank['userInfo']['clanInfo']['tag'] }}]</span>
-                        {% endif %}
-                        {{ rank['userInfo']['userName'] }}
-                    </div>
-                </div>
-            </div>
-            <div class="stats-section">
-                <div class="stat-col">
-                    <div class="stat-label">场次</div>
-                    <div class="stat-value">{{ rank['battle'] }}</div>
-                </div>
-                <div class="stat-col">
-                    <div class="stat-label">场均</div>
-                    <div class="stat-value" style="color: {{ rank['damageColor']['color'] }};">{{ rank['damage'] }}</div>
-                </div>
-                <div class="stat-col">
-                    <div class="stat-label">胜率</div>
-                    <div class="stat-value" style="color: {{ rank['winsColor']['color'] }};">{{ '%.1f' | format(rank['wins']) }}%</div>
-                </div>
-                <div class="stat-col">
-                    <div class="stat-label">PR</div>
-                    <div class="stat-value" style="color: {{ rank['pr']['color'] }};">{{ rank['pr']['value'] }}</div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- Rank 11-30 -->
-    {% if rank_list|length > 10 %}
-{#    <div class="section-title">排行榜 11-30</div>#}
-    <div class="rank-list-compact">
-        {% for rank in rank_list[10:30] %}
-        <div class="rank-row-compact">
-            <div class="compact-badge">{{ rank['sortIndex'] }}</div>
-            <div class="compact-avatar"
-                 {% if rank['userInfo']['avatar']['avatar']['status'] == 2 %}
-                 style="background-image: url('{{ rank['userInfo']['avatar']['avatar']['data'] }}');"
-                 {% else %}
-                 style="background-image: url('{{ rank['userInfo']['dogTag'] }}');"
-                 {% endif %}
-            ></div>
-            <div class="compact-name">
-                {% if rank['userInfo']['clanInfo']['tag'] %}
-                <span style="color: {{ rank['userInfo']['clanInfo']['color'] }};">[{{ rank['userInfo']['clanInfo']['tag'] }}]</span>
-                {% endif %}
-                {{ rank['userInfo']['userName'] }}
-            </div>
-            <div class="compact-stats">
-                <div class="compact-stat">{{ rank['battle'] }}</div>
-                <div class="compact-stat" style="color: {{ rank['damageColor']['color'] }};">{{ rank['damage'] }}</div>
-                <div class="compact-stat" style="color: {{ rank['winsColor']['color'] }};">{{ '%.1f' | format(rank['wins']) }}%</div>
-                <div class="compact-stat" style="color: {{ rank['pr']['color'] }};">{{ rank['pr']['value'] }}</div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endif %}
-
-    <div class="footer">
-        <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>
-        <p>github:wows-yuyuko</p>
-    </div>
-</div>
-
-<script>
-    (function () {
-        var levelNumber = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
-        var levelRoma = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "★"];
-        var tierEl = document.querySelector('.ship-tier');
-        if (tierEl) {
-            var idx = levelNumber.indexOf(tierEl.innerText.trim());
-            if (idx >= 0) {
-                tierEl.innerText = levelRoma[idx];
-            }
-        }
-    })();
-</script>
-</body>
+				<div style="margin: 0 50px; border-bottom: #008272 solid 5px; margin-bottom:20px;"></div>
+			</div>
+		</div>
+	</body>
+	
+	<script>
+		let ship_level_doc = document.getElementsByClassName('ship-level');
+		let level_number = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
+		let level_roma = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "★"];
+		for(let k=0;k<ship_level_doc.length;k++) {
+			ship_level_doc[k].innerText = level_roma[level_number.indexOf(ship_level_doc[k].innerText)];
+		}
+	</script>
+	
+	<script>
+		let arr_information = document.getElementsByClassName('rank-item');
+		for(let i=0;i<arr_information.length;i++) {
+			if(i%2 == 0) {
+				arr_information[i].style.backgroundColor = "#E4E4E4";
+			}
+		}
+	</script>
 </html>

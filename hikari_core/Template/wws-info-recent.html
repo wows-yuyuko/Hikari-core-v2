@@ -48,21 +48,19 @@
 <body>
 <div class="main-content">
     <div class="page-box">
-
         <div class="page-header">
             <div class="masking-header">
                 <div class="avatar-header"></div>
                 <div class="clan-user-server">
                     <div class="user-info ">
-                        {#                    是否有工会#}
+                        {#是否有工会#}
                         {% if data['userInfo']['clanInfo']['tag'] %}
                             <span style="color: {{ data['userInfo']['clanInfo']['color'] }};">[{{ data['userInfo']['clanInfo']['tag'] }}]</span>
                         {% endif %}
                         <span class="mirage-text">{{ data['userInfo']['userName'] }}</span></div>
-                    <div class="user-sign-time">注册时间: <span
-                            class="server-style">{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(int(abs(data['userInfo']['accountCreateTime'])))) }}</span>
+                    <div class="user-sign-time">注册时间: {{ time.strftime('%Y-%m-%d %H:%M',time.localtime(int(abs(data['userInfo']['accountCreateTime'])))) }}
                     </div>
-                    <div class="user-server">服务器: <span class="server server-style">{{ data['userInfo']['serverCn'] }}</span></div>
+                    <div class="user-server">服务器: {{ data['userInfo']['serverCn'] }} / {{ data['userInfo']['accountId'] }}</div>
                     {% if data['userInfo']['avatar']['sign']['status'] == 2 %}
                         <div class="user-signature">
                             {{ data['userInfo']['avatar']['sign']['data'] }}

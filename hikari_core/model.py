@@ -15,7 +15,7 @@ class Func(Protocol):
 
 class UserInfo_Model(BaseModel):
     Platform: str = 'QQ'
-    PlatformId: str = '1119809439'
+    PlatformId: str = '2622749113'
     GroupId: Optional[str] = None
 
 

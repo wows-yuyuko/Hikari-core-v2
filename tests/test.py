@@ -15,12 +15,12 @@ async def start():
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
                       game_path='')
-    await command('测试监控', False)
+    # await command('测试监控', False)
     # await command('asia wose_sinus', False)
     # await command('cn 用户＿11451414514 recent 90', False)
+    # await command('me ship 大', False)
+    # await command('战舰排行榜 cn 大和', False)
     await command('me ship 大', False)
-    # await command('me', False)
-    # await command('wws me recent 7', False)
     # await command("公会战记录 cn 团子大家族 25", False)
     # await command("wws查询绑定 me", True)
     # await command("me sx", False)
@@ -38,7 +38,7 @@ async def command(command_text: str, is_err: bool):
         await output_with_check_type(hikari_data, command_text)
     elif hikari_data.Status == 'wait':
         await output_with_check_type(hikari_data, command_text + 'select')
-        hikari_data.Input.Select_Index = 2
+        hikari_data.Input.Select_Index = 1
         hikari_data = await callback_hikari(hikari_data)
         await output_with_check_type(hikari_data, command_text)
     elif hikari_data.Status in ['error', 'failed']:
