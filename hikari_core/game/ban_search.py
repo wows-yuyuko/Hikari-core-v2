@@ -7,6 +7,7 @@ from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
 from ..moudle.publicAPI import get_AccountIdByName
 from ..moudle.wws_bind import get_DefaultBindInfo
+from ..template_registry import Templates
 
 
 @handle_yuyuko_errors()
@@ -34,10 +35,10 @@ async def get_BanInfo(hikari: Hikari_Model) -> Hikari_Model:
     result = orjson.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
-        hikari = hikari.set_template_info('wws-ban.html', 900, 100)
+        hikari = Templates.WWS_BAN.apply_to(hikari)
         return hikari.success(result['data'])
     elif result['code'] == 404 and result['data']:
-        hikari = hikari.set_template_info('wws-unban.html', 900, 100)
+        hikari = Templates.WWS_UNBAN.apply_to(hikari)
         return hikari.success(result['data'])
     else:
         return hikari.failed(f"{result['message']}")

@@ -16,6 +16,7 @@ from ..HttpClient_Pool import get_client_default
 from ..data_source import __version__, template_path
 from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
+from ..template_registry import Templates
 
 executor = ThreadPoolExecutor()
 
@@ -33,7 +34,7 @@ async def get_help(hikari: Hikari_Model):
     result = resp.text
     result = f"""帮助列表                                                当前版本{__version__}  最新版本{latest_version}\n{result}"""
     data = {'text': result}
-    hikari = hikari.set_template_info('text.html', 800, 10)
+    hikari = Templates.TEXT.apply_to(hikari)
     return hikari.success(data)
 
 

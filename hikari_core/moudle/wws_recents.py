@@ -5,6 +5,7 @@ from ..config import hikari_config
 from ..HttpClient_Pool import get_client_yuyuko
 from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
+from ..template_registry import Templates
 from .publicAPI import get_AccountIdByName
 
 # from nonebot_plugin_htmlrender import html_to_pic
@@ -43,7 +44,7 @@ async def get_RecentsInfo(hikari: Hikari_Model) -> Hikari_Model:
     result = orjson.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200:
-        hikari = hikari.set_template_info('wws-info-recents.html', 1200, 100)
+        hikari = Templates.WWS_INFO_RECENTS.apply_to(hikari)
         return hikari.success(result['data'])
     else:
         return hikari.failed(f"{result['message']}")

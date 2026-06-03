@@ -5,6 +5,7 @@ from ..config import hikari_config
 from ..HttpClient_Pool import get_client_yuyuko
 from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
+from ..template_registry import Templates
 from .publicAPI import check_yuyuko_cache, get_AccountIdByName
 
 # from nonebot_plugin_htmlrender import html_to_pic
@@ -52,7 +53,7 @@ async def get_RecentInfo(hikari: Hikari_Model) -> Hikari_Model:
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200:
         if result['data']['battleTypeInfo']['PVP']['battle'] or result['data']['battleTypeInfo']['RANK_SOLO']['battle']:
-            hikari = hikari.set_template_info('wws-info-recent.html', 1200, 100)
+            hikari = Templates.WWS_INFO_RECENT.apply_to(hikari)
             return hikari.success(result['data'])
         else:
             return hikari.failed('该日期数据记录不存在')

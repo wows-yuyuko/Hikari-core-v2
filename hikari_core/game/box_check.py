@@ -6,6 +6,7 @@ from ..HttpClient_Pool import get_client_yuyuko
 from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
 from ..moudle.publicAPI import get_AccountIdByName
+from ..template_registry import Templates
 
 
 @handle_yuyuko_errors()
@@ -28,7 +29,7 @@ async def check_christmas_box(hikari: Hikari_Model) -> Hikari_Model:
     result = orjson.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
-        hikari = hikari.set_template_info('wws-box-christmas.html', 920, 1000)
+        hikari = Templates.WWS_BOX_CHRISTMAS.apply_to(hikari)
         return hikari.success(result['data'])
     else:
         return hikari.failed(f"{result['message']}")

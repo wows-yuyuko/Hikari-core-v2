@@ -9,6 +9,7 @@ from ..config import hikari_config
 from ..HttpClient_Pool import get_client_yuyuko
 from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
+from ..template_registry import Templates
 from .publicAPI import get_AccountIdByName
 
 
@@ -24,7 +25,7 @@ async def get_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     result = orjson.loads(resp.content)
     if result['code'] == 200 and result['message'] == 'success':
         if result['data']:
-            hikari = hikari.set_template_info('bind-list.html', 900, 240)
+            hikari = Templates.BIND_LIST.apply_to(hikari)
             return hikari.success(result['data'])
         else:
             return hikari.failed('该用户似乎还没绑定窝窝屎账号')

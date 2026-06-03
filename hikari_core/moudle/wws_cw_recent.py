@@ -5,6 +5,7 @@ from ..config import hikari_config
 from ..HttpClient_Pool import get_client_yuyuko
 from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
+from ..template_registry import Templates
 from .publicAPI import get_ClanIdByName
 
 
@@ -19,7 +20,7 @@ async def get_cw_recent(hikari: Hikari_Model) -> Hikari_Model:
                     hikari.Input.ClanId = clanList[0]['clanId']
                 else:
                     hikari.Input.Select_Data = clanList
-                    hikari.set_template_info('select-clan.html', 360, 100)
+                    Templates.SELECT_CLAN.apply_to(hikari)
                     return hikari.wait(clanList)
             else:
                 return hikari.failed('找不到军团，请确认军团名是否正确')
@@ -54,7 +55,7 @@ async def get_cw_recent(hikari: Hikari_Model) -> Hikari_Model:
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200:
         if result['data']:
-            hikari.set_template_info('wws-clan-cw.html', 1200, 100)
+            Templates.WWS_CLAN_CW.apply_to(hikari)
         else:
             return hikari.failed('没有战斗数据')
         return hikari.success(result['data'])
