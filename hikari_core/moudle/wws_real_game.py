@@ -2,11 +2,10 @@ import os
 import re
 import shutil
 import traceback
-from asyncio.exceptions import TimeoutError
 
 import json_tools
 import orjson
-from httpx import ConnectTimeout, PoolTimeout, TimeoutException
+from httpx import PoolTimeout, TimeoutException
 from loguru import logger
 
 from ..config import hikari_config
@@ -16,9 +15,9 @@ from ..HttpClient_Pool import (
     get_client_yuyuko,
     recreate_client_default,
     recreate_client_wg,
-    recreate_client_yuyuko,
 )
 from ..cache_utils import get_cache_file_str
+from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model
 from .publicAPI import get_AccountIdByName
 
@@ -118,108 +117,99 @@ def write_config(config):
     return config
 
 
+@handle_yuyuko_errors()
 async def get_diff_ship(hikari: Hikari_Model):  # noqa: PLR0915
     """查询最新一轮监控信息"""
-    try:
-        listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
-        config = get_config()
-        account_id_list, account_list, send_list = [], [], []
-        # 获取监控列表，去重
-        for _group_id, group_config in config.items():
-            for each in group_config:
-                if each['account_id'] not in account_id_list:
-                    account_id_list.append(each['account_id'])
-                    account_list.append(each.copy())
-        logger.info('开始获取监控信息')
-        for account in account_list:
-            # 不存在记录本轮先创建
-            if not os.path.exists(f"{listen_data_path}/{account['account_id']}.json"):
-                latest_data = await get_latest_info(account['server'], account['account_id'])
-                if not latest_data or not latest_data['status'] == 'ok':
-                    continue
-                write_latest_info(account['account_id'], latest_data)
-                continue
-            # 存在历史记录，拉取最新战绩判断是否有差异
+    listen_data_path = f'{get_cache_file_str("real_game")}/account_data'
+    config = get_config()
+    account_id_list, account_list, send_list = [], [], []
+    # 获取监控列表，去重
+    for _group_id, group_config in config.items():
+        for each in group_config:
+            if each['account_id'] not in account_id_list:
+                account_id_list.append(each['account_id'])
+                account_list.append(each.copy())
+    logger.info('开始获取监控信息')
+    for account in account_list:
+        # 不存在记录本轮先创建
+        if not os.path.exists(f"{listen_data_path}/{account['account_id']}.json"):
             latest_data = await get_latest_info(account['server'], account['account_id'])
             if not latest_data or not latest_data['status'] == 'ok':
                 continue
-            last_data = get_last_info(account['account_id'])
             write_latest_info(account['account_id'], latest_data)
-            diff = jsonDiff(last_data, latest_data)
-            if diff:
-                compare_list = []
-                for each in diff:
-                    if 'replace' in each:
-                        value = each['value'] - each['prev']
-                        info = {'path': each['replace'], 'value': value}
-                        compare_list.append(info.copy())
-                    if 'add' in each:
-                        value = each['value']
-                        info = {'path': each['add'], 'value': value}
-                        compare_list.append(info.copy())
-                logger.info(orjson.dumps(compare_list))
+            continue
+        # 存在历史记录，拉取最新战绩判断是否有差异
+        latest_data = await get_latest_info(account['server'], account['account_id'])
+        if not latest_data or not latest_data['status'] == 'ok':
+            continue
+        last_data = get_last_info(account['account_id'])
+        write_latest_info(account['account_id'], latest_data)
+        diff = jsonDiff(last_data, latest_data)
+        if diff:
+            compare_list = []
+            for each in diff:
+                if 'replace' in each:
+                    value = each['value'] - each['prev']
+                    info = {'path': each['replace'], 'value': value}
+                    compare_list.append(info.copy())
+                if 'add' in each:
+                    value = each['value']
+                    info = {'path': each['add'], 'value': value}
+                    compare_list.append(info.copy())
+            logger.info(orjson.dumps(compare_list))
 
-                battles, win, loss, damage, shipId, match_count = 0, 0, 0, 0, 0, 0
-                ship_name_cn = ''
-                for each in compare_list:
-                    if '/pvp/wins' in each['path']:
-                        win += each['value']
-                    if '/pvp/losses' in each['path']:
-                        loss += each['value']
-                    if 'pvp/damage_dealt' in each['path']:
-                        damage += each['value']
+            battles, win, loss, damage, shipId, match_count = 0, 0, 0, 0, 0, 0
+            ship_name_cn = ''
+            for each in compare_list:
+                if '/pvp/wins' in each['path']:
+                    win += each['value']
+                if '/pvp/losses' in each['path']:
+                    loss += each['value']
+                if 'pvp/damage_dealt' in each['path']:
+                    damage += each['value']
+                if account['server'] not in ['cn', 'ru']:
+                    match = re.search(f"^/data/{account['account_id']}/(.*?)/pvp/battles$", each['path'])
+                else:
+                    match = re.search(f"^/data/{account['account_id']}/statistics/(.*?)/pvp/battles_count$", each['path'])
+                if match:
+                    match_count += 1
+                    if match_count > 5:
+                        break
+                    battles += each['value']
                     if account['server'] not in ['cn', 'ru']:
-                        match = re.search(f"^/data/{account['account_id']}/(.*?)/pvp/battles$", each['path'])
+                        index = int(match.group(1))
+                        shipId = int(latest_data['data'][str(account['account_id'])][index]['ship_id'])
                     else:
-                        match = re.search(f"^/data/{account['account_id']}/statistics/(.*?)/pvp/battles_count$", each['path'])
-                    if match:
-                        match_count += 1
-                        if match_count > 5:
-                            break
-                        battles += each['value']
-                        if account['server'] not in ['cn', 'ru']:
-                            index = int(match.group(1))
-                            shipId = int(latest_data['data'][str(account['account_id'])][index]['ship_id'])
+                        shipId = int(match.group(1))
+                    params = {'shipId': shipId}
+                    client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
+                    resp = await client_yuyuko.get(seach_ship_url, params=params)
+                    result = orjson.loads(resp.content)
+                    try:
+                        if result['code'] == 200:
+                            ship_name_cn = ship_name_cn + result['data']['nameCn'] + ','
+                    except Exception:
+                        pass
+            if match_count > 5:
+                break
+            # 构建消息
+            for _group_id, group_config in config.items():
+                for each in group_config:
+                    nick_name = each['nick_name']
+                    if account['account_id'] == each['account_id']:
+                        if battles == 1:
+                            msg = f'喜报：\n{nick_name}刚刚输了一场对局\n使用{ship_name_cn}伤害{damage}'
+                            if win:
+                                msg = f'悲报：\n{nick_name}刚刚赢了一场对局\n使用{ship_name_cn}伤害{damage}'
+                        elif battles >= 2:
+                            msg = f'{nick_name}刚刚完成了{battles}场对局\n胜{win}负{loss}平{battles-win-loss}\n使用{ship_name_cn}\n总伤害{damage}'
                         else:
-                            shipId = int(match.group(1))
-                        params = {'shipId': shipId}
-                        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-                        resp = await client_yuyuko.get(seach_ship_url, params=params)
-                        result = orjson.loads(resp.content)
-                        try:
-                            if result['code'] == 200:
-                                ship_name_cn = ship_name_cn + result['data']['nameCn'] + ','
-                        except Exception:
-                            pass
-                if match_count > 5:
-                    break
-                # 构建消息
-                for _group_id, group_config in config.items():
-                    for each in group_config:
-                        nick_name = each['nick_name']
-                        if account['account_id'] == each['account_id']:
-                            if battles == 1:
-                                msg = f'喜报：\n{nick_name}刚刚输了一场对局\n使用{ship_name_cn}伤害{damage}'
-                                if win:
-                                    msg = f'悲报：\n{nick_name}刚刚赢了一场对局\n使用{ship_name_cn}伤害{damage}'
-                            elif battles >= 2:
-                                msg = f'{nick_name}刚刚完成了{battles}场对局\n胜{win}负{loss}平{battles-win-loss}\n使用{ship_name_cn}\n总伤害{damage}'
-                            else:
-                                continue
-                            send_param = {'group_id': _group_id, 'msg': msg, 'type': 'text'}
-                            send_list.append(send_param.copy())
-        if not send_list:
-            return hikari.failed('没有新的监控战绩')
-        return hikari.success(send_list)
-    except (TimeoutError, ConnectTimeout):
-        logger.warning(traceback.format_exc())
-        return hikari.error('请求超时了，请过会儿再尝试哦~')
-    except PoolTimeout:
-        await recreate_client_yuyuko()
-        return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')
+                            continue
+                        send_param = {'group_id': _group_id, 'msg': msg, 'type': 'text'}
+                        send_list.append(send_param.copy())
+    if not send_list:
+        return hikari.failed('没有新的监控战绩')
+    return hikari.success(send_list)
 
 
 async def get_listen_list(hikari: Hikari_Model):

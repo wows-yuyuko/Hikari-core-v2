@@ -22,6 +22,7 @@ from ..HttpClient_Pool import (
     recreate_client_wg,
     recreate_client_yuyuko,
 )
+from ..http_error_handler import handle_yuyuko_errors
 from ..model import Hikari_Model, ShipInfo
 
 
@@ -42,36 +43,27 @@ async def get_nation_list(hikari: Hikari_Model):
         logger.error(traceback.format_exc())
 
 
+@handle_yuyuko_errors()
 async def get_ship_name(hikari: Hikari_Model):
     """根据国家等级类型查船名"""
     msg = ''
-    try:
-        params = {
-            'country': hikari.Input.ShipInfo.country,
-            'level': hikari.Input.ShipInfo.level,
-            'shipName': '',
-            'shipType': hikari.Input.ShipInfo.shipType,
-            'groupType': 'default',
-        }
-        url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
-        client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-        resp = await client_yuyuko.get(url, params=params, timeout=20)
-        result = orjson.loads(resp.content)
-        if result['data']:
-            for ship in result['data']:
-                msg += f"{ship['nameCn']}：{ship['nameEnglish']}\n"
-            return hikari.success(msg)
-        else:
-            return hikari.failed('没有符合的船只')
-    except (TimeoutError, ConnectTimeout):
-        logger.warning(traceback.format_exc())
-        return hikari.error('请求超时了，请过会儿再尝试哦~')
-    except PoolTimeout:
-        await recreate_client_yuyuko()
-        return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')
+    params = {
+        'country': hikari.Input.ShipInfo.country,
+        'level': hikari.Input.ShipInfo.level,
+        'shipName': '',
+        'shipType': hikari.Input.ShipInfo.shipType,
+        'groupType': 'default',
+    }
+    url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
+    client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
+    resp = await client_yuyuko.get(url, params=params, timeout=20)
+    result = orjson.loads(resp.content)
+    if result['data']:
+        for ship in result['data']:
+            msg += f"{ship['nameCn']}：{ship['nameEnglish']}\n"
+        return hikari.success(msg)
+    else:
+        return hikari.failed('没有符合的船只')
 
 async def get_ship_byName(hikari: Hikari_Model) -> List:
     try:
@@ -101,9 +93,6 @@ async def get_ship_byName(hikari: Hikari_Model) -> List:
             return []
     except PoolTimeout:
         await recreate_client_yuyuko()
-        return []
-    except Exception:
-        return []
 
 
 
@@ -120,12 +109,9 @@ async def get_all_shipList(hikari: Hikari_Model):
             return None
     except PoolTimeout:
         await recreate_client_yuyuko()
-        return
-    except Exception:
-        return None
 
 
-async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> str:
+async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> int:
     try:
         url = f'{hikari_config.yuyuko_url}/public/wows/account/search/{server}/user'
         params = {'userName': name, 'one': True}
@@ -135,16 +121,9 @@ async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> s
         if result['code'] == 200 and result['data']:
             return int(result['data'][0]['accountId'])
         else:
-            return result['message']
-    except (TimeoutError, ConnectTimeout):
-        logger.warning(traceback.format_exc())
-        return '请求超时了，请过一会儿重试哦~'
+            return hikari.failed(result['message'])
     except PoolTimeout:
         await recreate_client_yuyuko()
-        return
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        return f'好像出了点问题呢，可能是网络问题，如果重试几次还不行的话，请联系麻麻解决\n{e}'
 
 
 async def get_ClanIdByName(hikari: Hikari_Model, server: str, tag: str):
@@ -160,15 +139,9 @@ async def get_ClanIdByName(hikari: Hikari_Model, server: str, tag: str):
             return result['data']
         else:
             return None
-    except (TimeoutError, ConnectTimeout):
-        logger.warning(traceback.format_exc())
-        return None
     except PoolTimeout:
         await recreate_client_yuyuko()
         return
-    except Exception:
-        logger.error(traceback.format_exc())
-        return None
 
 
 async def check_yuyuko_cache(hikari: Hikari_Model, server, id):
@@ -202,9 +175,6 @@ async def check_yuyuko_cache(hikari: Hikari_Model, server, id):
     except PoolTimeout:
         await recreate_client_yuyuko()
         return False
-    except Exception:
-        logger.error('缓存上报失败')
-        return False
 
 
 async def get_wg_info(params, key, url):
@@ -216,7 +186,3 @@ async def get_wg_info(params, key, url):
             params[key] = resp.text
     except PoolTimeout:
         await recreate_client_wg()
-        return
-    except Exception:
-        logger.error(f'wg请求异常,请配置代理后尝试,上报url：{url}')
-        return

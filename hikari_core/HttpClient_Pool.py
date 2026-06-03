@@ -81,21 +81,26 @@ async def get_client_default() -> AsyncClient:
 
 
 async def recreate_client_yuyuko():
-    _client_yuyuko = await get_client_yuyuko()
+    global _client_yuyuko  # 声明使用全局变量
+    # 关闭旧连接
+    if _client_yuyuko is not None:
+        logger.info('关闭旧的yuyuko连接池')
+        await _client_yuyuko.aclose()
+    # 创建新连接
     logger.info('重新创建yuyuko连接池')
-    await _client_yuyuko.aclose()
     _client_yuyuko = await create_client_yuyuko()
 
 
 async def recreate_client_wg():
-    _client_wg = await get_client_wg()
-    logger.info('重新创建wg连接池')
-    await _client_wg.aclose()
+    global _client_wg
+    if _client_wg is not None:
+        logger.info('重新创建wg连接池')
+        await _client_wg.aclose()
     _client_wg = await create_client_wg()
 
-
 async def recreate_client_default():
-    _client_default = await get_client_default()
-    logger.info('重新创建default连接池')
-    await _client_default.aclose()
+    global _client_default
+    if _client_default is not None:
+        logger.info('重新创建default连接池')
+        await _client_default.aclose()
     _client_default = await create_client_default()
