@@ -171,3 +171,4 @@ hikari_core/game/listen_config.json
 poetry.lock
 tests/*.png
 .idea/
+tests/data/
