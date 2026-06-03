@@ -27,8 +27,6 @@ async def get_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
                 return hikari.success(result['data'])
             else:
                 return hikari.failed('该用户似乎还没绑定窝窝屎账号')
-        elif result['code'] == 500:
-            return hikari.failed(f"{result['message']}\n这是服务器问题，请联系雨季麻麻")
         else:
             return hikari.failed(f"{result['message']}")
     except (TimeoutError, ConnectTimeout):
@@ -37,9 +35,9 @@ async def get_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     except PoolTimeout:
         await recreate_client_yuyuko()
         return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
+        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')
 
 
 async def set_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
@@ -59,8 +57,6 @@ async def set_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['message'] == 'success':
             return hikari.success('绑定成功')
-        elif result['code'] == 500:
-            return hikari.failed(f"{result['message']}\n这是服务器问题，请联系雨季麻麻")
         else:
             return hikari.failed(f"{result['message']}")
     except (TimeoutError, ConnectTimeout):
@@ -69,9 +65,9 @@ async def set_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     except PoolTimeout:
         await recreate_client_yuyuko()
         return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
+        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')
 
 
 # 防止混淆纯数字名与AID，单独添加特殊绑定指令
@@ -87,8 +83,6 @@ async def set_special_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
         result = orjson.loads(resp.content)
         if result['code'] == 200 and result['message'] == 'success':
             return hikari.success('绑定成功')
-        elif result['code'] == 500:
-            return hikari.failed(f"{result['message']}\n这是服务器问题，请联系雨季麻麻")
         else:
             return hikari.failed(f"{result['message']}")
     except (TimeoutError, ConnectTimeout):
@@ -97,9 +91,9 @@ async def set_special_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     except PoolTimeout:
         await recreate_client_yuyuko()
         return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
+        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')
 
 
 async def change_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
@@ -137,9 +131,9 @@ async def change_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     except (TimeoutError, ConnectTimeout):
         logger.warning(traceback.format_exc())
         return '请求超时了，请过会儿再尝试哦~'
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return 'wuwuwu出了点问题，请联系麻麻解决'
+        return f'wuwuwu出了点问题，请联系麻麻解决\n{e}'
 
 
 async def delete_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
@@ -176,8 +170,6 @@ async def delete_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
                 return hikari.success(
                     f"删除绑定成功，删除的账号为{hikari.Input.Select_Data[hikari.Input.Select_Index - 1]['server']}：{hikari.Input.Select_Data[hikari.Input.Select_Index - 1]['userName']}"
                 )
-            elif result['code'] == 500:
-                return hikari.failed(f"{result['message']}\n这是服务器问题，请联系雨季麻麻")
             else:
                 return hikari.failed(f"{result['message']}")
 
@@ -187,9 +179,9 @@ async def delete_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     except PoolTimeout:
         await recreate_client_yuyuko()
         return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
+        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')
 
 
 async def get_DefaultBindInfo(hikari: Hikari_Model, platformType, platformId):

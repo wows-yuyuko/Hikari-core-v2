@@ -50,6 +50,6 @@ async def get_BanInfo(hikari: Hikari_Model) -> Hikari_Model:
     except PoolTimeout:
         await recreate_client_yuyuko()
         return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
+        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')

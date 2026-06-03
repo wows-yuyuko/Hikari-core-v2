@@ -76,10 +76,6 @@ async def get_ShipRecent(hikari: Hikari_Model) -> Hikari_Model:
         if result['code'] == 200 and result['data']:
             hikari.set_template_info('wws-ship-recent.html', 800, 100)
             return hikari.success(result['data'])
-        elif result['code'] == 403:
-            return hikari.failed(f"{result['message']}\n请先绑定账号")
-        elif result['code'] == 500:
-            return hikari.failed(f"{result['message']}\n这是服务器问题，请联系雨季麻麻")
         else:
             return hikari.failed(f"{result['message']}")
     except (TimeoutError, ConnectTimeout):
@@ -88,6 +84,6 @@ async def get_ShipRecent(hikari: Hikari_Model) -> Hikari_Model:
     except PoolTimeout:
         await recreate_client_yuyuko()
         return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
+        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')

@@ -69,9 +69,9 @@ async def get_ship_name(hikari: Hikari_Model):
     except PoolTimeout:
         await recreate_client_yuyuko()
         return hikari.error('连接池异常，请尝试重新查询~')
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return hikari.error('wuwuwu出了点问题，请联系麻麻解决')
+        return hikari.error(f'wuwuwu出了点问题，请联系麻麻解决\n{e}')
 
 async def get_ship_byName(hikari: Hikari_Model) -> List:
     try:
@@ -142,9 +142,9 @@ async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> s
     except PoolTimeout:
         await recreate_client_yuyuko()
         return
-    except Exception:
+    except Exception as e:
         logger.error(traceback.format_exc())
-        return '好像出了点问题呢，可能是网络问题，如果重试几次还不行的话，请联系麻麻解决'
+        return f'好像出了点问题呢，可能是网络问题，如果重试几次还不行的话，请联系麻麻解决\n{e}'
 
 
 async def get_ClanIdByName(hikari: Hikari_Model, server: str, tag: str):
