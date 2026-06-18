@@ -163,7 +163,7 @@ def find_and_modify_shipinfo(data, target_key="shipInfo"):
     def _replace_images(ship_info):
         """将 shipInfo 中的图片 URL 替换为本地 file:// 路径（若缓存文件存在）。"""
         for key in _SHIP_IMAGE_KEYS:
-            if key in ship_info:
+            if key in ship_info and ship_info[key] is not None:
                 local = wows_temp / str(os.path.basename(ship_info[key]))
                 if local.exists():
                     ship_info[key] = f"file:///{local.as_posix()}"
