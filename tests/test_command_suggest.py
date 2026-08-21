@@ -219,6 +219,21 @@ async def test_english_alias_routes():
         assert suggest == []
 
 
+async def test_help_templates_render():
+    """中英文帮助 H5 模板可正常渲染（无网络）。"""
+    from hikari_core import env
+
+    cases = [
+        ('help-zh.html', 'Hikari 指令帮助'),
+        ('help-en.html', 'Hikari Commands'),
+    ]
+    for name, keyword in cases:
+        tpl = env.get_template(name)
+        html = await tpl.render_async(data={'version_info': 'Version 1.2.5 | Latest 9.9'})
+        assert keyword in html, name
+        assert 'wws ship' in html, name
+
+
 # ============================================================
 # 独立运行入口
 # ============================================================
