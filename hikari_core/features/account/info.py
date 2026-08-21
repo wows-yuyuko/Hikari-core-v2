@@ -1,17 +1,17 @@
 import orjson
 from loguru import logger
 
-from ..config import hikari_config
-from ..HttpClient_Pool import get_client_yuyuko
-from ..http_error_handler import handle_yuyuko_errors
-from ..model import Hikari_Model
-from ..moudle.publicAPI import get_AccountIdByName
-from ..template_registry import Templates
+from hikari_core.core.config import hikari_config
+from hikari_core.core.http_client import get_client_yuyuko
+from hikari_core.core.http_error_handler import handle_yuyuko_errors
+from hikari_core.core.model import Hikari_Model
+from hikari_core.core.template_registry import Templates
+from hikari_core.features.api import check_yuyuko_cache, get_AccountIdByName
 
 
 @handle_yuyuko_errors()
-async def check_christmas_box(hikari: Hikari_Model) -> Hikari_Model:
-    """查询圣诞箱船池"""
+async def get_AccountInfo(hikari: Hikari_Model) -> Hikari_Model:
+    """查询账号总表"""
     if hikari.Status == 'init':
         if hikari.Input.Search_Type == 3:
             hikari.Input.AccountId = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
@@ -19,7 +19,15 @@ async def check_christmas_box(hikari: Hikari_Model) -> Hikari_Model:
                 return hikari.error(f'{hikari.Input.AccountId}')
     else:
         return hikari.error('当前请求状态错误')
-    url = f'{hikari_config.yuyuko_url}/public/wows/christmas/ship/box'
+    if hikari.Input.Search_Type == 3:
+        is_cache = await check_yuyuko_cache(hikari, hikari.Input.Server, hikari.Input.AccountId)
+    else:
+        is_cache = await check_yuyuko_cache(hikari, hikari.Input.Platform, hikari.Input.PlatformId)
+    if is_cache:
+        logger.success('上报数据成功')
+    else:
+        logger.success('跳过上报数据，直接请求')
+    url = f'{hikari_config.yuyuko_url}/public/wows/account/user/info'
     if hikari.Input.Search_Type == 3:
         params = {'server': hikari.Input.Server, 'accountId': hikari.Input.AccountId}
     else:
@@ -29,7 +37,7 @@ async def check_christmas_box(hikari: Hikari_Model) -> Hikari_Model:
     result = orjson.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
-        hikari = Templates.WWS_BOX_CHRISTMAS.apply_to(hikari)
+        hikari = Templates.WWS_INFO.apply_to(hikari)
         return hikari.success(result['data'])
     else:
         return hikari.failed(f"{result['message']}")

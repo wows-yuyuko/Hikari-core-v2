@@ -4,7 +4,7 @@ import time
 from loguru import logger
 
 from hikari_core import Hikari_Model, callback_hikari, init_hikari, get_cache_file  # noqa: E402
-from hikari_core.config import set_hikari_config
+from hikari_core.core.config import set_hikari_config
 
 platform = 'QQ'
 platform_id = '2622749113'
@@ -23,10 +23,10 @@ async def start():
                       game_path='')
     global is_out_image
     is_out_image = True
-
-    await command("me ship 无比 recent 2024-05-30")
-    await command("公会战排行榜 20")
-    await command('asia nahida_official ship 大')
+    await command("me 单船 塞德利茨")
+    # await command("me ship 无比 recent 2024-05-30")
+    # await command("公会战排行榜 20")
+    # await command('asia nahida_official ship 大')
 
 
 async def command(command_text: str):

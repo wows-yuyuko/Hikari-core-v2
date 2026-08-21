@@ -5,7 +5,7 @@
 
 用法::
 
-    from ..template_registry import Templates
+    from hikari_core.core.template_registry import Templates
 
     Templates.WWS_SHIP.apply_to(hikari)
     # 等价于旧写法: hikari.set_template_info('wws-ship.html', 800, 100)

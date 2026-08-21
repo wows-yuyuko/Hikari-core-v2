@@ -12,9 +12,9 @@ from bs4 import BeautifulSoup
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
-from ..config import hikari_config
-from ..data_source import number_url_homes
-from ..HttpClient_Pool import (
+from hikari_core.core.config import hikari_config
+from hikari_core.core.constants import number_url_homes
+from hikari_core.core.http_client import (
     get_client_default,
     get_client_wg,
     get_client_yuyuko,
@@ -22,8 +22,8 @@ from ..HttpClient_Pool import (
     recreate_client_wg,
     recreate_client_yuyuko,
 )
-from ..http_error_handler import handle_yuyuko_errors
-from ..model import Hikari_Model, ShipInfo
+from hikari_core.core.http_error_handler import handle_yuyuko_errors
+from hikari_core.core.model import Hikari_Model, ShipInfo
 
 
 async def get_nation_list(hikari: Hikari_Model):

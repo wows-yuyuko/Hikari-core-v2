@@ -1,29 +1,26 @@
-# fmt: off
 import orjson
 from loguru import logger
 
-from ..config import hikari_config
-from ..HttpClient_Pool import get_client_yuyuko
-from ..http_error_handler import handle_yuyuko_errors
-from ..model import Hikari_Model
-from ..template_registry import Templates
-from .publicAPI import check_yuyuko_cache, get_AccountIdByName, get_ship_byName
-
-# fmt: on
+from hikari_core.core.config import hikari_config
+from hikari_core.core.http_client import get_client_yuyuko
+from hikari_core.core.http_error_handler import handle_yuyuko_errors
+from hikari_core.core.model import Hikari_Model
+from hikari_core.core.template_registry import Templates
+from hikari_core.features.api import check_yuyuko_cache, get_AccountIdByName, get_ship_byName
 
 
 @handle_yuyuko_errors()
-async def get_ShipRecent(hikari: Hikari_Model) -> Hikari_Model:
-    """查询单船Recent"""
+async def get_ShipInfo(hikari: Hikari_Model) -> Hikari_Model:  # noqa: PLR0915
+    """查询单船水表"""
     if hikari.Status == 'init':
-        shipList = await get_ship_byName(hikari)
-        if shipList:
-            if len(shipList) < 2:
-                hikari.Input.ShipInfo = shipList[0]
+        ship_list = await get_ship_byName(hikari)
+        if ship_list:
+            if len(ship_list) < 2:
+                hikari.Input.ShipInfo = ship_list[0]
             else:
-                hikari.Input.Select_Data = shipList
+                hikari.Input.Select_Data = ship_list
                 Templates.SELECT_SHIP.apply_to(hikari)
-                return hikari.wait(shipList)
+                return hikari.wait(ship_list)
         else:
             return hikari.failed('找不到船，请确认船名是否正确，可以使用【wws 查船名】查询船只中英文')
     elif hikari.Status == 'wait':
@@ -48,23 +45,12 @@ async def get_ShipRecent(hikari: Hikari_Model) -> Hikari_Model:
     else:
         logger.success('跳过上报数据，直接请求')
 
-    url = f'{hikari_config.yuyuko_url}/api/wows/recent/day/list/info'
+    url = f'{hikari_config.yuyuko_url}/public/wows/account/ship/info'
     if hikari.Input.Search_Type == 3:
-        params = {
-            'server': hikari.Input.Server,
-            'accountId': hikari.Input.AccountId,
-            'dateTime': hikari.Input.Recent_Date,
-            'day': hikari.Input.Recent_Day,
-            'shipId': hikari.Input.ShipInfo.shipId,
-        }
+        params = {'server': hikari.Input.Server, 'accountId': hikari.Input.AccountId, 'shipId': hikari.Input.ShipInfo.shipId}
     else:
-        params = {
-            'server': hikari.Input.Platform,
-            'accountId': hikari.Input.PlatformId,
-            'dateTime': hikari.Input.Recent_Date,
-            'day': hikari.Input.Recent_Day,
-            'shipId': hikari.Input.ShipInfo.shipId,
-        }
+        params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId, 'shipId': hikari.Input.ShipInfo.shipId}
+
 
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, params=params, timeout=20)
@@ -72,7 +58,11 @@ async def get_ShipRecent(hikari: Hikari_Model) -> Hikari_Model:
     hikari.Output.Yuyuko_Code = result['code']
 
     if result['code'] == 200 and result['data']:
-        Templates.WWS_SHIP_RECENT.apply_to(hikari)
-        return hikari.success(result['data'])
+        if result['data']['typeInfo']['PVP']['battle'] or result['data']['typeInfo']['RANK_SOLO']['battle']:
+            Templates.WWS_SHIP.apply_to(hikari)
+            result['data']['shipRank'] = result['data']['rank']
+            return hikari.success(result['data'])
+        else:
+            return hikari.failed('查询不到战绩数据')
     else:
         return hikari.failed(f"{result['message']}")

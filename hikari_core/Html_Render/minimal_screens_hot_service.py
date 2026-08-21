@@ -17,7 +17,7 @@ from PIL import Image
 from playwright.async_api import async_playwright, Browser, Page
 
 
-from hikari_core.cache_utils import get_cache_file
+from hikari_core.core.cache_utils import get_cache_file
 
 class minimal_screens_hot_service:
     _instance = None
@@ -50,7 +50,7 @@ class minimal_screens_hot_service:
         self.request_count = 0
 
     async def start(self):
-        from hikari_core.config import hikari_config
+        from hikari_core.core.config import hikari_config
         """极速启动浏览器 - 优化启动参数"""
         self.user_browser = hikari_config.use_broswer
         self.playwright = await async_playwright().start()

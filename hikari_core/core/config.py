@@ -73,7 +73,7 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.command_suggest_dedupe = command_suggest_dedupe
     hikari_config.command_language = 'en' if str(command_language).lower().startswith('en') else 'zh'
     # 为空则使用默认路径
-    from hikari_core.cache_utils import get_cache_file, initial_cache_file
+    from hikari_core.core.cache_utils import get_cache_file, initial_cache_file
 
     try:
         if game_path == '':
@@ -88,7 +88,7 @@ def set_hikari_config(  # noqa: PLR0913
     global _initial_scheduler
     if _initial_scheduler and local_test is not True:
         logger.info('初始化任务....')
-        from hikari_core.game.help import update_ship_cache, update_ship_cache_cron, update_template
+        from hikari_core.features.system import update_ship_cache, update_ship_cache_cron, update_template
 
         logger.info('执行初始模板更新...')
         update_template()

@@ -1,16 +1,16 @@
 import orjson
 from loguru import logger
 
-from ..config import hikari_config
-from ..HttpClient_Pool import get_client_yuyuko
-from ..http_error_handler import handle_yuyuko_errors
-from ..model import Hikari_Model
-from ..template_registry import Templates
-from .publicAPI import get_ClanIdByName
+from hikari_core.core.config import hikari_config
+from hikari_core.core.http_client import get_client_yuyuko
+from hikari_core.core.http_error_handler import handle_yuyuko_errors
+from hikari_core.core.model import Hikari_Model
+from hikari_core.core.template_registry import Templates
+from hikari_core.features.api import get_ClanIdByName
 
 
 @handle_yuyuko_errors()
-async def get_ClanRank(hikari: Hikari_Model) -> Hikari_Model:
+async def get_ClanInfo(hikari: Hikari_Model) -> Hikari_Model:
     """查询公会基础信息"""
     if hikari.Status == 'init':
         if hikari.Input.Search_Type == 3:

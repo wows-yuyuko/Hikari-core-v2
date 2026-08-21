@@ -13,7 +13,7 @@ from typing import Any, Callable, List, Optional, Union
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
-from .HttpClient_Pool import (
+from .http_client import (
     recreate_client_default,
     recreate_client_wg,
     recreate_client_yuyuko,

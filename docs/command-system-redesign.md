@@ -293,7 +293,42 @@ class Router:
 
 | 文件 | 改动 |
 |---|---|
-| `hikari_core/command_select.py` | 新增 `route_command`（带建议路由）、`_suggest`、`_token_similarity`、`_flatten_entries`、`_is_identity_query`、`render_suggest_message`、`_display_alias`；`_match_level` 重构匹配层；移除 `工会` 别名；补充英文别名并调整列表顺序；`_USAGE` 双语文案 |
-| `hikari_core/analyze.py` | 改用 `route_command`，有建议时直接返回提示错误 |
-| `hikari_core/config.py` | 新增 `command_suggest_max` / `command_suggest_dedupe` / `command_language` 配置 |
+| `hikari_core/commands/router.py`（原 `command_select.py`） | 新增 `route_command`（带建议路由）、`_suggest`、`_token_similarity`、`_flatten_entries`、`_is_identity_query`、`render_suggest_message`、`_display_alias`；`_match_level` 重构匹配层；移除 `工会` 别名；补充英文别名并调整列表顺序；`_USAGE` 双语文案 |
+| `hikari_core/commands/parser.py`（原 `analyze.py`） | 改用 `route_command`，有建议时直接返回提示错误 |
+| `hikari_core/core/config.py`（原 `config.py`） | 新增 `command_suggest_max` / `command_suggest_dedupe` / `command_language` 配置 |
 | `tests/test_command_suggest.py` | 19 条无网络单元测试（路由回归 + 智能提示 + 去重/上限/中英文配置） |
+
+## 8. 项目结构按功能域重构（refactor/feature-structure 分支）
+
+将原先「顶层平铺 + `moudle`（拼写错误）/`game` 语义模糊」的结构，重构为「core 基础设施 → commands 指令系统 → features 业务功能」三层：
+
+```
+hikari_core/
+├── __init__.py            # 顶层公共 API（init_hikari / Hikari_Model / 各功能函数，保持不变）
+├── core/                  # 框架基础设施（不依赖业务）
+│   ├── config.py  model.py  utils.py  cache_utils.py
+│   ├── http_client.py（原 HttpClient_Pool.py）  http_error_handler.py  template_registry.py
+│   ├── constants.py       # 原 data_source.py 数据常量（服务器/国家/舰种/等级/template_path/__version__）
+│   └── render_helpers.py  # 原 data_source.py 渲染辅助（PR 颜色/排行解析/set_render_params）
+├── commands/              # 指令系统
+│   ├── router.py          # 原 command_select.py（指令表 + 路由 + 智能提示）
+│   └── parser.py          # 原 analyze.py（指令解析）
+├── features/              # 业务功能
+│   ├── api.py             # 原 moudle/publicAPI.py（共享 API 辅助）
+│   ├── account/           # 账号水表：info / recent / recents（原 wws_info / wws_recent / wws_recents）
+│   ├── ship/              # 战舰：info / recent / rank（原 wws_ship_info / wws_ship_recent / wws_shiprank）
+│   ├── clan/              # 军团/公会：info / rank / cw_rank / cw_recent
+│   ├── bind.py            # 绑定（原 wws_bind）
+│   ├── monitor.py         # 实时监控（原 wws_real_game）
+│   ├── fun.py             # 娱乐：ban / box / roll / sx（原 game 下 4 个小文件合并）
+│   └── system.py          # 系统维护：help / 版本 / 模板与战舰缓存更新（原 game/help.py）
+├── Html_Render/  Template/   # 渲染引擎与模板资源（保持不动）
+```
+
+**要点**
+
+- 分层依赖：`features → core`，`commands → features + core`，`core` 不依赖任何业务模块。
+- `data_source.py` 按职责拆分为 `core/constants.py`（数据常量）与 `core/render_helpers.py`（渲染辅助）；`template_path` 已修正为指向 `hikari_core/Template`。
+- 娱乐类 4 个小文件（ban_search/box_check/roll/sx）合并进 `features/fun.py`。
+- **破坏性变更（按决策：不保留兼容 shim）**：旧路径 `hikari_core.moudle.*`、`hikari_core.game.*`、`hikari_core.config`、`hikari_core.command_select`、`hikari_core.analyze`、`hikari_core.data_source`、`hikari_core.HttpClient_Pool` 等均已删除，外部引用需同步迁移到新路径；顶层 `from hikari_core import init_hikari / Hikari_Model / get_ShipInfo` 等公共 API 不受影响。建议随此重构将版本提升至 2.0。
+- 测试：`tests/test_command_suggest.py` 19 条全部通过；`py_compile` 全量通过。

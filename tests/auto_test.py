@@ -1,6 +1,6 @@
 import asyncio
 
-from hikari_core.config import set_hikari_config
+from hikari_core.core.config import set_hikari_config
 from tests.test import command
 
 platform = 'QQ'

@@ -12,7 +12,7 @@ import orjson
 import pytz
 from loguru import logger
 
-from .data_source import template_path
+from .constants import template_path
 
 
 def startup():

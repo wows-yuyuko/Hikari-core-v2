@@ -6,7 +6,7 @@
 
 import asyncio
 
-from hikari_core.command_select import (
+from hikari_core.commands.router import (
     get_AccountInfo,
     get_RecentInfo,
     get_ShipInfo,
@@ -15,7 +15,7 @@ from hikari_core.command_select import (
     render_suggest_message,
     select_command,
 )
-from hikari_core.config import hikari_config
+from hikari_core.core.config import hikari_config
 
 
 # ============================================================
@@ -118,7 +118,7 @@ async def test_dedupe_mechanism():
 
     开启去重时同一功能只提示一条；关闭时多条同效果别名可同时提示。
     """
-    from hikari_core.command_select import _suggest, first_command_list
+    from hikari_core.commands.router import _suggest, first_command_list
 
     tokens = ['单船排行榜', 'ship.rank']
     hikari_config.command_suggest_dedupe = True
@@ -202,7 +202,7 @@ async def test_zh_mode_unchanged():
 
 async def test_english_alias_routes():
     """新增英文别名可直接路由（英文模式下的指令入口）。"""
-    from hikari_core.command_select import (
+    from hikari_core.commands.router import (
         async_update_ship_cache,
         get_BindInfo,
         get_listen_list,

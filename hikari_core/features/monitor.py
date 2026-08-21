@@ -8,18 +8,18 @@ import orjson
 from httpx import PoolTimeout, TimeoutException
 from loguru import logger
 
-from ..config import hikari_config
-from ..HttpClient_Pool import (
+from hikari_core.core.cache_utils import get_cache_file_str
+from hikari_core.core.config import hikari_config
+from hikari_core.core.http_client import (
     get_client_default,
     get_client_wg,
     get_client_yuyuko,
     recreate_client_default,
     recreate_client_wg,
 )
-from ..cache_utils import get_cache_file_str
-from ..http_error_handler import handle_yuyuko_errors
-from ..model import Hikari_Model
-from .publicAPI import get_AccountIdByName
+from hikari_core.core.http_error_handler import handle_yuyuko_errors
+from hikari_core.core.model import Hikari_Model
+from hikari_core.features.api import get_AccountIdByName
 
 api_list = {
     'asia': 'https://api.worldofwarships.asia/wows/ships/stats/',
