@@ -113,7 +113,7 @@ hikari_core/commands/
   account.py   # info / recent / recents / ship / ship_recent 命令声明
   clan.py      # clan / cw_rank / cw_recent / clan_rank
   bind.py      # bind / special_bind / change / delete / 查询绑定
-  other.py     # help / roll / sx / box / ban / 搜船名 / 监控 / 更新
+  other.py     # help / roll / sx / box / ban / 搜船名 / 更新
   __init__.py  # COMMAND_TREE 注册中心 + build_help()
 analyze.py     # 重写为: normalize → route → bind → identity
 ```
@@ -279,10 +279,8 @@ class Router:
   |---|---|---|---|
   | 更新样式 | `update_style` | 切换绑定 | `change_bind` |
   | 更新战舰 | `update_ship` | 查询绑定 | `bind_list` |
-  | 查询监控 | `monitor_list` | 删除绑定 | `delete_bind` |
-  | 测试监控 | `test_monitor` | 特殊绑定 | `special_bind` |
-  | 添加监控 | `add_monitor` | 搜船名 | `search_ship` |
-  | 删除监控 | `delete_monitor` | 重置监控 | `reset_monitor` |
+  | 删除绑定 | `delete_bind` | 特殊绑定 | `special_bind` |
+  | 搜船名 | `search_ship` | | |
 
   > 注意：`search_ship` / `update_ship` 等含 `ship` 子串的英文别名，其指令条目必须排在 `ship` / `ship.rank` 之前（已按此调整列表顺序），否则会被子串匹配截胡。
 
@@ -319,7 +317,6 @@ hikari_core/
 │   ├── ship/              # 战舰：info / recent / rank（原 wws_ship_info / wws_ship_recent / wws_shiprank）
 │   ├── clan/              # 军团/公会：info / rank / cw_rank / cw_recent
 │   ├── bind.py            # 绑定（原 wws_bind）
-│   ├── monitor.py         # 实时监控（原 wws_real_game）
 │   ├── fun.py             # 娱乐：ban / box / roll / sx（原 game 下 4 个小文件合并）
 │   └── system.py          # 系统维护：help / 版本 / 模板与战舰缓存更新（原 game/help.py）
 ├── Html_Render/  Template/   # 渲染引擎与模板资源（保持不动）
@@ -328,6 +325,7 @@ hikari_core/
 **要点**
 
 - 分层依赖：`features → core`，`commands → features + core`，`core` 不依赖任何业务模块。
+- 实时监控功能（monitor_list / test_monitor / add_monitor / delete_monitor / reset_monitor）已整体删除（`features/monitor.py` 移除，原 wws_real_game）。
 - `data_source.py` 按职责拆分为 `core/constants.py`（数据常量）与 `core/render_helpers.py`（渲染辅助）；`template_path` 已修正为指向 `hikari_core/Template`。
 - 娱乐类 4 个小文件（ban_search/box_check/roll/sx）合并进 `features/fun.py`。
 - **破坏性变更（按决策：不保留兼容 shim）**：旧路径 `hikari_core.moudle.*`、`hikari_core.game.*`、`hikari_core.config`、`hikari_core.command_select`、`hikari_core.analyze`、`hikari_core.data_source`、`hikari_core.HttpClient_Pool` 等均已删除，外部引用需同步迁移到新路径；顶层 `from hikari_core import init_hikari / Hikari_Model / get_ShipInfo` 等公共 API 不受影响。建议随此重构将版本提升至 2.0。

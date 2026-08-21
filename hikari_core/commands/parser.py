@@ -19,7 +19,6 @@ from ..features.clan.cw_recent import get_cw_recent
 from ..features.clan.cw_rank import get_CwRank
 from ..features.clan.info import get_ClanInfo
 from ..features.fun import check_christmas_box, get_BanInfo, get_sx_info, roll_ship
-from ..features.monitor import add_listen_list, delete_listen_list
 from ..features.ship.info import get_ShipInfo
 from ..features.ship.rank import get_ShipRank
 from ..features.ship.recent import get_ShipRecent
@@ -291,28 +290,6 @@ async def _handle_ship_rank(hikari: Hikari_Model) -> Hikari_Model:
     return hikari
 
 
-async def _handle_listen_add(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 add_listen_list。"""
-    if len(hikari.Input.Command_List) != 3:
-        return hikari.error('请检查参数中是否包含服务器、游戏昵称、备注昵称，以空格分隔，顺序不限')
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
-    if not hikari.Input.Server:
-        return hikari.error('服务器名输入错误')
-    hikari.Input.AccountName = str(hikari.Input.Command_List[0])
-    return hikari
-
-
-async def _handle_listen_delete(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 delete_listen_list。"""
-    if len(hikari.Input.Command_List) != 1:
-        return hikari.error('请检查是否仅输入了要删除的监控序号')
-    if str(hikari.Input.Command_List[0]).isdigit() and len(str(hikari.Input.Command_List[0])) < 3:
-        hikari.Input.Select_Index = int(hikari.Input.Command_List[0])
-    else:
-        return hikari.error('请确认输入序号是否正确')
-    return hikari
-
-
 async def _handle_clan_info(hikari: Hikari_Model) -> Hikari_Model:
     """处理 get_ClanInfo。"""
     if hikari.Input.Search_Type != 3:
@@ -412,8 +389,6 @@ _HANDLERS = {
     get_ship_name: _handle_ship_name_roll,
     roll_ship: _handle_ship_name_roll,
     get_ShipRank: _handle_ship_rank,
-    add_listen_list: _handle_listen_add,
-    delete_listen_list: _handle_listen_delete,
     get_ClanInfo: _handle_clan_info,
     get_CwRank: _handle_cw,
     get_cw_recent: _handle_cw,

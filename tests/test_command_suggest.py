@@ -205,13 +205,11 @@ async def test_english_alias_routes():
     from hikari_core.commands.router import (
         async_update_ship_cache,
         get_BindInfo,
-        get_listen_list,
         get_ship_name,
     )
 
     cases = [
         (['search_ship'], get_ship_name),
-        (['monitor_list'], get_listen_list),
         (['bind_list'], get_BindInfo),
         (['update_ship'], async_update_ship_cache),
     ]

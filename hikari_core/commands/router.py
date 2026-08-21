@@ -15,7 +15,6 @@ from ..features.clan.cw_rank import get_CwRank
 from ..features.clan.info import get_ClanInfo
 from ..features.clan.rank import get_ClanRank
 from ..features.fun import check_christmas_box, get_BanInfo, get_sx_info, roll_ship
-from ..features.monitor import add_listen_list, delete_listen_list, get_diff_ship, get_listen_list, reset_config
 from ..features.ship.info import get_ShipInfo
 from ..features.ship.rank import get_ShipRank
 from ..features.ship.recent import get_ShipRecent
@@ -60,11 +59,6 @@ first_command_list = [  # 同指令中越长的匹配词越靠前；含英文别
     command(('check_version', '检查更新'), check_version),
     command(('update_style', '更新样式'), async_update_template),
     command(('update_ship', '更新战舰'), async_update_ship_cache),
-    command(('monitor_list', '查询监控', '监控列表', '查询监听', '监听列表'), get_listen_list),
-    command(('test_monitor', '测试监控'), get_diff_ship),
-    command(('add_monitor', '添加监控'), add_listen_list),
-    command(('delete_monitor', '删除监控'), delete_listen_list),
-    command(('reset_monitor', '重置监控'), reset_config),
     command(('change_bind', '切换绑定', '更换绑定', '更改绑定'), change_BindInfo),
     command(('bind_list', '查询绑定', '绑定查询', '绑定列表', '查绑定'), get_BindInfo),
     command(('delete_bind', '删除绑定'), delete_BindInfo),
@@ -112,11 +106,6 @@ _USAGE: Dict[Func, Dict[str, str]] = {
     get_BanInfo: {'zh': '[服务器] [昵称] 或 me', 'en': '[server] [nickname] or me'},
     get_ship_name: {'zh': '<国家> <舰种> <等级>', 'en': '<nation> <type> <tier>'},
     roll_ship: {'zh': '[国家] [舰种] [等级]', 'en': '[nation] [type] [tier]'},
-    get_listen_list: {'zh': '', 'en': ''},
-    add_listen_list: {'zh': '<服务器> <昵称> <备注>', 'en': '<server> <nickname> <remark>'},
-    delete_listen_list: {'zh': '<序号>', 'en': '<index>'},
-    get_diff_ship: {'zh': '', 'en': ''},
-    reset_config: {'zh': '', 'en': ''},
     check_version: {'zh': '', 'en': ''},
     async_update_template: {'zh': '', 'en': ''},
     async_update_ship_cache: {'zh': '', 'en': ''},
