@@ -66,36 +66,3 @@ servers = [
     matching(('ru', '俄服', 'Russia'), 'ru'),
     matching(('cn', '国服', 'china'), 'cn'),
 ]
-
-tiers = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ', 'Ⅺ']
-
-nb2_file = [
-    {'name': 'bot.py', 'url': 'https://raw.fastgit.org/benx1n/HikariBot/master/bot.py'},
-    {'name': '.env', 'url': 'https://raw.fastgit.org/benx1n/HikariBot/master/.env'},
-    {
-        'name': 'pyproject.toml',
-        'url': 'https://raw.fastgit.org/benx1n/HikariBot/master/pyproject.toml',
-    },
-]
-
-pr_select = [
-    {'value': 0, 'name': '还需努力', 'englishName': 'Bad', 'color': '#f44336'},
-    {'value': 750, 'name': '低于平均', 'englishName': 'Below Average', 'color': '#FF9800'},
-    {'value': 1100, 'name': '平均水平', 'englishName': 'Average', 'color': '#FFC107'},
-    {'value': 1350, 'name': '好', 'englishName': 'Good', 'color': '#8BC34A'},
-    {'value': 1550, 'name': '很好', 'englishName': 'Very Good', 'color': '#4CAF50'},
-    {'value': 1750, 'name': '非常好', 'englishName': 'Great', 'color': '#00BCD4'},
-    {'value': 2100, 'name': '大佬水平', 'englishName': 'Unicum', 'color': '#9C27B0'},
-    {'value': 2450, 'name': '神佬水平', 'englishName': 'Super Unicum', 'color': '#673AB7'},
-]
-
-color_data = {
-    'Bad': '#F44336',
-    'Below Average': '#FF9800',
-    'Average': '#FFC107',
-    'Good': '#8BC34A',
-    'Very Good': '#4CAF50',
-    'Great': '#00BCD4',
-    'Unicum': '#9C27B0',
-    'Super Unicum': '#673AB7',
-}
