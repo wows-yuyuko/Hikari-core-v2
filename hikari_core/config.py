@@ -23,6 +23,7 @@ class Config_Model(BaseModel):
     # 指令输错时的智能提示配置
     command_suggest_max: int = 3  # 最大提示条数，设为 0 则关闭智能提示
     command_suggest_dedupe: bool = True  # 同一效果(相同功能)的多个别名只提示一条
+    command_language: str = 'zh'  # 指令提示语言: zh=中文, en=英文（英文模式下提示英文指令）
 
 
 hikari_config = Config_Model()
@@ -41,6 +42,7 @@ def set_hikari_config(  # noqa: PLR0913
     local_test: bool = False,
     command_suggest_max: int = 3,
     command_suggest_dedupe: bool = True,
+    command_language: str = 'zh',
 ):
     """配置Hikari-core
 
@@ -55,6 +57,7 @@ def set_hikari_config(  # noqa: PLR0913
         yuyuko_url (str):yuyuko请求地址
         command_suggest_max (int): 指令输错时最大提示条数，默认3，设为0则关闭智能提示
         command_suggest_dedupe (bool): 相同功能的多别名只提示一条，默认开启
+        command_language (str): 指令提示语言，zh=中文(默认)，en=英文（提示英文指令与英文参数用法）
     """
     global hikari_config  # noqa: PLW0602
     hikari_config.proxy = proxy
@@ -68,6 +71,7 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.local_test = local_test
     hikari_config.command_suggest_max = command_suggest_max
     hikari_config.command_suggest_dedupe = command_suggest_dedupe
+    hikari_config.command_language = 'en' if str(command_language).lower().startswith('en') else 'zh'
     # 为空则使用默认路径
     from hikari_core.cache_utils import get_cache_file, initial_cache_file
 

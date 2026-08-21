@@ -259,11 +259,41 @@ class Router:
 - **二级指令同样覆盖**：`ship 大和 recebt` 会提示 `wws recent <船名> [天数或日期]`；
 - **兼容性**：`select_command` / `findFunction_and_replaceKeywords` 保持原签名不变。
 
+### 7.2 中英文设置
+
+`set_hikari_config(command_language='en')` 切换指令提示语言（默认 `zh`）：
+
+- **英文模式**下智能提示默认展示英文指令与英文参数用法：
+
+  ```
+  Unrecognized command. Did you mean (max 3 shown):
+    wws ship <ship name>
+    wws rank ship <server> <ship name>
+    wws recent ship <ship name> [days or date]
+  More help: send "wws help"
+  ```
+
+- 为原本只有中文别名的指令补充英文别名（英文模式下的指令入口）：
+
+  | 功能 | 英文别名 | 功能 | 英文别名 |
+  |---|---|---|---|
+  | 更新样式 | `update_style` | 切换绑定 | `change_bind` |
+  | 更新战舰 | `update_ship` | 查询绑定 | `bind_list` |
+  | 查询监控 | `monitor_list` | 删除绑定 | `delete_bind` |
+  | 测试监控 | `test_monitor` | 特殊绑定 | `special_bind` |
+  | 添加监控 | `add_monitor` | 搜船名 | `search_ship` |
+  | 删除监控 | `delete_monitor` | 重置监控 | `reset_monitor` |
+
+  > 注意：`search_ship` / `update_ship` 等含 `ship` 子串的英文别名，其指令条目必须排在 `ship` / `ship.rank` 之前（已按此调整列表顺序），否则会被子串匹配截胡。
+
+- 匹配仍为中英双语（中文模式输入英文、英文模式输入中文均可命中），仅提示展示语言随配置切换。
+- `help` 帮助文本（远程 OSS txt）暂未国际化，英文模式仍为中文内容，如需一并处理另议。
+
 ### 7.3 实现位置
 
 | 文件 | 改动 |
 |---|---|
-| `hikari_core/command_select.py` | 新增 `route_command`（带建议路由）、`_suggest`、`_token_similarity`、`_flatten_entries`、`_is_identity_query`、`render_suggest_message`；`_match_level` 重构匹配层；移除 `工会` 别名 |
+| `hikari_core/command_select.py` | 新增 `route_command`（带建议路由）、`_suggest`、`_token_similarity`、`_flatten_entries`、`_is_identity_query`、`render_suggest_message`、`_display_alias`；`_match_level` 重构匹配层；移除 `工会` 别名；补充英文别名并调整列表顺序；`_USAGE` 双语文案 |
 | `hikari_core/analyze.py` | 改用 `route_command`，有建议时直接返回提示错误 |
-| `hikari_core/config.py` | 新增 `command_suggest_max` / `command_suggest_dedupe` 配置 |
-| `tests/test_command_suggest.py` | 15 条无网络单元测试（路由回归 + 智能提示 + 去重/上限配置） |
+| `hikari_core/config.py` | 新增 `command_suggest_max` / `command_suggest_dedupe` / `command_language` 配置 |
+| `tests/test_command_suggest.py` | 19 条无网络单元测试（路由回归 + 智能提示 + 去重/上限/中英文配置） |

@@ -63,19 +63,21 @@ clan_command_list = [
 ]
 
 
-first_command_list = [  # 同指令中越长的匹配词越靠前
+first_command_list = [  # 同指令中越长的匹配词越靠前；含英文别名的指令需在可能冲突的词之前
     command(('check_version', '检查更新'), check_version),
-    command(('更新样式',), async_update_template),
-    command(('更新战舰',), async_update_ship_cache),
-    command(('查询监控', '监控列表', '查询监听', '监听列表'), get_listen_list),
-    command(('测试监控',), get_diff_ship),
-    command(('添加监控',), add_listen_list),
-    command(('删除监控',), delete_listen_list),
-    command(('重置监控',), reset_config),
-    command(('切换绑定', '更换绑定', '更改绑定'), change_BindInfo),
-    command(('查询绑定', '绑定查询', '绑定列表', '查绑定'), get_BindInfo),
-    command(('删除绑定',), delete_BindInfo),
-    command(('特殊绑定',), set_special_BindInfo),
+    command(('update_style', '更新样式'), async_update_template),
+    command(('update_ship', '更新战舰'), async_update_ship_cache),
+    command(('monitor_list', '查询监控', '监控列表', '查询监听', '监听列表'), get_listen_list),
+    command(('test_monitor', '测试监控'), get_diff_ship),
+    command(('add_monitor', '添加监控'), add_listen_list),
+    command(('delete_monitor', '删除监控'), delete_listen_list),
+    command(('reset_monitor', '重置监控'), reset_config),
+    command(('change_bind', '切换绑定', '更换绑定', '更改绑定'), change_BindInfo),
+    command(('bind_list', '查询绑定', '绑定查询', '绑定列表', '查绑定'), get_BindInfo),
+    command(('delete_bind', '删除绑定'), delete_BindInfo),
+    command(('special_bind', '特殊绑定'), set_special_BindInfo),
+    # search_ship 含 'ship' 子串，需排在 ship / ship.rank 之前
+    command(('search_ship', '搜船名', '查船名', '船名'), get_ship_name),
     command(('ship.rank', '单船排行榜', '战舰排行榜'), get_ShipRank),
     command(('cw.rank', '军团战排行榜', '公会战排行榜'), get_CwRank),
     command(('cw.recent', '军团战记录', '公会战记录'), get_cw_recent),
@@ -92,41 +94,40 @@ first_command_list = [  # 同指令中越长的匹配词越靠前
     command(('sx', '扫雪'), get_sx_info),
     command(('ban', '封号记录'), get_BanInfo),
     command(('box', 'sd', '圣诞船池'), check_christmas_box),
-    command(('搜船名', '查船名', '船名'), get_ship_name),
     command(('help', '帮助'), get_help),
 ]
 
-# 各功能的参数用法提示，用于指令输错时的智能提示（key 为实际执行的功能函数）
-_USAGE: Dict[Func, str] = {
-    get_AccountInfo: '<服务器> <游戏昵称>',
-    get_RecentInfo: '[天数或日期]',
-    get_RecentsInfo: '',
-    get_ShipInfo: '<船名>',
-    get_ShipRecent: '<船名> [天数或日期]',
-    get_ShipRank: '<服务器> <船名>',
-    get_CwRank: '[服务器] [赛季]',
-    get_cw_recent: '<服务器> <公会TAG> [赛季] [队数]',
-    get_ClanRank: '<服务器> <公会TAG>',
-    get_ClanInfo: '<服务器> <公会TAG>',
-    set_BindInfo: '<服务器> <游戏昵称>',
-    set_special_BindInfo: '<AID>',
-    change_BindInfo: '[序号]',
-    delete_BindInfo: '<序号>',
-    get_BindInfo: 'me 或 @群友',
-    check_christmas_box: '[服务器] [昵称] 或 me',
-    get_sx_info: '[服务器] [昵称] 或 me',
-    get_BanInfo: '[服务器] [昵称] 或 me',
-    get_ship_name: '<国家> <舰种> <等级>',
-    roll_ship: '[国家] [舰种] [等级]',
-    get_listen_list: '',
-    add_listen_list: '<服务器> <昵称> <备注>',
-    delete_listen_list: '<序号>',
-    get_diff_ship: '',
-    reset_config: '',
-    check_version: '',
-    async_update_template: '',
-    async_update_ship_cache: '',
-    get_help: '',
+# 各功能的参数用法提示（中英双语），用于指令输错时的智能提示（key 为实际执行的功能函数）
+_USAGE: Dict[Func, Dict[str, str]] = {
+    get_AccountInfo: {'zh': '<服务器> <游戏昵称>', 'en': '<server> <nickname>'},
+    get_RecentInfo: {'zh': '[天数或日期]', 'en': '[days or date]'},
+    get_RecentsInfo: {'zh': '', 'en': ''},
+    get_ShipInfo: {'zh': '<船名>', 'en': '<ship name>'},
+    get_ShipRecent: {'zh': '<船名> [天数或日期]', 'en': '<ship name> [days or date]'},
+    get_ShipRank: {'zh': '<服务器> <船名>', 'en': '<server> <ship name>'},
+    get_CwRank: {'zh': '[服务器] [赛季]', 'en': '[server] [season]'},
+    get_cw_recent: {'zh': '<服务器> <公会TAG> [赛季] [队数]', 'en': '<server> <clan tag> [season] [team]'},
+    get_ClanRank: {'zh': '<服务器> <公会TAG>', 'en': '<server> <clan tag>'},
+    get_ClanInfo: {'zh': '<服务器> <公会TAG>', 'en': '<server> <clan tag>'},
+    set_BindInfo: {'zh': '<服务器> <游戏昵称>', 'en': '<server> <nickname>'},
+    set_special_BindInfo: {'zh': '<AID>', 'en': '<AID>'},
+    change_BindInfo: {'zh': '[序号]', 'en': '[index]'},
+    delete_BindInfo: {'zh': '<序号>', 'en': '<index>'},
+    get_BindInfo: {'zh': 'me 或 @群友', 'en': 'me or @member'},
+    check_christmas_box: {'zh': '[服务器] [昵称] 或 me', 'en': '[server] [nickname] or me'},
+    get_sx_info: {'zh': '[服务器] [昵称] 或 me', 'en': '[server] [nickname] or me'},
+    get_BanInfo: {'zh': '[服务器] [昵称] 或 me', 'en': '[server] [nickname] or me'},
+    get_ship_name: {'zh': '<国家> <舰种> <等级>', 'en': '<nation> <type> <tier>'},
+    roll_ship: {'zh': '[国家] [舰种] [等级]', 'en': '[nation] [type] [tier]'},
+    get_listen_list: {'zh': '', 'en': ''},
+    add_listen_list: {'zh': '<服务器> <昵称> <备注>', 'en': '<server> <nickname> <remark>'},
+    delete_listen_list: {'zh': '<序号>', 'en': '<index>'},
+    get_diff_ship: {'zh': '', 'en': ''},
+    reset_config: {'zh': '', 'en': ''},
+    check_version: {'zh': '', 'en': ''},
+    async_update_template: {'zh': '', 'en': ''},
+    async_update_ship_cache: {'zh': '', 'en': ''},
+    get_help: {'zh': '', 'en': ''},
 }
 
 # 相似度阈值：低于该值的指令词不进入建议列表
@@ -262,24 +263,39 @@ def _suggest(match_list, command_List) -> List[dict]:
     return scored[: hikari_config.command_suggest_max]
 
 
+def _display_alias(com, kw) -> str:
+    """按当前语言选择展示用的指令别名。
+
+    - 英文模式：优先展示该指令的第一个英文别名（如 ship / rank / monitor_list）；
+    - 中文模式：展示命中的别名（如输入 单传 提示 单船）。
+    """
+    if hikari_config.command_language == 'en':
+        for k in com.keywords or ():
+            if str(k).isascii():
+                return k
+    if kw and kw in (com.keywords or ()):
+        return kw
+    return com.keywords[0] if com.keywords else ''
+
+
 def render_suggest_message(suggestions: List[dict]) -> str:
-    """将建议列表渲染为提示文案（指令使用匹配到的关键词，参数补充用法提示）。"""
+    """将建议列表渲染为提示文案（按 command_language 输出中/英文）。"""
+    is_en = hikari_config.command_language == 'en'
     lines = []
     for item in suggestions:
-        words = []
-        for com in item['path']:
-            kw = item.get('kw')
-            # 命中哪个别名就展示哪个别名（如输入"单传"提示"单船"），否则展示主别名
-            word = kw if kw and kw in com.keywords else com.keywords[0]
-            words.append(word)
-        usage = _USAGE.get(item['handler'], '')
-        line = 'wws ' + ' '.join(words)
+        words = [_display_alias(com, item.get('kw')) for com in item['path']]
+        usage = (_USAGE.get(item['handler'], {}) or {}).get('en' if is_en else 'zh', '')
+        line = 'wws ' + ' '.join(w for w in words if w)
         if usage:
             line += ' ' + usage
         lines.append(line)
     cap = hikari_config.command_suggest_max
-    head = f'未识别的指令，你是不是想输入（最多显示 {cap} 条）：\n'
-    tail = '\n更多帮助请发送：wws help'
+    if is_en:
+        head = f'Unrecognized command. Did you mean (max {cap} shown):\n'
+        tail = '\nMore help: send "wws help"'
+    else:
+        head = f'未识别的指令，你是不是想输入（最多显示 {cap} 条）：\n'
+        tail = '\n更多帮助请发送：wws help'
     return head + '\n'.join('  ' + l for l in lines) + tail
 
 

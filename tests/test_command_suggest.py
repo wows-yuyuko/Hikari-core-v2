@@ -162,6 +162,66 @@ async def test_render_message_format():
 
 
 # ============================================================
+# 中英文模式
+# ============================================================
+
+async def test_english_mode_hints_english():
+    """英文模式下提示英文指令与英文参数用法。"""
+    hikari_config.command_language = 'en'
+    try:
+        func, rest, suggest = await route_command(['单传'])
+        assert suggest
+        msg = render_suggest_message(suggest)
+        assert 'Did you mean' in msg
+        assert 'wws ship <ship name>' in msg
+        assert '单船' not in msg  # 英文模式不展示中文别名
+    finally:
+        hikari_config.command_language = 'zh'
+
+
+async def test_english_mode_english_typo():
+    """英文模式下英文拼写错误提示英文指令。"""
+    hikari_config.command_language = 'en'
+    try:
+        func, rest, suggest = await route_command(['shep', '大和'])
+        assert suggest
+        msg = render_suggest_message(suggest)
+        assert 'wws ship <ship name>' in msg
+    finally:
+        hikari_config.command_language = 'zh'
+
+
+async def test_zh_mode_unchanged():
+    """默认中文模式行为不变。"""
+    hikari_config.command_language = 'zh'
+    func, rest, suggest = await route_command(['单传', '大和'])
+    msg = render_suggest_message(suggest)
+    assert '你是不是想输入' in msg
+    assert 'wws 单船 <船名>' in msg
+
+
+async def test_english_alias_routes():
+    """新增英文别名可直接路由（英文模式下的指令入口）。"""
+    from hikari_core.command_select import (
+        async_update_ship_cache,
+        get_BindInfo,
+        get_listen_list,
+        get_ship_name,
+    )
+
+    cases = [
+        (['search_ship'], get_ship_name),
+        (['monitor_list'], get_listen_list),
+        (['bind_list'], get_BindInfo),
+        (['update_ship'], async_update_ship_cache),
+    ]
+    for tokens, expect in cases:
+        func, rest, suggest = await route_command(list(tokens))
+        assert func == expect, f'{tokens} -> {func}'
+        assert suggest == []
+
+
+# ============================================================
 # 独立运行入口
 # ============================================================
 
