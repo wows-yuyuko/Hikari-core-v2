@@ -20,6 +20,9 @@ class Config_Model(BaseModel):
     yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com'
     yuyuko_type: Optional[str] = 'BOT'
     local_test: bool = False
+    # 指令输错时的智能提示配置
+    command_suggest_max: int = 3  # 最大提示条数，设为 0 则关闭智能提示
+    command_suggest_dedupe: bool = True  # 同一效果(相同功能)的多个别名只提示一条
 
 
 hikari_config = Config_Model()
@@ -36,6 +39,8 @@ def set_hikari_config(  # noqa: PLR0913
     yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com',
     yuyuko_type: Optional[str] = 'BOT',
     local_test: bool = False,
+    command_suggest_max: int = 3,
+    command_suggest_dedupe: bool = True,
 ):
     """配置Hikari-core
 
@@ -48,6 +53,8 @@ def set_hikari_config(  # noqa: PLR0913
         use_broswer (str): chromium/firefox，默认chromium，性能大约为firefox三倍
         game_path (str):缓存文件夹路径，推荐设置在bot目录下，不配置默认为当前项目的data/wows-yuyuko目录下
         yuyuko_url (str):yuyuko请求地址
+        command_suggest_max (int): 指令输错时最大提示条数，默认3，设为0则关闭智能提示
+        command_suggest_dedupe (bool): 相同功能的多别名只提示一条，默认开启
     """
     global hikari_config  # noqa: PLW0602
     hikari_config.proxy = proxy
@@ -59,6 +66,8 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.yuyuko_url = yuyuko_url
     hikari_config.yuyuko_type = yuyuko_type
     hikari_config.local_test = local_test
+    hikari_config.command_suggest_max = command_suggest_max
+    hikari_config.command_suggest_dedupe = command_suggest_dedupe
     # 为空则使用默认路径
     from hikari_core.cache_utils import get_cache_file, initial_cache_file
 

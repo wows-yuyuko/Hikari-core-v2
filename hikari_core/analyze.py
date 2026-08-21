@@ -7,7 +7,7 @@ from typing import Optional
 
 from loguru import logger
 
-from .command_select import select_command
+from .command_select import render_suggest_message, route_command
 from .data_source import levels, nations, servers, shiptypes
 from .game.ban_search import get_BanInfo
 from .game.box_check import check_christmas_box
@@ -36,7 +36,10 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
                 return hikari.error('请发送wws help查看帮助')
             hikari.Input.Command_Text = html.unescape(str(hikari.Input.Command_Text)).strip()
             hikari = await extract_with_special_name(hikari)
-            hikari.Function, hikari.Input.Command_List = await select_command(hikari.Input.Command_List)
+            hikari.Function, hikari.Input.Command_List, suggest = await route_command(hikari.Input.Command_List)
+            if suggest:
+                # 指令未识别，给出相似命令的智能提示
+                return hikari.error(render_suggest_message(suggest))
             if hikari.Input.AccountName:
                 hikari.Input.Command_List.insert(0, hikari.Input.AccountName)
             hikari = await extract_with_me_or_at(hikari)
