@@ -8,12 +8,10 @@ from typing import List
 
 import httpx
 import orjson
-from bs4 import BeautifulSoup
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
 from hikari_core.core.config import hikari_config
-from hikari_core.core.constants import number_url_homes
 from hikari_core.core.http_client import (
     get_client_default,
     get_client_wg,

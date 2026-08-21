@@ -69,14 +69,6 @@ servers = [
 
 tiers = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ', 'Ⅺ']
 
-number_url_homes = {
-    'asia': 'https://asia.wows-numbers.com',
-    'eu': 'https://wows-numbers.com',
-    'na': 'https://na.wows-numbers.com',
-    'ru': 'https://ru.wows-numbers.com',
-    'cn': '',
-}
-
 nb2_file = [
     {'name': 'bot.py', 'url': 'https://raw.fastgit.org/benx1n/HikariBot/master/bot.py'},
     {'name': '.env', 'url': 'https://raw.fastgit.org/benx1n/HikariBot/master/.env'},

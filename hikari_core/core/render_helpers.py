@@ -1,9 +1,9 @@
-"""渲染辅助函数（PR 颜色、排行榜解析等）。
+"""渲染辅助函数（PR 颜色等）。
 
 原 ``hikari_core/data_source.py`` 的渲染辅助部分，数据常量见 ``core/constants.py``。
+已移除 wows-numbers 爬虫相关函数（set_ShipRank_Numbers / search_accountId / search_color）。
 """
 
-import re
 import traceback
 
 from .constants import color_data, pr_select, template_path
@@ -27,92 +27,8 @@ async def select_prvalue_and_color(pr):
     return describe, color
 
 
-async def set_ShipRank_Numbers(data, server, shipId):
-    try:
-        info_list = []
-        for each in data:
-            index = int(each.select('td')[0].string)
-            clan_name = each.select('td[style="text-align: left;  "] a')
-            if len(clan_name) > 1:
-                tag = clan_name[0].string.replace('[', '').replace(']', '')
-                userName = clan_name[1].string
-                url = clan_name[1].attrs['href']
-            else:
-                tag = None
-                userName = clan_name[0].string
-                url = clan_name[0].attrs['href']
-            accountId = await search_accountId(url)
-            battles = int(each.select('td span')[0].string.replace(' ', ''))
-            pr = int(each.select('td span')[1].string.replace(' ', ''))
-            prColor = await search_color(each.select('td span')[1].attrs['style'])
-            wins = float(each.select('td span')[2].string.replace('%', ''))
-            winsColor = await search_color(each.select('td span')[2].attrs['style'])
-            frags = float(each.select('td span')[3].string)
-            fragsColor = await search_color(each.select('td span')[3].attrs['style'])
-            maxFrags = int(each.select('td span')[4].string)
-            damage = int(each.select('td span')[5].string.replace(' ', ''))
-            damageColor = await search_color(each.select('td span')[5].attrs['style'])
-            maxDamage = int(each.select('td span')[6].string.replace(' ', ''))
-            xp = int(each.select('td span')[7].string.replace(' ', ''))
-            maxXp = int(each.select('td span')[8].string.replace(' ', ''))
-            # planesDestroyed = float(each.select('td span')[9].string)
-            # planesDestroyedColor = await search_color(each.select('td span')[9].attrs['style'])
-            # maxPlanesDestroyed = int(each.select('td span')[10].string)
-            info = {
-                'accountId': accountId,
-                'battles': battles,
-                'damage': damage,
-                'damageColor': damageColor,
-                'frags': frags,
-                'fragsColor': fragsColor,
-                'index': index,
-                'maxDamage': maxDamage,
-                'maxFrags': maxFrags,
-                'maxXp': maxXp,
-                'pr': pr,
-                'prColor': prColor,
-                'server': server,
-                'shipId': shipId,
-                'wins': wins,
-                'winsColor': winsColor,
-                'xp': xp,
-                'tag': tag,
-                'userName': userName,
-            }
-            info_list.append(info)
-        return info_list
-
-    except Exception:
-        traceback.print_exc()
-        return None
-
-
 async def set_clanRecord_params():
     return
-
-
-async def search_accountId(str):
-    try:
-        match = re.search(r'/player/(.*?),', str)
-        if match:
-            return int(match.group(1).strip())
-        else:
-            return None
-    except Exception:
-        traceback.print_exc()
-        return None
-
-
-async def search_color(str):
-    try:
-        match = re.search(r'color:(.*?);', str)
-        if match:
-            return match.group(1).strip()
-        else:
-            return None
-    except Exception:
-        traceback.print_exc()
-        return None
 
 
 async def set_damageColor(type, value):
