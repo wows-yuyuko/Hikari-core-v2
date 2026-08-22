@@ -28,24 +28,9 @@ executor = ThreadPoolExecutor()
 @handle_yuyuko_errors(recreate_func="default")
 async def get_help(hikari: Hikari_Model):
     """获取帮助列表（按 command_language 输出中文/英文 H5 帮助页）"""
-    version_line = ''
-    try:
-        url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/version.json'
-        client_default = await get_client_default()
-        resp = await client_default.get(url, timeout=20)
-        result = orjson.loads(resp.content)
-        latest_version = result['latest_version']
-        is_en = hikari_config.command_language == 'en'
-        version_line = (
-            f'Version {__version__} | Latest {latest_version}'
-            if is_en
-            else f'当前版本 {__version__}  最新版本 {latest_version}'
-        )
-    except Exception:
-        logger.warning('获取版本信息失败，帮助页不显示版本号')
     template = Templates.HELP_EN if hikari_config.command_language == 'en' else Templates.HELP_ZH
     template.apply_to(hikari)
-    return hikari.success({'version_info': version_line})
+    return hikari.success({})
 
 
 def _find_repo_root() -> Optional[Path]:
