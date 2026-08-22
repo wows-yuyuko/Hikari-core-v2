@@ -58,5 +58,11 @@
 	},
 	{
 		"cw-rank-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/cw-rank-v5.html"
+	},
+	{
+		"help-zh.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/help-zh.html"
+	},
+	{
+		"help-en.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/help-en.html"
 	}
 ]
