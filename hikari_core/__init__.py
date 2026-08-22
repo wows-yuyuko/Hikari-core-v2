@@ -127,6 +127,16 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
             # 测试模式下才赋值给模板内容
             if hikari_config.local_test:
                 hikari.template_content = content
+            # 渲染图片时额外保存一份 HTML，便于查看与调试
+            if hikari_config.save_template_html:
+                try:
+                    html_dir = get_cache_file() / 'template_html'
+                    html_dir.mkdir(parents=True, exist_ok=True)
+                    html_path = html_dir / os.path.basename(hikari.Output.Template)
+                    html_path.write_text(content, encoding='utf-8')
+                    logger.info(f'已保存渲染HTML: {html_path}')
+                except Exception:
+                    logger.error(traceback.format_exc())
             hikari.Output.Data = content
             hikari.Output.Data_Type = type(hikari.Output.Data)
 

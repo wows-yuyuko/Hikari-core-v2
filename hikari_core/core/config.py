@@ -20,6 +20,7 @@ class Config_Model(BaseModel):
     yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com'
     yuyuko_type: Optional[str] = 'BOT'
     local_test: bool = False
+    save_template_html: bool = False  # 渲染图片时额外保存一份 HTML，便于查看与调试
     # 指令输错时的智能提示配置
     command_suggest_max: int = 3  # 最大提示条数，设为 0 则关闭智能提示
     command_suggest_dedupe: bool = True  # 同一效果(相同功能)的多个别名只提示一条
@@ -40,6 +41,7 @@ def set_hikari_config(  # noqa: PLR0913
     yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com',
     yuyuko_type: Optional[str] = 'BOT',
     local_test: bool = False,
+    save_template_html: bool = False,
     command_suggest_max: int = 3,
     command_suggest_dedupe: bool = True,
     command_language: str = 'zh',
@@ -58,6 +60,7 @@ def set_hikari_config(  # noqa: PLR0913
         command_suggest_max (int): 指令输错时最大提示条数，默认3，设为0则关闭智能提示
         command_suggest_dedupe (bool): 相同功能的多别名只提示一条，默认开启
         command_language (str): 指令提示语言，zh=中文(默认)，en=英文（提示英文指令与英文参数用法）
+        save_template_html (bool): 渲染图片时额外保存一份 HTML 到缓存目录 template_html/，默认关闭
     """
     global hikari_config  # noqa: PLW0602
     hikari_config.proxy = proxy
@@ -69,6 +72,7 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.yuyuko_url = yuyuko_url
     hikari_config.yuyuko_type = yuyuko_type
     hikari_config.local_test = local_test
+    hikari_config.save_template_html = save_template_html
     hikari_config.command_suggest_max = command_suggest_max
     hikari_config.command_suggest_dedupe = command_suggest_dedupe
     hikari_config.command_language = 'en' if str(command_language).lower().startswith('en') else 'zh'
@@ -91,7 +95,7 @@ def set_hikari_config(  # noqa: PLR0913
         from hikari_core.features.system import update_ship_cache, update_ship_cache_cron, update_template
 
         logger.info('执行初始模板更新...')
-        update_template()
+        # update_template()
         logger.info('执行初始缓存更新...')
         update_ship_cache()
         logger.info('启动定时任务')
