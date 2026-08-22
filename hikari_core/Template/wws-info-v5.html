@@ -87,9 +87,15 @@
             {% endif %}
         </div>
 
-        <div class="recnet-time">
-            <span>最后战斗时间：</span><span>{{ time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(abs(data['lastBattleTime'])))}}</span>
+        {% if data['typeInfo']['PVP']['battleInfo']['lastBattleTime'] > 0 %}
+        <div class="recnet-time"><span>最后战斗时间：</span>
+            <span>{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(int(abs(data['typeInfo']['PVP']['battleInfo']['lastBattleTime'])))) }}</span>
         </div>
+        {% else %}
+        <div class="recnet-time"><span>最后战斗时间：</span>
+            <span>N/A</span>
+        </div>
+        {% endif %}
 
         {% if data['battleTypeInfo']['PVP']['battle'] %}
             <div class="overview-change">

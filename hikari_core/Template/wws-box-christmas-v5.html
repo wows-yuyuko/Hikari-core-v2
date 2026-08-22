@@ -4,17 +4,19 @@
 <head>
     <meta charset="utf-8">
     <title></title>
+    <link href="file:\\{{template_path}}/main.css" rel="stylesheet" type="text/css">
+    <link href="file:\\{{template_path}}/avatar.css" rel="stylesheet" type="text/css">
 </head>
 <style>
-    * {
-        padding: 0;
-        margin: 0;
+    body {
+        background: linear-gradient(180deg, #f6f4ff 0%, #eef1f8 100%);
     }
 
     .main-content, body {
         width: 1500px;
+        margin: 0 auto;
         font-size: 30px;
-        font-family: "Microsoft YaHei", serif;
+        font-family: "Microsoft YaHei Bold", "Microsoft YaHei", sans-serif;
         font-weight: bold;
     }
 
@@ -24,77 +26,15 @@
         flex-direction: column;
     }
 
-    .masking-header {
-        display: flex;
-        justify-content: flex-start;
-        height: 280px;
-        width: auto;
-        margin-top: 10px;
-        margin-left: 10px;
-        gap: 15px;
-        border-radius: 36px;
-        background: linear-gradient(to right, rgba(250, 250, 250, 0.75) 600px, rgba(250, 250, 250, 0));
-    }
-
-    .user-info {
-        font-weight: bolder;
-        line-height: 30px;
-        font-size: 45px;
-    }
-
-    .user-sign-time {
-        margin-top: 30px;
-        font-family: "Microsoft YaHei UI Light", serif;
-    }
-
-    .user-server {
-        margin-top: 5px;
-        font-family: "Microsoft YaHei UI Light", serif;
-    }
-
-    .server-style {
-        font-weight: bold;
-    }
-
-    .user-signature {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        padding: 30px;
-        gap: 10px;
-        width: auto;
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 36px;
-        margin-top: 30px;
-    }
-</style>
-<style>
-    {%if data['userInfo']['avatar']['colorName']['status']==2 %}
-        .mirage-text {
-            background: {{ data['userInfo']['avatar']['colorName']['data'] }};
-            color: transparent;
-            -webkit-background-clip: text;
-            animation: ran-7e872de5 10s linear infinite;
-        }
-    {% endif %}
-
-    .main-content, body {
-        width: 1500px;
-        font-size: 30px;
-        font-family: "Microsoft YaHei", serif;
-        font-weight: bold;
-        background-size: contain;
-        /*background: url("https://shinoaki.com/110554439_p0.jpg") no-repeat;*/
-    }
-
+    /* ===== 顶部头像区域（与 wws-info-v5 家族一致） ===== */
     .page-header {
         border-radius: 36px;
         height: 300px;
         margin: 50px 50px 30px;
         display: flex;
         justify-content: flex-start;
-    {%if data['userInfo']['avatar']['banner']['status']==2 %}
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    {% if data['userInfo']['avatar']['banner']['status']==2 %}
         background: url("{{data['userInfo']['avatar']['banner']['data']}}") no-repeat;
     {% endif %}
         background-position: center;
@@ -108,7 +48,7 @@
         width: 260px;
         margin-left: 10px;
         margin-top: 10px;
-    {%if data['userInfo']['avatar']['avatar']['status']==2 %}
+    {% if data['userInfo']['avatar']['avatar']['status']==2 %}
         background: url("{{data['userInfo']['avatar']['avatar']['data']}}") no-repeat;
     {% else %}
         background: url("{{data['userInfo']['dogTag']}}") no-repeat;
@@ -126,31 +66,49 @@
         font-weight: bold;
         flex-grow: 1;
         justify-content: center;
+    {% if data['userInfo']['avatar']['sign']['status'] != 2 %}
+        gap: 20px;
+    {% endif %}
     }
 
     .auth-status {
         color: #767171;
         margin: 0 50px;
         height: 60px;
-        background-color: #F2F2F2;
+        background: rgba(245, 240, 255, 0.5);
+        border: 2px solid rgba(180, 160, 230, 0.6);
         border-radius: 16px;
         line-height: 60px;
         font-weight: normal;
         text-align: center;
+        box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
     }
 
     .box-info {
         color: #767171;
         margin: 30px 50px;
         height: 60px;
-        background-color: #F2F2F2;
+        background: rgba(245, 240, 255, 0.5);
+        border: 2px solid rgba(180, 160, 230, 0.6);
         border-radius: 16px;
         line-height: 60px;
         font-weight: normal;
         text-align: center;
+        box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
     }
 </style>
 <style>
+    {% if data['userInfo']['avatar']['colorName']['status']==2 %}
+        .mirage-text {
+            background: {{ data['userInfo']['avatar']['colorName']['data'] }};
+            background-size: 200% 200%;
+            color: transparent;
+            -webkit-background-clip: text;
+            animation: ran-7e872de5 3s linear infinite;
+        }
+    {% endif %}
+
+    /* ===== 统一卡片（玻璃紫调） ===== */
     .total-ship-row {
         margin: 0 40px;
         margin-top: 30px;
@@ -160,18 +118,22 @@
 
     .total-ship {
         margin: 0 10px;
-        background-color: #F2F2F2;
-        flex: 1;
+        background: rgba(245, 240, 255, 0.5);
+        border: 2px solid rgba(180, 160, 230, 0.6);
         border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
+        flex: 1;
         display: flex;
         flex-direction: column;
     }
 
     .schedule {
         margin: 0 10px;
-        background-color: #F2F2F2;
-        flex: 1;
+        background: rgba(245, 240, 255, 0.5);
+        border: 2px solid rgba(180, 160, 230, 0.6);
         border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
+        flex: 1;
     }
 
     .total-ship .up {
@@ -232,13 +194,17 @@
         height: 60px;
         font-weight: bold;
         line-height: 60px;
+        background: transparent;
+        margin: 0;
+        border-radius: 0;
+        overflow: visible;
     }
 
     .pr-bar-bg {
         position: relative;
         flex: 1;
         line-height: 60px;
-        background-color: #A6A6A6;
+        background-color: rgba(180, 160, 230, 0.35);
         height: 60px;
         border-radius: 30px;
         margin-top: 10px;
@@ -258,26 +224,39 @@
     .pr-number {
         z-index: 99;
         position: absolute;
-        left: 0px;
-        right: 0px;
+        left: 0;
+        right: 0;
         font-size: 35px;
         font-weight: bold;
+        color: #303133;
+        text-shadow: none;
     }
 
-    .footer {
-        line-height: 30px;
+    .tips {
         margin-top: 70px;
         text-align: center;
         font-weight: bold;
         font-size: 20px;
         color: #909399;
+        line-height: 30px;
+    }
+
+    .footer {
+        margin-top: 30px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 24px;
+        color: #909399;
+        margin-bottom: 20px;
     }
 </style>
 <style>
     .rare-info {
         margin: 0 50px;
-        background-color: #F2F2F2;
+        background: rgba(245, 240, 255, 0.5);
+        border: 2px solid rgba(180, 160, 230, 0.6);
         border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
         min-height: 300px;
         display: flex;
         justify-content: flex-start;
@@ -361,10 +340,10 @@
                         <div class="pr-bar-bg">
                             <span class="pr-number"><span class="pr-text"></span></span>
                             <div class="pr-bar" style="background-color: #92D050;"></div>
-                            <div class="footer">
+                            <div class="tips">
                                 <p>tips：未授权数据不准确，仅支持统计已战斗过的舰船</p>
                                 <p>授权地址(点击右上角WG图标)：<span style="color: red">wows.mgaia.top</span></p>
-                                <p>频道搜索”yuyuko”即可使用稳定的腾讯官方机器人~</p>
+                                <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>
                             </div>
                         </div>
                     </div>
@@ -392,6 +371,9 @@
             {% endfor %}
         </div>
         {% endfor %}
+        <div class="footer">
+            <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>
+            <p>©github:wows-yuyuko</p>
         </div>
     </div>
 </div>

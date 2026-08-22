@@ -1,95 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-cn">
 <head>
     <meta charset="utf-8">
     <title></title>
+    <link href="file:\\{{template_path}}/main.css" rel="stylesheet" type="text/css">
+    <link href="file:\\{{template_path}}/avatar.css" rel="stylesheet" type="text/css">
 </head>
 <style>
-    * {
-        padding: 0;
-        margin: 0;
+    body {
+        width: 660px;
+        background: linear-gradient(180deg, #f6f4ff 0%, #eef1f8 100%);
     }
+
     .main-content {
         width: 660px;
-        font-family: 'Microsoft YaHei';
-        font-family: "Microsoft YaHei";
+        margin: 20px auto;
+        font-family: "Microsoft YaHei Bold", "Microsoft YaHei", sans-serif;
         font-size: 20px;
         border-radius: 16px;
         font-weight: bold;
-        background-color: #F2F2F2;
+        background: rgba(245, 240, 255, 0.5);
+        border: 2px solid rgba(180, 160, 230, 0.6);
+        box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
+        overflow: hidden;
+        box-sizing: border-box;
     }
+
     .header {
         height: 80px;
         display: flex;
+        align-items: center;
         line-height: 40px;
+        background: linear-gradient(135deg, rgba(106, 17, 203, 0.08) 0%, rgba(37, 117, 252, 0.08) 100%);
+        border-bottom: 2px solid rgba(180, 160, 230, 0.4);
     }
-    .sec {
-        margin: 15px;
-        height: 50px;
-        width: 50px;
-        text-align: center;
-        line-height: 50px;
-        border-radius: 30px;
-        border: #008272 3px solid;
-        font-weight: normal;
+
+    .header-text {
+        color: #4a4a4a;
     }
-    .ship-list {
-        display: flex;
-        flex-direction: column;
-        border-radius: 16px;
-    }
-    .ship-item {
-        display: flex;
-        height: 60px;
-        line-height: 60px;
-    }
-    .ship-inf {
-        flex: 1;
-        display: flex;
-    }
-    .index {
-        width: 60px;
-        text-align: center;
-        font-weight: bold;
-    }
-    .ship-level {
-        width: 40px;
-        text-align: center;
-        display: inline-block;
-    }
-    .ship-name {
-        text-align: center;
-        display: inline-block;
-    }
-    .ship-server-type {
-        width: 80px;
-        text-align: center;
-        display: inline-block;
-    }
-    .icon{
-        width: 40px;
-    }
-    .icon img {
-        display: block;
-        width: 30px;
-        height: 30px;
-        margin: 15px 0;
-    }
-</style>
-<style>
+
     .table-style {
         width: 100%;
         border-collapse: collapse;
         table-layout: fixed;
+        border: none;
     }
 
-    .table-style th, .table-style td {
+    .table-style th,
+    .table-style td {
         padding: 12px;
-        border: 1px solid #ddd;
+        border: 1px solid rgba(180, 160, 230, 0.3);
+    }
+
+    .table-style th {
+        background: rgba(245, 240, 255, 0.8);
+        color: #4a4a4a;
+        font-size: 18px;
+    }
+
+    .table-style tbody tr:nth-child(odd) {
+        background: rgba(180, 160, 230, 0.12);
     }
 
     .center-align {
         text-align: center;
+    }
+
+    .center-align-index {
+        color: #6a11cb;
+        font-weight: bold;
     }
 
     .img-text-wrapper {
@@ -100,6 +79,11 @@
 
     .img-text-wrapper img {
         object-fit: cover;
+    }
+
+    .ship-level-v2 {
+        font-weight: bold;
+        color: #6a11cb;
     }
 </style>
 <body>
@@ -160,26 +144,12 @@
         </tbody>
     </table>
 </div>
-</div>
 </body>
 
 <script>
     let index_doc = document.getElementsByClassName('center-align-index');
     for(let idx=0;idx<index_doc.length;idx++) {
         index_doc[idx].innerText = idx+1;
-    }
-</script>
-
-<script>
-    let arr_information = document.getElementsByClassName('ship-item');
-    for(let i=0;i<arr_information.length;i++) {
-        if(i%2 == 0 && i == (arr_information.length-1)) {
-            arr_information[i].style.backgroundColor = "#E4E4E4";
-            arr_information[i].style.borderBottomLeftRadius = "16px";
-            arr_information[i].style.borderBottomRightRadius = "16px";
-        } else if (i%2 == 0) {
-            arr_information[i].style.backgroundColor = "#E4E4E4";
-        }
     }
 </script>
 </html>

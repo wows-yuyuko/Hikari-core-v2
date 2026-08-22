@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title></title>
+    <link href="file:\\{{template_path}}/main.css" rel="stylesheet" type="text/css">
+    <link href="file:\\{{template_path}}/avatar.css" rel="stylesheet" type="text/css">
 </head>
 <style>
     * {
@@ -11,8 +13,10 @@
     }
 
     body {
+        width: 1200px;
         font-size: 24px;
         font-family: "Microsoft YaHei Bold", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(180deg, #f6f4ff 0%, #eef1f8 100%);
     }
 
     {% if data['avatar']['poster']['status'] == 2 %}
@@ -188,6 +192,7 @@
         display: flex;
         align-items: center;
         color: #3a3a3a;
+        text-shadow: none;
     }
 
     /* ===== 时间信息 ===== */
@@ -437,7 +442,7 @@
         margin-top: 24px;
         text-align: center;
         font-weight: bold;
-        font-size: 18px;
+        font-size: 20px;
         color: #909399;
         margin-bottom: 20px;
     }
@@ -687,8 +692,8 @@
 
         <!-- ===== Footer ===== -->
         <div class="footer">
-            <p>频道搜索"yuyuko"即可使用稳定的腾讯官方机器人~</p>
-            <p>赞助鸣谢：科长、男人们的定远号、海上最速暴毙传说</p>
+            <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>
+            <p>©github:wows-yuyuko</p>
         </div>
     </div>
 </div>

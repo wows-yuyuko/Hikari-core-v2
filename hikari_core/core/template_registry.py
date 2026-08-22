@@ -8,7 +8,7 @@
     from hikari_core.core.template_registry import Templates
 
     Templates.WWS_SHIP.apply_to(hikari)
-    # 等价于旧写法: hikari.set_template_info('wws-ship.html', 800, 100)
+    # 等价于旧写法: hikari.set_template_info('wws-ship-v5.html', 800, 100)
 """
 
 from __future__ import annotations
@@ -39,33 +39,33 @@ class TemplateConfig:
 class Templates:
     """模板注册中心 — 所有模板配置的集中定义"""
 
-    # 选择列表
-    SELECT_SHIP: TemplateConfig = TemplateConfig("select-ship-v3.html", 680, 100)
-    SELECT_CLAN: TemplateConfig = TemplateConfig("select-clan.html", 360, 100)
+    # 选择列表（v5 统一风格）
+    SELECT_SHIP: TemplateConfig = TemplateConfig("select-ship-v5.html", 680, 100)
+    SELECT_CLAN: TemplateConfig = TemplateConfig("select-clan-v5.html", 360, 100)
 
-    # 水表
-    WWS_SHIP: TemplateConfig = TemplateConfig("wws-ship.html", 800, 100)
-    WWS_SHIP_RECENT: TemplateConfig = TemplateConfig("wws-ship-recent.html", 800, 100)
-    WWS_INFO: TemplateConfig = TemplateConfig("wws-info.html", 920, 1000)
-    WWS_INFO_RECENT: TemplateConfig = TemplateConfig("wws-info-recent.html", 1200, 100)
-    WWS_INFO_RECENTS: TemplateConfig = TemplateConfig("wws-info-recents.html", 1200, 100)
+    # 水表（v5 统一风格）
+    WWS_SHIP: TemplateConfig = TemplateConfig("wws-ship-v5.html", 800, 100)
+    WWS_SHIP_RECENT: TemplateConfig = TemplateConfig("wws-ship-recent-v5.html", 800, 100)
+    WWS_INFO: TemplateConfig = TemplateConfig("wws-info-v5.html", 920, 1000)
+    WWS_INFO_RECENT: TemplateConfig = TemplateConfig("wws-info-recent-v5.html", 1200, 100)
+    WWS_INFO_RECENTS: TemplateConfig = TemplateConfig("wws-info-recents-v5.html", 1200, 100)
 
-    # 公会
-    WWS_CLAN: TemplateConfig = TemplateConfig("wws-clan.html", 1200, 100)
-    WWS_CLAN_CW: TemplateConfig = TemplateConfig("wws-clan-cw.html", 1200, 100)
-    CW_RANK: TemplateConfig = TemplateConfig("cw-rank.html", 1300, 100)
+    # 公会（v5 统一风格）
+    WWS_CLAN: TemplateConfig = TemplateConfig("wws-clan-v5.html", 1200, 100)
+    WWS_CLAN_CW: TemplateConfig = TemplateConfig("wws-clan-cw-v5.html", 1200, 100)
+    CW_RANK: TemplateConfig = TemplateConfig("cw-rank-v5.html", 1300, 100)
 
-    # 排行榜
-    SHIP_RANK: TemplateConfig = TemplateConfig("ship-rank-v2.html", 1300, 100)
+    # 排行榜（v5 统一风格）
+    SHIP_RANK: TemplateConfig = TemplateConfig("ship-rank-v5.html", 1300, 100)
 
-    # 绑定
-    BIND_LIST: TemplateConfig = TemplateConfig("bind-list.html", 900, 240)
+    # 绑定（v5 统一风格）
+    BIND_LIST: TemplateConfig = TemplateConfig("bind-list-v5.html", 900, 240)
 
-    # 其他
-    WWS_BAN: TemplateConfig = TemplateConfig("wws-ban.html", 900, 100)
-    WWS_UNBAN: TemplateConfig = TemplateConfig("wws-unban.html", 900, 100)
-    WWS_SX: TemplateConfig = TemplateConfig("wws-sx.html", 920, 1000)
-    WWS_BOX_CHRISTMAS: TemplateConfig = TemplateConfig("wws-box-christmas.html", 920, 1000)
+    # 其他（v5 统一风格）
+    WWS_BAN: TemplateConfig = TemplateConfig("wws-ban-v5.html", 900, 100)
+    WWS_UNBAN: TemplateConfig = TemplateConfig("wws-unban-v5.html", 900, 100)
+    WWS_SX: TemplateConfig = TemplateConfig("wws-sx-v5.html", 920, 1000)
+    WWS_BOX_CHRISTMAS: TemplateConfig = TemplateConfig("wws-box-christmas-v5.html", 920, 1000)
 
     # 帮助（中/英 H5 帮助页）
     HELP_ZH: TemplateConfig = TemplateConfig("help-zh.html", 900, 10)

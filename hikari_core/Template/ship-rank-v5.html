@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title></title>
+    <link href="file:\\{{template_path}}/main.css" rel="stylesheet" type="text/css">
+    <link href="file:\\{{template_path}}/avatar.css" rel="stylesheet" type="text/css">
 </head>
 <style>
     * {
@@ -12,10 +14,11 @@
 
     body {
         width: 1300px;
-        font-family: "Microsoft YaHei", sans-serif;
+        margin: 0 auto;
+        font-family: "Microsoft YaHei Bold", "Microsoft YaHei", sans-serif;
         font-weight: bold;
-        background: linear-gradient(180deg, #0f0f1a 0%, #1a1a30 50%, #141428 100%);
-        color: #e0e0e0;
+        background: linear-gradient(180deg, #f6f4ff 0%, #eef1f8 100%);
+        color: #2d2d3a;
     }
 
     .page-box {
@@ -25,15 +28,21 @@
         padding-bottom: 30px;
     }
 
-    /* ===== Title Header ===== */
+    /* ===== 统一标题头 ===== */
     .title-header {
-        text-align: center;
+        margin: 40px 30px 25px;
         height: 110px;
         line-height: 110px;
-        font-size: 50px;
-        margin-bottom: 25px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: center;
+        font-size: 44px;
+        font-weight: bold;
+        color: #ffffff;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        box-shadow: 0 4px 16px rgba(106, 17, 203, 0.25);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .ship-tier {
@@ -70,25 +79,25 @@
         height: 90px;
         border-radius: 16px;
         overflow: hidden;
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(245, 240, 255, 0.5);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(180, 160, 230, 0.4);
     }
 
     .rank-row.rank-1 {
-        border-color: rgba(255, 215, 0, 0.5);
-        box-shadow: 0 0 18px rgba(255, 215, 0, 0.12);
+        border-color: rgba(212, 175, 55, 0.7);
+        box-shadow: 0 0 18px rgba(212, 175, 55, 0.18);
     }
 
     .rank-row.rank-2 {
-        border-color: rgba(192, 192, 192, 0.35);
-        box-shadow: 0 0 14px rgba(192, 192, 192, 0.08);
+        border-color: rgba(150, 150, 160, 0.5);
+        box-shadow: 0 0 14px rgba(150, 150, 160, 0.12);
     }
 
     .rank-row.rank-3 {
-        border-color: rgba(205, 127, 50, 0.35);
-        box-shadow: 0 0 14px rgba(205, 127, 50, 0.08);
+        border-color: rgba(180, 110, 50, 0.5);
+        box-shadow: 0 0 14px rgba(180, 110, 50, 0.12);
     }
 
     .player-section {
@@ -111,7 +120,8 @@
         background-size: cover;
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
-        border: 1px solid rgba(220, 230, 255, 0.25);
+        border: 1px solid rgba(180, 160, 230, 0.4);
+        background: rgba(245, 240, 255, 0.55);
         position: relative;
         isolation: isolate;
     }
@@ -135,29 +145,29 @@
         border-radius: 14px;
         font-size: 24px;
         font-weight: bold;
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.6);
+        background: rgba(106, 17, 203, 0.08);
+        color: #6a11cb;
     }
 
     .rank-row.rank-1 .rank-badge {
         background: linear-gradient(135deg, #ffd700, #ffb300);
         color: #1a1a2e;
         font-size: 16px;
-        box-shadow: 0 0 14px rgba(255, 215, 0, 0.3);
+        box-shadow: 0 0 14px rgba(212, 175, 55, 0.35);
     }
 
     .rank-row.rank-2 .rank-badge {
         background: linear-gradient(135deg, #e8e8e8, #b0b0b0);
         color: #1a1a2e;
         font-size: 16px;
-        box-shadow: 0 0 10px rgba(192, 192, 192, 0.25);
+        box-shadow: 0 0 10px rgba(150, 150, 160, 0.25);
     }
 
     .rank-row.rank-3 .rank-badge {
         background: linear-gradient(135deg, #e0a060, #b87333);
         color: #fff;
         font-size: 16px;
-        box-shadow: 0 0 10px rgba(205, 127, 50, 0.25);
+        box-shadow: 0 0 10px rgba(180, 110, 50, 0.25);
     }
 
     .player-avatar {
@@ -167,19 +177,23 @@
         background-position: center;
         background-size: cover;
         flex-shrink: 0;
-        background-color: #2a2a3e;
-        filter: drop-shadow(4px 4px 6px rgba(0, 0, 0, 0.3));
-        box-shadow: 0 0 6px rgba(72, 72, 72, 0.4);
+        background-color: #e8e4f5;
+        filter: drop-shadow(4px 4px 6px rgba(0, 0, 0, 0.15));
+        box-shadow: 0 0 6px rgba(120, 110, 180, 0.3);
     }
 
     .player-name {
         font-weight: bolder;
         font-size: 20px;
-        color: #fff;
+        color: #2d2d3a;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
         flex-grow: 1;
+    }
+
+    .player-glass.has-banner .player-name {
+        color: #fff;
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
     }
 
@@ -203,13 +217,13 @@
 
     .stat-label {
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.45);
+        color: #8a8a9a;
         margin-bottom: 2px;
     }
 
     .stat-value {
         font-size: 24px;
-        color: #fff;
+        color: #2d2d3a;
     }
 
     /* ===== Compact Row (11-30) ===== */
@@ -225,14 +239,14 @@
         align-items: center;
         height: 46px;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.04);
+        background: rgba(245, 240, 255, 0.4);
+        border: 1px solid rgba(180, 160, 230, 0.25);
         padding: 0 10px;
         gap: 10px;
     }
 
     .rank-row-compact:nth-child(odd) {
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(180, 160, 230, 0.15);
     }
 
     .rank-row-compact .compact-badge {
@@ -240,7 +254,8 @@
         width: 28px;
         text-align: center;
         font-size: 16px;
-        color: rgba(255, 255, 255, 0.4);
+        color: #6a11cb;
+        font-weight: bold;
     }
 
     .rank-row-compact .compact-avatar {
@@ -250,14 +265,14 @@
         background-position: center;
         background-size: cover;
         flex-shrink: 0;
-        background-color: #2a2a3e;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: #e8e4f5;
+        border: 1px solid rgba(180, 160, 230, 0.4);
     }
 
     .rank-row-compact .compact-name {
         flex: 1;
         font-size: 16px;
-        color: #ccc;
+        color: #4a4a5a;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -272,15 +287,19 @@
     .rank-row-compact .compact-stat {
         flex: 1;
         font-size: 16px;
-        color: #bbb;
+        color: #6a6a7a;
     }
 
     .section-title {
         margin: 25px 30px 10px;
         font-size: 22px;
-        color: rgba(255, 255, 255, 0.35);
-        padding-left: 10px;
-        border-left: 3px solid rgba(255, 215, 0, 0.4);
+        color: #4a4a4a;
+        text-align: center;
+        height: 50px;
+        line-height: 50px;
+        border-radius: 25px;
+        background: rgba(245, 240, 255, 0.5);
+        border: 2px solid rgba(180, 160, 230, 0.5);
     }
 
     /* ===== Footer ===== */
@@ -288,7 +307,7 @@
         margin-top: 35px;
         text-align: center;
         font-size: 20px;
-        color: rgba(255, 255, 255, 0.25);
+        color: #909399;
     }
 
     .footer p {
@@ -398,7 +417,7 @@
 
     <div class="footer">
         <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>
-        <p>github:wows-yuyuko</p>
+        <p>©github:wows-yuyuko</p>
     </div>
 </div>
 </body>

@@ -375,3 +375,68 @@ body {
     color: #666;
     vertical-align: super;
 }
+
+/* ==========================================================
+   统一视觉规范 v2（Hikari 模板体系）
+   参考模板: wws-info-v5.html / wws-ship-v5.html / wws-info-recent-v5.html
+   ========================================================== */
+
+/* 标题条：无头像数据模板的统一头部（军团战排名 / 排行榜等） */
+.title-header {
+    margin: 40px 50px 30px;
+    height: 120px;
+    line-height: 120px;
+    text-align: center;
+    font-size: 44px;
+    font-weight: bold;
+    color: #ffffff;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    box-shadow: 0 4px 16px rgba(106, 17, 203, 0.25);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 序号徽标（选择列表 / 绑定列表） */
+.sec {
+    margin: 15px;
+    height: 50px;
+    width: 50px;
+    text-align: center;
+    line-height: 50px;
+    border-radius: 25px;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: #ffffff;
+    font-weight: normal;
+    flex-shrink: 0;
+}
+
+/* 服务器徽章（封禁查询 / 绑定列表） */
+.server-border {
+    width: 150px;
+    height: 40px;
+    line-height: 40px;
+    background: rgba(245, 240, 255, 0.6);
+    border: 2px solid rgba(180, 160, 230, 0.6);
+    border-radius: 20px;
+    font-size: 30px;
+}
+
+/* 头部服务器名加粗 */
+.server-style {
+    font-weight: bold;
+}
+
+/* 统一表格（选择列表） */
+.table-style {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.table-style th,
+.table-style td {
+    padding: 12px;
+    border: 1px solid rgba(180, 160, 230, 0.35);
+}

@@ -1,56 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-cn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Player Statistics</title>
+    <link href="file:\\{{template_path}}/main.css" rel="stylesheet" type="text/css">
+    <link href="file:\\{{template_path}}/avatar.css" rel="stylesheet" type="text/css">
     <style>
         body {
             width: 1200px;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
+            margin: 0 auto;
+            font-family: "Microsoft YaHei Bold", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(180deg, #f6f4ff 0%, #eef1f8 100%);
+            padding: 20px 0;
         }
 
         .container {
-            width: 1200%;
-            max-width: 1200px;
-            background-color: white;
-            border: 1px solid #ccc;
+            width: 1200px;
+            margin: 0 auto;
+            background: rgba(245, 240, 255, 0.5);
+            border: 2px solid rgba(180, 160, 230, 0.6);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 12px rgba(200, 190, 255, 0.15);
+            box-sizing: border-box;
         }
 
+        /* ===== 统一顶部横幅 ===== */
         .header {
             position: relative;
             padding: 20px;
             background-image: url('{{ data['avatar']['banner'] }}');
             background-size: cover;
             background-position: center;
-            color: white;
+            color: #ffffff;
+            box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
         }
 
         .header h2 {
             margin: 0;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+        }
+
+        .header h3 {
+            margin: 8px 0 0;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
         }
 
         .header .info {
-            background-color: rgba(199, 199, 199, 0.7);
-            padding: 5px;
+            background-color: rgba(255, 255, 255, 0.85);
+            color: #2d2d3a;
+            padding: 12px 20px;
             border-radius: 16px;
             display: flex;
             width: 500px;
-
+            gap: 30px;
+            border: 2px solid rgba(180, 160, 230, 0.6);
         }
 
         .tier {
             height: 180px;
-            color: black;
+            color: #6a11cb;
             width: 400px;
             text-align: center;
             line-height: 70px;
@@ -71,7 +81,7 @@
         }
 
         .table table, .table th, .table td {
-            border: 1px solid #ccc;
+            border: 1px solid rgba(180, 160, 230, 0.4);
         }
 
         .table th, .table td {
@@ -80,19 +90,32 @@
         }
 
         .table th {
-            background-color: #f2f2f2;
+            background: rgba(245, 240, 255, 0.9);
+            color: #4a4a4a;
         }
 
+        .table tbody tr:nth-child(odd) {
+            background: rgba(180, 160, 230, 0.12);
+        }
+
+        .footer {
+            width: 100%;
+            text-align: center;
+            color: #909399;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 20px 0;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <div class="info">
-            <div style="color: black;width: 300px">
+            <div style="color: #2d2d3a;width: 300px">
                 <h2>Clan:&nbsp;<span>[{{ data['clan']['tag'] }}]</span></h2>
                 <h3>{{ data['clan']['serverCn'] }} {{ data['season'] }}赛季 {{ data['clan']['teamNumber'] }}队</h3>
-                <table style="text-align: left;font-weight: bold;border-spacing:0px 10px;">
+                <table style="text-align: left;font-weight: bold;border-spacing:0px 10px;border: none;">
                     <tbody>
                     <tr>
                         <td>场次:{{ data['clan']['battlesCount'] }}</td>
@@ -163,7 +186,10 @@
             </tbody>
         </table>
     </div>
-    <div style="width: 100%; text-align: center;">©西行寺雨季 ©本心 @mgaia</div>
+    <div class="footer">
+        <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>
+        <p>©github:wows-yuyuko</p>
+    </div>
 </div>
 {% if template_path and template_path/"echarts.js" %}
     <script src="file:\\{{ template_path }}/echarts.js"></script>
