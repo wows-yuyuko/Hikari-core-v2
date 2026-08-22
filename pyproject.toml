@@ -3,7 +3,8 @@ name = "hikari-core"
 version = "1.2.5"
 description = "SDK for yuyuko,战舰世界yuyuko平台BOT SDK"
 authors = [
-    {name = "benx1n", email = "1119809439@qq.com"}
+    {name = "benx1n", email = "1119809439@qq.com"},
+    {name = "雨季", email = "2622749113@qq.com"},
 ]
 readme = "README.md"
 keywords = ["qqbot", "wows", "wws", "bot", "stats"]
@@ -27,8 +28,8 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/wows-yuyuko/Hikari-core"
-repository = "https://github.com/wows-yuyuko/Hikari-core"
+homepage = "https://github.com/wows-yuyuko/Hikari-core-v2"
+repository = "https://github.com/wows-yuyuko/Hikari-core-v2"
 
 [tool.poetry]
 packages = [{include = "hikari_core"}]
