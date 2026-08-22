@@ -26,7 +26,6 @@ env.globals.update(
     int=int,
 )
 
-logger.info(f'模板目录 template_path: {template_path} (存在: {template_path.exists()})')
 logger.info(f'模板目录 as_uri: {template_path.as_uri()}')
 
 
