@@ -126,28 +126,6 @@
             </div>
         {% endif %}
 
-        <div class="information-body one-background-color">
-            <div class="information-col">
-                <div class="information-col-item">排名</div>
-                <div class="information-col-item">场均</div>
-                <div class="information-col-item">胜率</div>
-                <div class="information-col-item">PR</div>
-
-            </div>
-            <div class="information-col">
-                <div class="information-col-item">
-                    {% if data['rank'] > 0 %}
-                        {{ data['rank'] }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </div>
-                <div class="information-col-item change-avgdmg">{{ data['dwpData']['damage'] }}</div>
-                <div class="information-col-item change-win">{{ data['dwpData']['wins'] }}</div>
-                <div class="information-col-item change-pr">{{ data['dwpData']['pr'] }}</div>
-            </div>
-        </div>
-
         {% if data['typeInfo']['PVP']['battle'] %}
             <div class="overview-change">
                 <div class="overview-change-item left-item">
