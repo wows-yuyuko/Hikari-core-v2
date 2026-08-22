@@ -95,7 +95,7 @@ def set_hikari_config(  # noqa: PLR0913
         from hikari_core.features.system import update_ship_cache, update_ship_cache_cron, update_template
 
         logger.info('执行初始模板更新...')
-        # update_template()
+        update_template()
         logger.info('执行初始缓存更新...')
         update_ship_cache()
         logger.info('启动定时任务')
