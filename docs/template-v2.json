@@ -1,0 +1,62 @@
+[
+	{
+		"main.css": "https://wows.shinoaki.com/wows-web/main.css"
+	},
+	{
+		"avatar.css": "https://wows.shinoaki.com/wows-web/avatar.css"
+	},
+	{
+		"main.js": "https://wows.shinoaki.com/wows-web/main.js"
+	},
+	{
+		"echarts.js": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/echarts.js"
+	},
+	{
+		"bind-list-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/bind-list-v5.html"
+	},
+	{
+		"select-ship-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/select-ship-v5.html"
+	},
+	{
+		"select-clan-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/select-clan-v5.html"
+	},
+	{
+		"ship-rank-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/ship-rank-v5.html"
+	},
+	{
+		"wws-ban-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-ban-v5.html"
+	},
+	{
+		"wws-box-christmas-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-box-christmas-v5.html"
+	},
+	{
+		"wws-clan-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-clan-v5.html"
+	},
+	{
+		"wws-clan-cw-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-clan-cw-v5.html"
+	},
+	{
+		"wws-info-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-info-v5.html"
+	},
+	{
+		"wws-info-recent-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-info-recent-v5.html"
+	},
+	{
+		"wws-info-recents-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-info-recents-v5.html"
+	},
+	{
+		"wws-ship-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-ship-v5.html"
+	},
+	{
+		"wws-ship-recent-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-ship-recent-v5.html"
+	},
+	{
+		"wws-sx-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-sx-v5.html"
+	},
+	{
+		"wws-unban-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-unban-v5.html"
+	},
+	{
+		"cw-rank-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/cw-rank-v5.html"
+	}
+]
