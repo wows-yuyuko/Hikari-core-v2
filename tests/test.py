@@ -23,9 +23,9 @@ async def start():
                       game_path='')
     global is_out_image
     is_out_image = True
-    await command("me 查询绑定")
+    await command("me ship 哥伦布")
     # await command("ban cn 西行寺雨季")
-    # await command("me")
+    await command("me")
     # await command("me sx")
     # await command("me sd")
     # await command("me recent 30")
