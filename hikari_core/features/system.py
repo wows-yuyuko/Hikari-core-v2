@@ -1,19 +1,22 @@
 import asyncio
 import os
+import subprocess
 import time
 import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
 import orjson
 from loguru import logger
 
+from hikari_core import __version__
 from hikari_core.core.cache_utils import get_cache_file, get_cache_file_str
 from hikari_core.core.config import hikari_config
-from hikari_core.core.constants import __version__, template_path
+from hikari_core.core.constants import template_path
 from hikari_core.core.http_client import get_client_default
 from hikari_core.core.http_error_handler import handle_yuyuko_errors
 from hikari_core.core.model import Hikari_Model
@@ -45,9 +48,32 @@ async def get_help(hikari: Hikari_Model):
     return hikari.success({'version_info': version_line})
 
 
+def _find_repo_root() -> Optional[Path]:
+    """向上查找包含 .git 的仓库根目录（供 check_version 同步用）"""
+    start = Path(__file__).resolve().parent.parent.parent  # hikari_core 的上级
+    for d in (start, *start.parents):
+        if (d / '.git').exists():
+            return d
+    return None
+
+
+def _git_pull_main(repo_root: Path):
+    """同步仓库 main 分支，返回 (returncode, stdout, stderr)"""
+    try:
+        proc = subprocess.run(
+            ['git', '-C', str(repo_root), 'pull', 'origin', 'main'],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+    except Exception as e:
+        return -1, '', str(e)
+
+
 @handle_yuyuko_errors(recreate_func="default")
 async def check_version(hikari: Hikari_Model):
-    """检查版本信息"""
+    """检查版本信息；检测到新版本时自动同步仓库 main 分支"""
     url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/version.json'
     client_default = await get_client_default()
     resp = await client_default.get(url, timeout=20)
@@ -59,11 +85,19 @@ async def check_version(hikari: Hikari_Model):
             msg += f"\n{each['date']} v{each['version']}\n"
             for i in each['description']:
                 msg += f'{i}\n'
-    msg += '实验性更新指令：wws 更新Hikari，请在能登录上服务器的情况下执行该命令'
-    if match:
-        return hikari.success(msg)
-    else:
+    if not match:
         return hikari.success('Hikari:当前已经是最新版本了')
+    msg += '\n检测到新版本，正在同步仓库 main 分支...'
+    repo_root = _find_repo_root()
+    if repo_root is None:
+        msg += '\n未找到仓库目录（.git），请手动执行 git pull origin main'
+        return hikari.error(msg)
+    code, out, err = await asyncio.to_thread(_git_pull_main, repo_root)
+    if code == 0:
+        msg += f'\n同步完成：{repo_root}\n请重启 Bot 后生效'
+        return hikari.success(msg)
+    msg += f'\n同步失败（exit {code}）:\n{(err or out)[-500:]}'
+    return hikari.error(msg)
 
 
 async def async_update_template(hikari: Hikari_Model = Hikari_Model()):

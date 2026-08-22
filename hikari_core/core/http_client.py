@@ -3,7 +3,7 @@ from httpx import AsyncClient, Request, Response
 from loguru import logger
 
 from .config import hikari_config
-from .constants import __version__
+from .. import __version__
 
 
 async def before_request(request: Request):

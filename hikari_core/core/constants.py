@@ -11,7 +11,6 @@ from typing import Tuple
 
 dir_path = Path(__file__).resolve().parent.parent  # hikari_core/
 template_path = dir_path / 'Template'
-__version__ = '1.2.5'
 
 
 @dataclass
