@@ -23,7 +23,16 @@ async def start():
                       game_path='')
     global is_out_image
     is_out_image = True
-    await command("me 单船 塞德利茨")
+    await command("me 查询绑定")
+    # await command("ban cn 西行寺雨季")
+    # await command("me")
+    # await command("me sx")
+    # await command("me sd")
+    # await command("me recent 30")
+    # await command("me ship 大和 recent 90")
+    # await command("me clan")
+    # await command("clan asia YU")
+    # await command("战舰排行榜 国服 大和")
     # await command("me ship 无比 recent 2024-05-30")
     # await command("公会战排行榜 20")
     # await command('asia nahida_official ship 大')

@@ -95,7 +95,7 @@ def update_template():
     """更新模板"""
     try:
         # tasks = []
-        url = 'https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/template.json'
+        url = 'https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/template-v2.json'
         with httpx.Client() as client:
             resp = client.get(url, timeout=20)
             result = orjson.loads(resp.content)
