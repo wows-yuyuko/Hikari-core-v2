@@ -1,12 +1,12 @@
 [
 	{
-		"main-v5.css": "https://wows.shinoaki.com/wows-web/main-v5.css"
+		"main-v5.css": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/main-v5.css"
 	},
 	{
-		"avatar-v5.css": "https://wows.shinoaki.com/wows-web/avatar-v5.css"
+		"avatar-v5.css": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/avatar-v5.css"
 	},
 	{
-		"main-v5.js": "https://wows.shinoaki.com/wows-web/main-v5.js"
+		"main-v5.js": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/main-v5.js"
 	},
 	{
 		"echarts.js": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/echarts.js"
