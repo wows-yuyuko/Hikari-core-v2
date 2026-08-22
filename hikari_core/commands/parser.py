@@ -101,7 +101,6 @@ def _match_at_mention(text: str, platform: str) -> Optional[re.Match]:
     patterns = {
         'QQ': r'CQ:at,qq=(\d+)',
         'QQ_CHANNEL': r'<@!(\d+)',
-        'QQ_OFFICIAL': r'<@([0-9A-Za-z]+)',
     }
     pattern = patterns.get(platform)
     return re.search(pattern, text) if pattern else None
