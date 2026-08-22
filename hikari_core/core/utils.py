@@ -15,23 +15,6 @@ from loguru import logger
 from .constants import template_path
 
 
-def startup():
-    try:
-        url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/template_Hikari_Latest/template.json'
-        with httpx.Client() as client:
-            resp = client.get(url, timeout=20)
-            result = orjson.loads(resp.content)
-            for each in result:
-                for name, url in each.items():
-                    resp = client.get(url, timeout=20)
-                    with open(template_path / name, 'wb+') as file:
-                        file.write(resp.content)
-        print(f'success {time.time()}')
-    except Exception:
-        logger.error(traceback.format_exc())
-        return
-
-
 async def match_keywords(match_list, lists) -> Tuple[Optional[str], List]:
     """字段列表匹配(仅匹配单个元素)
 
