@@ -66,7 +66,6 @@ class Templates:
     WWS_UNBAN: TemplateConfig = TemplateConfig("wws-unban.html", 900, 100)
     WWS_SX: TemplateConfig = TemplateConfig("wws-sx.html", 920, 1000)
     WWS_BOX_CHRISTMAS: TemplateConfig = TemplateConfig("wws-box-christmas.html", 920, 1000)
-    TEXT: TemplateConfig = TemplateConfig("text.html", 800, 10)
 
     # 帮助（中/英 H5 帮助页）
     HELP_ZH: TemplateConfig = TemplateConfig("help-zh.html", 900, 10)
