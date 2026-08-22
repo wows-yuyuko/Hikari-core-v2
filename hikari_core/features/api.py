@@ -1,5 +1,6 @@
 import asyncio
 import gzip
+import json
 import traceback
 from asyncio.exceptions import TimeoutError
 from base64 import b64encode
@@ -7,7 +8,6 @@ from pathlib import Path
 from typing import List
 
 import httpx
-import orjson
 from httpx import ConnectTimeout, PoolTimeout
 from loguru import logger
 
@@ -30,7 +30,7 @@ async def get_nation_list(hikari: Hikari_Model):
         url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/nation/list'
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, timeout=20)
-        result = orjson.loads(resp.content)
+        result = json.loads(resp.content)
         for nation in result['data']:
             msg: str = msg + f"{nation['cn']}：{nation['nation']}\n"
         return msg
@@ -55,7 +55,7 @@ async def get_ship_name(hikari: Hikari_Model):
     url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, params=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     if result['data']:
         for ship in result['data']:
             msg += f"{ship['nameCn']}：{ship['nameEnglish']}\n"
@@ -75,7 +75,7 @@ async def get_ship_byName(hikari: Hikari_Model) -> List:
         params = {'country': '', 'level': '', 'shipName': ship_name, 'shipType': '', 'groupType': 'default'}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
-        result = orjson.loads(resp.content)
+        result = json.loads(resp.content)
         if result.get('code') == 200 and result.get('data'):
             code_data = result['data']
             # 转换为 ShipInfo 对象列表
@@ -100,7 +100,7 @@ async def get_all_shipList(hikari: Hikari_Model):
         params = {'country': '', 'level': '', 'shipName': '', 'shipType': '', 'groupType': 'default'}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
-        result = orjson.loads(resp.content)
+        result = json.loads(resp.content)
         if result['code'] == 200 and result['data']:
             return result['data']
         else:
@@ -115,7 +115,7 @@ async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> i
         params = {'userName': name, 'one': True}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.post(url, json=params, timeout=20)
-        result = orjson.loads(resp.content)
+        result = json.loads(resp.content)
         if result['code'] == 200 and result['data']:
             return int(result['data'][0]['accountId'])
         else:
@@ -132,7 +132,7 @@ async def get_ClanIdByName(hikari: Hikari_Model, server: str, tag: str):
         }
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
-        result = orjson.loads(resp.content)
+        result = json.loads(resp.content)
         if result['code'] == 200 and result['data']:
             return result['data']
         else:
@@ -148,7 +148,7 @@ async def check_yuyuko_cache(hikari: Hikari_Model, server, id):
         params = {'accountId': id, 'server': server}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.post(yuyuko_cache_url, json=params, timeout=5)
-        result = orjson.loads(resp.content)
+        result = json.loads(resp.content)
         cache_data = {}
         if result['code'] == 201:
             if 'DEV' in result['data']:
@@ -160,10 +160,10 @@ async def check_yuyuko_cache(hikari: Hikari_Model, server, id):
                 await asyncio.gather(*tasks)
             if not cache_data:
                 return False
-            data_base64 = b64encode(gzip.compress(orjson.dumps(cache_data))).decode()
+            data_base64 = b64encode(gzip.compress(json.dumps(cache_data))).decode()
             params['data'] = data_base64
             resp = await client_yuyuko.post(yuyuko_cache_url, json=params, timeout=5)
-            result = orjson.loads(resp.content)
+            result = json.loads(resp.content)
             logger.success(result)
             if result['code'] == 200:
                 return True
@@ -179,7 +179,7 @@ async def get_wg_info(params, key, url):
     try:
         client_wg = await get_client_wg()
         resp = await client_wg.get(url, timeout=5, follow_redirects=True)
-        wg_result = orjson.loads(resp.content)
+        wg_result = json.loads(resp.content)
         if resp.status_code == 200 and wg_result['status'] == 'ok':
             params[key] = resp.text
     except PoolTimeout:

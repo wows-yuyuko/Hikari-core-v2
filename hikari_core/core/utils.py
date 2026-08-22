@@ -4,12 +4,10 @@ import io
 import time
 import traceback
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 import httpx
-import orjson
-import pytz
 from loguru import logger
 
 from .constants import template_path
@@ -87,7 +85,7 @@ class FreqLimiter:
 
 
 class DailyNumberLimiter:
-    tz = pytz.timezone('Asia/Shanghai')
+    tz = timezone(timedelta(hours=8))  # Asia/Shanghai 固定 UTC+8（中国无夏令时），原生替代 pytz
 
     def __init__(self, max_num):
         self.today = -1

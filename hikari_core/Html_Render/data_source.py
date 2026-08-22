@@ -1,8 +1,8 @@
+import asyncio
 from os import getcwd
 from pathlib import Path
 from typing import Literal, Union
 
-import aiofiles
 import jinja2
 import time
 import tempfile
@@ -53,15 +53,8 @@ async def text_to_pic(
     )
 
 
-# async def read_md(md_path: str) -> str:
-#     async with aiofiles.open(str(Path(md_path).resolve()), mode="r") as f:
-#         md = await f.read()
-#     return markdown.markdown(md)
-
-
 async def read_file(path: str) -> str:
-    async with aiofiles.open(path, mode='r') as f:
-        return await f.read()
+    return await asyncio.to_thread(Path(path).read_text, encoding='utf-8')
 
 
 async def read_tpl(path: str) -> str:

@@ -3,7 +3,7 @@
 由原 ``hikari_core/game/`` 下的 ban_search / box_check / roll / sx 四个小文件合并而来。
 """
 
-import orjson
+import json
 from loguru import logger
 
 from hikari_core.core.config import hikari_config
@@ -37,7 +37,7 @@ async def get_BanInfo(hikari: Hikari_Model) -> Hikari_Model:
     url = f'{hikari_config.yuyuko_url}/public/wows/ban/cn/user'
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.post(url, json={'accountId': hikari.Input.AccountId}, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
         hikari = Templates.WWS_BAN.apply_to(hikari)
@@ -66,7 +66,7 @@ async def check_christmas_box(hikari: Hikari_Model) -> Hikari_Model:
         params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId}
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, params=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
         hikari = Templates.WWS_BOX_CHRISTMAS.apply_to(hikari)
@@ -95,7 +95,7 @@ async def roll_ship(hikari: Hikari_Model):
     url = f'{hikari_config.yuyuko_url}/public/wows/roll/ship/roll'
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.post(url, json=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     if result['code'] == 200 and result['data']:
         return hikari.success(f"本次roll到了{result['data']['shipNameCn']}")
     else:
@@ -119,7 +119,7 @@ async def get_sx_info(hikari: Hikari_Model) -> Hikari_Model:
         params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId}
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, params=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
         hikari = Templates.WWS_SX.apply_to(hikari)

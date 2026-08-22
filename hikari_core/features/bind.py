@@ -1,7 +1,7 @@
+import json
 import traceback
 from asyncio.exceptions import TimeoutError
 
-import orjson
 from httpx import ConnectTimeout
 from loguru import logger
 
@@ -22,7 +22,7 @@ async def get_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId}
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, params=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     if result['code'] == 200 and result['message'] == 'success':
         if result['data']:
             hikari = Templates.BIND_LIST.apply_to(hikari)
@@ -47,7 +47,7 @@ async def set_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId, 'accountId': hikari.Input.AccountId}
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.post(url, json=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     if result['code'] == 200 and result['message'] == 'success':
         return hikari.success('绑定成功')
     else:
@@ -64,7 +64,7 @@ async def set_special_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId, 'accountId': hikari.Input.AccountId}
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.post(url, json=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     if result['code'] == 200 and result['message'] == 'success':
         return hikari.success('绑定成功')
     else:
@@ -135,7 +135,7 @@ async def delete_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
         params = {'platformType': hikari.Input.Platform, 'platformId': hikari.Input.PlatformId, 'accountId': hikari.Input.AccountId}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.request('DELETE', url=url, json=params, timeout=20)
-        result = orjson.loads(resp.content)
+        result = json.loads(resp.content)
         if result['code'] == 200 and result['message'] == 'success':
             return hikari.success(
                 f"删除绑定成功，删除的账号为{hikari.Input.Select_Data[hikari.Input.Select_Index - 1]['server']}：{hikari.Input.Select_Data[hikari.Input.Select_Index - 1]['userName']}"
@@ -161,7 +161,7 @@ async def get_DefaultBindInfo(hikari: Hikari_Model, platformType, platformId):
     }
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, params=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     if result['code'] == 200 and result['message'] == 'success':
         if result['data']:
             for each in result['data']:

@@ -1,4 +1,4 @@
-import orjson
+import json
 from loguru import logger
 
 from hikari_core.core.config import hikari_config
@@ -39,7 +39,7 @@ async def search_rank(hikari: Hikari_Model):
     url = f'{hikari_config.yuyuko_url}/public/rank/yuyuko_ship/{hikari.Input.Server}?shipId={hikari.Input.ShipInfo.shipId}&page=1'
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     if result['code'] == 200 and result['data']:
         Templates.SHIP_RANK.apply_to(hikari)
         result_data = {'data': result['data'], 'shipInfo': hikari.Input.ShipInfo}

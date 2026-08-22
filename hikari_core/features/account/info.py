@@ -1,4 +1,4 @@
-import orjson
+import json
 from loguru import logger
 
 from hikari_core.core.config import hikari_config
@@ -34,7 +34,7 @@ async def get_AccountInfo(hikari: Hikari_Model) -> Hikari_Model:
         params = {'server': hikari.Input.Platform, 'accountId': hikari.Input.PlatformId}
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
     resp = await client_yuyuko.get(url, params=params, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
         hikari = Templates.WWS_INFO.apply_to(hikari)

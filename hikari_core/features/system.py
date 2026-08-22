@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import subprocess
 import time
@@ -10,7 +11,6 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
-import orjson
 from loguru import logger
 
 from hikari_core import __version__
@@ -62,7 +62,7 @@ async def check_version(hikari: Hikari_Model):
     url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/version.json'
     client_default = await get_client_default()
     resp = await client_default.get(url, timeout=20)
-    result = orjson.loads(resp.content)
+    result = json.loads(resp.content)
     match, msg = False, '发现新版本'
     for each in result['data']:
         if each['version'] > __version__:
@@ -117,7 +117,7 @@ def update_template():
         url = 'https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/template-v2.json'
         with httpx.Client() as client:
             resp = client.get(url, timeout=20)
-            result = orjson.loads(resp.content)
+            result = json.loads(resp.content)
             for each in result:
                 for name, url in each.items():
                     resp = client.get(url, timeout=5)
@@ -145,7 +145,7 @@ def update_ship_cache():
         get_all_ship_cache_hash_json(get_cache_file_str())
     # 加载本地json
     with open(get_cache_file() / "ship_cache_hash.json", "rb") as f:
-        ship_hash_local_json = orjson.loads(f.read())
+        ship_hash_local_json = json.loads(f.read())
     ship_hash_new_json = get_all_ship_cache_hash_json(get_cache_file_str())
     local_dict = {item["key"]: item["value"] for item in ship_hash_local_json}
     remote_dict = {item["key"]: item["value"] for item in ship_hash_new_json}
@@ -165,7 +165,7 @@ def get_all_ship_cache_hash_json(dir: str):
             resp = client.get(url, timeout=20)
             with open(file_json, 'wb') as f:
                 f.write(resp.content)
-            return orjson.loads(resp.content)
+            return json.loads(resp.content)
     except Exception:
         return None
 
