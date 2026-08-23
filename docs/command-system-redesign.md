@@ -83,7 +83,6 @@ init_hikari_no_output (__init__.py:50)
 
 - `_parse_ship_query_params`（analyze.py:184-199）取 `Command_List[0]` / `[1]` 作为船名 → **带空格的英文船名（如 "Jean Bart"）永远查不了**，直接报"参数缺少或溢出"。
 - `Search_Type` 1/2/3 魔数（model.py:36），仅靠注释说明。
-- 平台特判 `_apply_qq_official_default`（analyze.py:88-97）埋在通用解析链路中。
 
 ### 2.6 P1 — 括号提取 `(名字)` 是第三种身份指定方式，且有毒
 

@@ -62,31 +62,17 @@ async def extract_with_special_name(hikari: Hikari_Model) -> Hikari_Model:
 async def extract_with_me(hikari: Hikari_Model) -> Hikari_Model:
     """识别 'me' 身份；@提及 由平台侧处理，SDK 内部不再解析。"""
     try:
-        if hikari.UserInfo.Platform in ['QQ', 'QQ_CHANNEL', 'QQ_OFFICIAL']:
-            await _apply_qq_official_default(hikari)
-            for i in hikari.Input.Command_List:
-                if str(i).lower() == 'me':
-                    hikari.Input.Search_Type = 1
-                    hikari.Input.Platform = hikari.UserInfo.Platform
-                    hikari.Input.PlatformId = hikari.UserInfo.PlatformId
-                    hikari.Input.Command_List.remove(i)
-                    break
+        for i in hikari.Input.Command_List:
+            if str(i).lower() == 'me':
+                hikari.Input.Search_Type = 1
+                hikari.Input.Platform = hikari.UserInfo.Platform
+                hikari.Input.PlatformId = hikari.UserInfo.PlatformId
+                hikari.Input.Command_List.remove(i)
+                break
         return hikari
     except Exception:
         logger.error(traceback.format_exc())
         return hikari.error('解析指令时发生错误，请确认输入参数无误')
-
-
-async def _apply_qq_official_default(hikari: Hikari_Model) -> None:
-    """在 QQ_OFFICIAL 平台，无服务器参数时默认使用 'me' 模式。"""
-    if hikari.UserInfo.Platform != 'QQ_OFFICIAL':
-        return
-    analyze_command_list = hikari.Input.Command_List.copy()
-    analyze_server, _ = await match_keywords(analyze_command_list, servers)
-    if not analyze_server:
-        hikari.Input.Search_Type = 1
-        hikari.Input.Platform = hikari.UserInfo.Platform
-        hikari.Input.PlatformId = hikari.UserInfo.PlatformId
 
 
 # ============================================================

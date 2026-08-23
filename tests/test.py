@@ -6,9 +6,9 @@ from loguru import logger
 from hikari_core import Hikari_Model, callback_hikari, init_hikari, get_cache_file  # noqa: E402
 from hikari_core.core.config import set_hikari_config
 
-platform = 'QQ'
-platform_id = '2622749113'
-group_id = '967546463'
+platform = 'QQ_OFFICIAL'
+platform_id = '4978A94EF5DF0B67A1D0E00AFB5A2C32'
+group_id = None
 is_out_image = False
 
 
@@ -23,9 +23,9 @@ async def start():
                       game_path='')
     global is_out_image
     is_out_image = True
-    await command("me ship 哥伦布")
+    # await command("me ship 哥伦布")
     # await command("ban cn 西行寺雨季")
-    await command("me")
+    await command("测试")
     # await command("me sx")
     # await command("me sd")
     # await command("me recent 30")
