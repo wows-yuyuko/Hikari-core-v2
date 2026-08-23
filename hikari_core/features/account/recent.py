@@ -13,7 +13,28 @@ from hikari_core.features.api import check_yuyuko_cache, get_AccountIdByName
 
 @handle_yuyuko_errors()
 async def get_RecentInfo(hikari: Hikari_Model) -> Hikari_Model:
-    """查询Recent"""
+    """查询近期（随机 + 排位）"""
+    return await _query_recent_day(hikari, mode='all')
+
+
+@handle_yuyuko_errors()
+async def get_RecentRandom(hikari: Hikari_Model) -> Hikari_Model:
+    """查询近期随机（仅 PVP 随机战）"""
+    return await _query_recent_day(hikari, mode='random')
+
+
+@handle_yuyuko_errors()
+async def get_RecentRank(hikari: Hikari_Model) -> Hikari_Model:
+    """查询近期排位（仅 RANK_SOLO 排位战）"""
+    return await _query_recent_day(hikari, mode='rank')
+
+
+async def _query_recent_day(hikari: Hikari_Model, mode: str = 'all') -> Hikari_Model:
+    """近期战绩公共查询逻辑。
+
+    Args:
+        mode: all=随机+排位 / random=仅随机(PVP) / rank=仅排位(RANK_SOLO)
+    """
     if hikari.Status == 'init':
         if hikari.Input.Search_Type == 3:
             hikari.Input.AccountId = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
@@ -51,11 +72,23 @@ async def get_RecentInfo(hikari: Hikari_Model) -> Hikari_Model:
     resp = await client_yuyuko.get(url, params=params, timeout=20)
     result = json.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
-    if result['code'] == 200:
-        if result['data']['battleTypeInfo']['PVP']['battle'] or result['data']['battleTypeInfo']['RANK_SOLO']['battle']:
-            hikari = Templates.WWS_INFO_RECENT.apply_to(hikari)
-            return hikari.success(result['data'])
-        else:
-            return hikari.failed('该日期数据记录不存在')
-    else:
+    if result['code'] != 200:
         return hikari.failed(f"{result['message']}")
+
+    battle_type_info = result['data']['battleTypeInfo']
+    has_pvp = battle_type_info['PVP']['battle']
+    has_rank = battle_type_info['RANK_SOLO']['battle']
+    if mode == 'random':
+        if not has_pvp:
+            return hikari.failed('该日期没有随机战数据记录')
+        template = Templates.WWS_INFO_RECENT_RANDOM
+    elif mode == 'rank':
+        if not has_rank:
+            return hikari.failed('该日期没有排位战数据记录')
+        template = Templates.WWS_INFO_RECENT_RANK
+    else:
+        if not (has_pvp or has_rank):
+            return hikari.failed('该日期数据记录不存在')
+        template = Templates.WWS_INFO_RECENT
+    hikari = template.apply_to(hikari)
+    return hikari.success(result['data'])

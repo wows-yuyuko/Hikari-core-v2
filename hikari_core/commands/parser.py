@@ -9,7 +9,7 @@ from ..core.constants import levels, nations, servers, shiptypes
 from ..core.model import Hikari_Model
 from ..core.utils import match_keywords
 from ..features.account.info import get_AccountInfo
-from ..features.account.recent import get_RecentInfo
+from ..features.account.recent import get_RecentInfo, get_RecentRandom, get_RecentRank
 from ..features.account.recents import get_RecentsInfo
 from ..features.api import get_ship_name
 from ..features.bind import change_BindInfo, delete_BindInfo, get_BindInfo, set_BindInfo, set_special_BindInfo
@@ -94,16 +94,16 @@ def _pop_digits_from_list(command_list: list) -> list:
 # ============================================================
 
 async def _handle_account_recent(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 get_AccountInfo / get_RecentInfo / get_RecentsInfo / get_ShipInfo / get_ShipRecent。"""
+    """处理 get_AccountInfo / get_RecentInfo / get_RecentRandom / get_RecentRank / get_RecentsInfo / get_ShipInfo / get_ShipRecent。"""
     hikari.Input.Recent_Date = time.strftime('%Y-%m-%d', time.localtime())
 
-    if hikari.Function == get_RecentInfo and datetime.now().hour < 7:
+    if hikari.Function in [get_RecentInfo, get_RecentRandom, get_RecentRank] and datetime.now().hour < 7:
         hikari.Input.Recent_Day = 1
 
-    if hikari.Function in [get_RecentInfo, get_RecentsInfo, get_ShipRecent]:
+    if hikari.Function in [get_RecentInfo, get_RecentRandom, get_RecentRank, get_RecentsInfo, get_ShipRecent]:
         _extract_day_and_date_params(hikari)
 
-    if hikari.Function in [get_AccountInfo, get_RecentInfo, get_RecentsInfo]:
+    if hikari.Function in [get_AccountInfo, get_RecentInfo, get_RecentRandom, get_RecentRank, get_RecentsInfo]:
         return await _parse_account_query_params(hikari)
     elif hikari.Function in [get_ShipInfo, get_ShipRecent]:
         return await _parse_ship_query_params(hikari)
@@ -338,6 +338,8 @@ async def _parse_cw_recent_by_identity(hikari: Hikari_Model) -> Hikari_Model:
 _HANDLERS = {
     get_AccountInfo: _handle_account_recent,
     get_RecentInfo: _handle_account_recent,
+    get_RecentRandom: _handle_account_recent,
+    get_RecentRank: _handle_account_recent,
     get_RecentsInfo: _handle_account_recent,
     get_ShipInfo: _handle_account_recent,
     get_ShipRecent: _handle_account_recent,

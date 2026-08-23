@@ -123,6 +123,59 @@ _SHIP_RANK_DATA = {
     },
 }
 
+# ---------- 近期（随机 + 排位） ----------
+def _bt(battle: int, pr: int, win: float = 60.0, damage: int = 100000) -> dict:
+    """构造一个 battleType 节点（顶层与单船 typeInfo 共用同一形状）。"""
+    return {
+        'battle': battle,
+        'prInfo': {'value': pr, 'name': '良好', 'color': '#ffffff'},
+        'battleInfo': {
+            'battleInfo': {'battle': battle},
+            'avgInfo': {
+                'xp': 1500,
+                'win': win,
+                'winsData': {'color': '#ffffff'},
+                'damage': damage,
+                'damageData': {'color': '#ffffff'},
+                'frags': 1.5,
+                'kd': 2.0,
+                'shipsSpotted': 2.5,
+                'planesKilled': 1.0,
+            },
+            'hitRatioInfo': {'ratioMain': 40.0},
+            'fragsInfo': {
+                'fragsByMain': 10, 'fragsByAtba': 1, 'fragsByPlanes': 2,
+                'fragsByTpd': 3, 'fragsByRam': 0, 'fragsByDbomb': 1,
+            },
+        },
+    }
+
+
+_RECENT_SHIP_INFO = {
+    'countryImage': 'https://x/Japan-Nation-image.png',
+    'shipTypeImage': 'https://x/Battleship-ShipType-image.png',
+    'levelStr': 'X',
+    'imgSmall': 'https://x/asia-1-small.png',
+    'nameCn': '大和',
+}
+
+_RECENT_DATA = {
+    'userInfo': {**_USER_INFO, 'accountId': 12345},
+    'battleTypeInfo': {
+        'PVP': _bt(100, 2000),
+        'PVP_SOLO': _bt(50, 1900),
+        'PVP_DIV2': _bt(30, 1800),
+        'PVP_DIV3': _bt(20, 1700),
+        'RANK_SOLO': _bt(40, 1850),
+    },
+    'recordTime': 1700000000000,
+    'shipInfoBattleList': [
+        {'shipInfo': _RECENT_SHIP_INFO, 'typeInfo': {'PVP': _bt(10, 2100), 'RANK_SOLO': _bt(4, 1950)}},
+        {'shipInfo': {**_RECENT_SHIP_INFO, 'nameCn': '出云', 'levelStr': 'IX'},
+         'typeInfo': {'PVP': _bt(5, 1800), 'RANK_SOLO': _bt(0, 0)}},
+    ],
+}
+
 # ---------- 扫雪 ----------
 _SX_DATA = {
     'userInfo': _USER_INFO,
@@ -274,6 +327,9 @@ CASES = [
     ('select-ship-v5.html', _SELECT_SHIP_DATA, ['请在20秒内选择对应的序号', '岛风']),
     ('cw-rank-v5.html', _CW_RANK_DATA, ['赛季', '最后战斗时间', '第一公会']),
     ('ship-rank-v5.html', _SHIP_RANK_DATA, ['大和', '4289389488-small', '场次', 'PR']),
+    ('wws-info-recent-v5.html', _RECENT_DATA, ['综合战绩', '随机战', '排位战']),
+    ('wws-info-recent-random-v5.html', _RECENT_DATA, ['近期随机', '随机战']),
+    ('wws-info-recent-rank-v5.html', _RECENT_DATA, ['近期排位', '排位战']),
     ('wws-sx-v5.html', _SX_DATA, ['总船只', '钢铁', '煤炭', '研发点']),
     ('wws-box-christmas-v5.html', _BOX_DATA, ['圣诞箱中', '已拥有', '收集进度']),
     ('wws-clan-cw-v5.html', _CLAN_CW_DATA, ['近期战斗', '段位', '胜率']),

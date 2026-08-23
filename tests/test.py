@@ -30,6 +30,8 @@ async def start():
     await command("单船 大和")
     await command("测试")
 
+    await command("近期随机")
+    await command("近期排位")
     # await command("me sx")
     # await command("me sd")
     # await command("me recent 30")

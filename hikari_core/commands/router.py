@@ -6,7 +6,7 @@ from ..core.config import hikari_config
 from ..core.constants import servers
 from ..core.model import Func
 from ..features.account.info import get_AccountInfo
-from ..features.account.recent import get_RecentInfo
+from ..features.account.recent import get_RecentInfo, get_RecentRandom, get_RecentRank
 from ..features.account.recents import get_RecentsInfo
 from ..features.api import get_ship_name
 from ..features.bind import change_BindInfo, delete_BindInfo, get_BindInfo, set_BindInfo, set_special_BindInfo
@@ -35,6 +35,8 @@ ship_command_list = [
 
 recent_command_list = [
     command(('ship', '单船'), get_ShipRecent),
+    command(('随机', 'random', 'pvp'), get_RecentRandom),
+    command(('排位', 'rank'), get_RecentRank),
 ]
 
 
@@ -63,6 +65,9 @@ first_command_list = [  # 同指令中越长的匹配词越靠前；含英文别
     command(('cw.rank', '军团战排行榜', '公会战排行榜'), get_CwRank),
     command(('cw.recent', '军团战记录', '公会战记录'), get_cw_recent),
     command(('clan.rank', '军团排行榜', '公会排行榜'), get_ClanRank),
+    # 近期随机/近期排位 含 'rank'/'近期' 子串，需排在 rank / recent 之前
+    command(('recent_random', '近期随机', '随机近期'), get_RecentRandom),
+    command(('recent_rank', '近期排位', '排位近期'), get_RecentRank),
     command(('rank', '排行榜'), None, get_ShipRank, rank_command_list),
     command(('bind', '绑定', 'set'), set_BindInfo),
     command(('recents', '单场近期'), get_RecentsInfo),
@@ -82,6 +87,8 @@ first_command_list = [  # 同指令中越长的匹配词越靠前；含英文别
 _USAGE: Dict[Func, Dict[str, str]] = {
     get_AccountInfo: {'zh': '<服务器> <游戏昵称>', 'en': '<server> <nickname>'},
     get_RecentInfo: {'zh': '[天数或日期]', 'en': '[days or date]'},
+    get_RecentRandom: {'zh': '[天数或日期]', 'en': '[days or date]'},
+    get_RecentRank: {'zh': '[天数或日期]', 'en': '[days or date]'},
     get_RecentsInfo: {'zh': '', 'en': ''},
     get_ShipInfo: {'zh': '<船名>', 'en': '<ship name>'},
     get_ShipRecent: {'zh': '<船名> [天数或日期]', 'en': '<ship name> [days or date]'},
