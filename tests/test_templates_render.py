@@ -93,7 +93,18 @@ _CW_RANK_DATA = {
 
 # ---------- 单船排行榜 ----------
 _SHIP_RANK_DATA = {
-    'shipInfo': {'levelStr': 'X', 'nameCn': '大和'},
+    'shipInfo': {
+        'levelStr': 'X',
+        'nameCn': '大和',
+        'shipType': 'Battleship',
+        'shipTypeCn': '战列舰',
+        'nation': 'Japan',
+        'serverType': 'ASIA',
+        'shipId': 4289389488,
+        'countryImage': 'https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/Japan-Nation-image.png',
+        'shipTypeImage': 'https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/Battleship-ShipType-image.png',
+        'imgSmall': 'https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/asia-4289389488-small.png',
+    },
     'data': {
         'value': [
             {
@@ -262,7 +273,7 @@ CASES = [
     ('select-clan-v5.html', _SELECT_CLAN_DATA, ['请在20秒内选择对应的序号', '第一公会']),
     ('select-ship-v5.html', _SELECT_SHIP_DATA, ['请在20秒内选择对应的序号', '岛风']),
     ('cw-rank-v5.html', _CW_RANK_DATA, ['赛季', '最后战斗时间', '第一公会']),
-    ('ship-rank-v5.html', _SHIP_RANK_DATA, ['大和', '场次', 'PR']),
+    ('ship-rank-v5.html', _SHIP_RANK_DATA, ['大和', '4289389488-small', '场次', 'PR']),
     ('wws-sx-v5.html', _SX_DATA, ['总船只', '钢铁', '煤炭', '研发点']),
     ('wws-box-christmas-v5.html', _BOX_DATA, ['圣诞箱中', '已拥有', '收集进度']),
     ('wws-clan-cw-v5.html', _CLAN_CW_DATA, ['近期战斗', '段位', '胜率']),
