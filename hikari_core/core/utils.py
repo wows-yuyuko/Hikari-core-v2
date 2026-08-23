@@ -33,28 +33,6 @@ async def match_keywords(match_list, lists) -> Tuple[Optional[str], List]:
     return None, match_list
 
 
-async def find_and_replace_keywords(match_list, lists) -> Tuple[Optional[str], List]:
-    """字段列表匹配(可匹配同元素内更小长度)
-
-    Args:
-        match_list (List): 待匹配列表
-        lists (List): 匹配字符列表
-
-    Returns:
-        match_keywards (str/None):匹配到的字段
-        match_list (List): 去除匹配字符后的列表
-    """
-    for each in lists:
-        for kw in each.keywords:
-            for i, match_kw in enumerate(match_list):
-                if match_kw.find(kw) + 1:
-                    match_list[i] = str(match_kw).replace(kw, '')
-                    if not match_list[i]:
-                        match_list.remove('')
-                    return each.match_keywords, match_list
-    return None, match_list
-
-
 def encode_gzip(bytes) -> str:
     """gzip压缩
 

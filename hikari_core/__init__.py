@@ -1,7 +1,7 @@
 import time
 import traceback
 import os
-from typing import Optional
+from typing import List, Optional
 
 import jinja2
 from jinja2.exceptions import UndefinedError
@@ -18,7 +18,36 @@ from .core.model import Hikari_Model, Input_Model, UserInfo_Model
 from .core.render_helpers import set_render_params
 from .Html_Render import html_to_pic, html_to_pic_by_gif
 from .commands.parser import analyze_command
-from .commands.router import *  # noqa: F403
+# 供外部 bot 使用的公共指令 API（显式导出，替代通配导入）
+from .commands.router import (  # noqa: F401
+    command,
+    first_command_list,
+    select_command,
+    get_AccountInfo,
+    get_RecentInfo,
+    get_RecentsInfo,
+    get_ShipInfo,
+    get_ShipRecent,
+    get_ShipRank,
+    get_CwRank,
+    get_cw_recent,
+    get_ClanInfo,
+    get_ClanRank,
+    change_BindInfo,
+    delete_BindInfo,
+    get_BindInfo,
+    set_BindInfo,
+    set_special_BindInfo,
+    check_christmas_box,
+    get_BanInfo,
+    get_sx_info,
+    roll_ship,
+    get_ship_name,
+    check_version,
+    async_update_ship_cache,
+    async_update_template,
+    get_help,
+)
 
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path), enable_async=True)
 env.globals.update(

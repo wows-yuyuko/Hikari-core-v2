@@ -60,7 +60,7 @@ init_hikari_no_output (__init__.py:50)
 | `find_and_replace_keywords` | utils.py:55 | 子串匹配、区分大小写 | **死代码，全项目无调用** |
 | `findFunction_and_replaceKeywords` | command_select.py:96 | 子串匹配、**区分大小写** | 路由在用 |
 
-实际 bug：`wws SHIP 大和` / `wws Rank ship` 路由不到任何命令，落到兜底 `get_AccountInfo`，把 `SHIP` 当游戏昵称去请求 API。全角/半角括号（`（）` vs `()`）也未做 token 归一化。
+实际 bug：`wws SHIP 大和` / `wws Rank ship` 路由不到任何命令，落到兜底 `get_AccountInfo`，把 `SHIP` 当游戏昵称去请求 API。**已修复（2026-08）：`_match_level` 改为大小写不敏感的子串匹配。**（括号语法已整体移除，不再涉及全角/半角归一化。）
 
 ### 2.3 P1 — 子串匹配 + 列表顺序强耦合
 
@@ -211,11 +211,11 @@ class Router:
 
 ## 5. 立即可做的低风险修复（不依赖大重构）
 
-1. `findFunction_and_replaceKeywords` 改为大小写不敏感（对齐 `match_keywords`）；
-2. 删除死代码 `find_and_replace_keywords`（utils.py:55-74）；
-3. 删除 `levels` 重复的 `'4'`（data_source.py:48）；
-4. 合并重复的 `Func` Protocol，统一签名（command_select.py:28 vs model.py:7）；
-5. `_parse_ship_query_params` 船名改为"剩余 token 合并"，修复英文多词船名；
+1. ✅ `_match_level` 已改为大小写不敏感（对齐 `match_keywords`），`wws SHIP 大和` 等不再误落兜底；
+2. ✅ 已删除死代码 `find_and_replace_keywords`（utils.py）与孤儿函数 `findFunction_and_replaceKeywords`；
+3. ✅ 删除 `levels` 重复的 `'4'`（data_source.py:48）；
+4. ✅ 已合并重复的 `Func` Protocol，统一使用 `model.py` 的定义（`hikari` 签名）；
+5. ✅ `_parse_ship_query_params` 船名改为"剩余 token 合并"（me 模式），修复英文多词船名；未指定服务器时默认查自己；
 6. ✅ 括号提取已整体移除（见 §2.6），`大和(测试)` 即完整船名。
 
 ---
@@ -228,7 +228,7 @@ class Router:
 | D2 | `set`、`sd`、`recents`、`box` 等缩写别名 | 保留 / 移除 / 标记 deprecated | **已确认：全部保留** |
 | D3 | `工会`（错别字）等兼容别名 | 保留并注释 / 移除 | **已确认：移除，输错由智能提示兜底** |
 | D4 | `(括号)` 指定账号语法 | 移除 / 收紧为 `(服务器 名字)` | **已实施：移除（2026-08）** |
-| D5 | 帮助文本 | 远程 txt 继续维护 / 自动生成（推荐）| **已实施：不自动生成；改为本地中英双语 H5 帮助页（help-zh.html / help-en.html），随 `command_language` 切换，版本号动态注入** |
+| D5 | 帮助文本 | 远程 txt 继续维护 / 自动生成（推荐）| **已实施：不自动生成；改为本地中英双语 H5 帮助页（help-zh.html / help-en.html），随 `command_language` 切换，不显示版本信息** |
 
 ## 7. 已实施：指令收敛 + 输错智能提示（feat/command-suggest 分支）
 
@@ -255,9 +255,9 @@ class Router:
 - **最大条数可配置**：`set_hikari_config(command_suggest_max=N)`，默认 3，设为 0 关闭智能提示；
 - **同效果去重可配置**：同一功能的多别名（如 `ship.rank` 与 `rank` 都是单船排行）只提示一条，`set_hikari_config(command_suggest_dedupe=False)` 关闭；
 - **中文别名优先展示**：提示展示命中的那个别名（输入 `单传` 提示 `单船`），并附带参数用法；
-- **合法身份查询不误报**：`me` / `@` / `服务器+昵称` 等默认账号查询不会触发提示；
+- **合法身份查询不误报**：`me` / `服务器+昵称` 等默认账号查询不会触发提示；
 - **二级指令同样覆盖**：`ship 大和 recebt` 会提示 `wws recent <船名> [天数或日期]`；
-- **兼容性**：`select_command` / `findFunction_and_replaceKeywords` 保持原签名不变。
+- **兼容性**：`select_command` 保持原签名不变；`findFunction_and_replaceKeywords` 已删除（无调用方）。
 
 ### 7.2 中英文设置
 

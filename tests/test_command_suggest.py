@@ -57,6 +57,20 @@ async def test_second_level_match_no_suggest():
     assert suggest == []
 
 
+async def test_case_insensitive_routing():
+    """指令匹配大小写不敏感：SHIP / Rank 应正常路由，不再落到兜底账号查询。"""
+    cases = [
+        (['SHIP', '大和'], get_ShipInfo),
+        (['Rank', 'ship', '大和'], get_ShipRank),
+        (['recent', 'SHIP', '大和'], get_ShipRecent),
+        (['单船', '大和'], get_ShipInfo),
+    ]
+    for tokens, expect in cases:
+        func, rest, suggest = await route_command(list(tokens))
+        assert func == expect, f'{tokens} -> {func}'
+        assert suggest == []
+
+
 # ============================================================
 # 智能提示
 # ============================================================

@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from difflib import SequenceMatcher
-from typing import Dict, List, Protocol, Tuple, runtime_checkable
+from typing import Dict, List, Tuple
 
 from ..core.config import hikari_config
 from ..core.constants import servers
+from ..core.model import Func
 from ..features.account.info import get_AccountInfo
 from ..features.account.recent import get_RecentInfo
 from ..features.account.recents import get_RecentsInfo
@@ -18,12 +19,6 @@ from ..features.ship.info import get_ShipInfo
 from ..features.ship.rank import get_ShipRank
 from ..features.ship.recent import get_ShipRecent
 from ..features.system import async_update_ship_cache, async_update_template, check_version, get_help
-
-
-@runtime_checkable
-class Func(Protocol):
-    async def __call__(self, **kwargs):
-        ...
 
 
 @dataclass
@@ -139,7 +134,7 @@ def _is_identity_query(match_list) -> bool:
 
 
 async def _match_level(match_list, command_List, default_func) -> Tuple[command, List, bool]:
-    """匹配一层指令。
+    """匹配一层指令（大小写不敏感的子串匹配）。
 
     Args:
         match_list (List): 待匹配列表
@@ -152,19 +147,17 @@ async def _match_level(match_list, command_List, default_func) -> Tuple[command,
     """
     for com in command_List or []:
         for kw in com.keywords or ():
+            kw_l = str(kw).casefold()
             for i, match_kw in enumerate(match_list):
-                if match_kw.find(kw) + 1:
-                    match_list[i] = str(match_kw).replace(kw, '')
+                mk = str(match_kw)
+                idx = mk.casefold().find(kw_l)
+                if idx + 1:
+                    # 大小写不敏感删除命中的关键词（对齐 match_keywords）
+                    match_list[i] = mk[:idx] + mk[idx + len(kw):]
                     if not match_list[i]:  # 为空时才删除，防止未加空格没有被split切割
                         match_list.remove('')
                     return com, match_list, True
     return command(None, default_func, None), match_list, False
-
-
-async def findFunction_and_replaceKeywords(match_list, command_List, default_func) -> Tuple[command, List]:
-    """字段列表匹配(保持原签名)，无匹配时 func 为 default_func。"""
-    com, match_list, _ = await _match_level(match_list, command_List, default_func)
-    return com, match_list
 
 
 def _flatten_entries(command_List) -> List[Tuple[Tuple[command, ...], Tuple[str, ...], Func]]:
