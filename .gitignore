@@ -170,3 +170,5 @@ poetry.lock
 tests/*.png
 .idea/
 tests/data/
+# echarts 运行时由 OSS 清单（update_style）拉取，不纳入 git 跟踪
+hikari_core/Template/echarts.js
