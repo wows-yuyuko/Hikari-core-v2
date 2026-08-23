@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Dict, List, Protocol, Tuple, runtime_checkable
@@ -100,7 +99,7 @@ _USAGE: Dict[Func, Dict[str, str]] = {
     set_special_BindInfo: {'zh': '<AID>', 'en': '<AID>'},
     change_BindInfo: {'zh': '[序号]', 'en': '[index]'},
     delete_BindInfo: {'zh': '<序号>', 'en': '<index>'},
-    get_BindInfo: {'zh': 'me 或 @群友', 'en': 'me or @member'},
+    get_BindInfo: {'zh': 'me', 'en': 'me'},
     check_christmas_box: {'zh': '[服务器] [昵称] 或 me', 'en': '[server] [nickname] or me'},
     get_sx_info: {'zh': '[服务器] [昵称] 或 me', 'en': '[server] [nickname] or me'},
     get_BanInfo: {'zh': '[服务器] [昵称] 或 me', 'en': '[server] [nickname] or me'},
@@ -124,7 +123,7 @@ def _is_server_token(token) -> bool:
 
 
 def _is_identity_query(match_list) -> bool:
-    """判断无指令关键词的输入是否为合法的身份查询（me / @ / 服务器+昵称）。
+    """判断无指令关键词的输入是否为合法的身份查询（me / 服务器+昵称）。
 
     此类输入会走默认的账号查询逻辑，不应触发智能提示。
     """
@@ -132,8 +131,6 @@ def _is_identity_query(match_list) -> bool:
         return False
     lowered = [str(t).casefold() for t in match_list]
     if lowered == ['me']:
-        return True
-    if any(re.search(r'CQ:at,qq=\d+|<@!\d+', str(t)) for t in match_list):
         return True
     # 服务器+昵称：恰好两个 token 且其中一个是服务器关键词（顺序不限）
     if len(match_list) == 2 and sum(1 for t in lowered if t in _SERVER_KEYWORDS) == 1:

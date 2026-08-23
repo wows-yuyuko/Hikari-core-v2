@@ -33,7 +33,7 @@ class ShipInfo(dict):
 class Input_Model(BaseModel):
     Command_Text: str = Field(default='', description='输入的指令,请提前去除wws')  # 输入的指令,请提前去除wws
     Command_List: List[str] = Field(default_factory=list)
-    Search_Type: Optional[int] = 3  # 1:me  2:@  3:server+name or default
+    Search_Type: Optional[int] = 3  # 1:me  3:server+name or default
     Platform: Optional[str] = None
     PlatformId: Optional[str] = None
     Server: Optional[str] = None

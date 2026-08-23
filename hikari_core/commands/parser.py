@@ -3,7 +3,6 @@ import re
 import time
 import traceback
 from datetime import datetime
-from typing import Optional
 
 from loguru import logger
 
@@ -38,7 +37,7 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
                 return hikari.error(render_suggest_message(suggest))
             if hikari.Input.AccountName:
                 hikari.Input.Command_List.insert(0, hikari.Input.AccountName)
-            hikari = await extract_with_me_or_at(hikari)
+            hikari = await extract_with_me(hikari)
             hikari = await extract_with_function(hikari)
         return hikari
     except Exception:
@@ -60,7 +59,8 @@ async def extract_with_special_name(hikari: Hikari_Model) -> Hikari_Model:
         return hikari.error('解析指令时发生错误，请确认输入参数无误')
 
 
-async def extract_with_me_or_at(hikari: Hikari_Model) -> Hikari_Model:
+async def extract_with_me(hikari: Hikari_Model) -> Hikari_Model:
+    """识别 'me' 身份；@提及 由平台侧处理，SDK 内部不再解析。"""
     try:
         if hikari.UserInfo.Platform in ['QQ', 'QQ_CHANNEL', 'QQ_OFFICIAL']:
             await _apply_qq_official_default(hikari)
@@ -69,13 +69,6 @@ async def extract_with_me_or_at(hikari: Hikari_Model) -> Hikari_Model:
                     hikari.Input.Search_Type = 1
                     hikari.Input.Platform = hikari.UserInfo.Platform
                     hikari.Input.PlatformId = hikari.UserInfo.PlatformId
-                    hikari.Input.Command_List.remove(i)
-                    break
-                match = _match_at_mention(i, hikari.UserInfo.Platform)
-                if match:
-                    hikari.Input.Search_Type = 2
-                    hikari.Input.Platform = hikari.UserInfo.Platform
-                    hikari.Input.PlatformId = str(match.group(1))
                     hikari.Input.Command_List.remove(i)
                     break
         return hikari
@@ -94,16 +87,6 @@ async def _apply_qq_official_default(hikari: Hikari_Model) -> None:
         hikari.Input.Search_Type = 1
         hikari.Input.Platform = hikari.UserInfo.Platform
         hikari.Input.PlatformId = hikari.UserInfo.PlatformId
-
-
-def _match_at_mention(text: str, platform: str) -> Optional[re.Match]:
-    """根据平台提取 @提及 中的用户 ID。"""
-    patterns = {
-        'QQ': r'CQ:at,qq=(\d+)',
-        'QQ_CHANNEL': r'<@!(\d+)',
-    }
-    pattern = patterns.get(platform)
-    return re.search(pattern, text) if pattern else None
 
 
 # ============================================================
@@ -194,15 +177,15 @@ async def _parse_ship_query_params(hikari: Hikari_Model) -> Hikari_Model:
     elif len(hikari.Input.Command_List) == 1:
         hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[0])
     else:
-        return hikari.error('您似乎准备用me或@查询单船战绩，请检查参数是否缺少或溢出，以空格分隔，顺序不限')
+        return hikari.error('您似乎准备用me查询单船战绩，请检查参数是否缺少或溢出，以空格分隔，顺序不限')
     return hikari
 
 
 async def _handle_bind(hikari: Hikari_Model) -> Hikari_Model:
     """处理所有绑定操作：查询 / 设置 / 特殊绑定 / 切换 / 删除。"""
     if hikari.Function == get_BindInfo:
-        if hikari.Input.Search_Type not in [1, 2]:
-            return hikari.error('参数似乎出了问题呢，请使用me或@群友')
+        if hikari.Input.Search_Type != 1:
+            return hikari.error('参数似乎出了问题呢，请使用me查询绑定')
         return hikari
 
     if hikari.Function in [set_BindInfo, set_special_BindInfo]:
@@ -353,7 +336,7 @@ async def _parse_cw_recent_by_name(hikari: Hikari_Model) -> Hikari_Model:
 
 
 async def _parse_cw_recent_by_identity(hikari: Hikari_Model) -> Hikari_Model:
-    """通过当前用户身份（me/@）解析 CW 近期战绩参数。"""
+    """通过当前用户身份（me）解析 CW 近期战绩参数。"""
     hikari.Input.Server = hikari.UserInfo.Platform
     hikari.Input.ClanId = hikari.UserInfo.PlatformId
 
