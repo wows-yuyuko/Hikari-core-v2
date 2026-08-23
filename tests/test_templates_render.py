@@ -176,6 +176,27 @@ _RECENT_DATA = {
     ],
 }
 
+# ---------- 战舰筛选（ships） ----------
+_SHIPS_DATA = {
+    'userInfo': {**_USER_INFO, 'accountId': 12345},
+    'battleTypeInfo': {
+        'PVP': _bt(100, 2000),
+        'PVP_SOLO': _bt(50, 1900),
+        'PVP_DIV2': _bt(30, 1800),
+        'PVP_DIV3': _bt(20, 1700),
+        'RANK_SOLO': _bt(40, 1850),
+    },
+    'filter': {
+        'shipType': 'Battleship', 'country': 'Japan', 'level': '10',
+        'min': 6, 'max': 10, 'desc': '10级 · 战列舰 · 日本 · 等级≥6 · 等级≤10',
+    },
+    'list': [
+        {'shipInfo': _RECENT_SHIP_INFO, 'typeInfo': {'PVP': _bt(100, 2400)}},
+        {'shipInfo': {**_RECENT_SHIP_INFO, 'nameCn': '出云', 'levelStr': 'IX'},
+         'typeInfo': {'PVP': _bt(80, 2100)}},
+    ],
+}
+
 # ---------- 扫雪 ----------
 _SX_DATA = {
     'userInfo': _USER_INFO,
@@ -330,6 +351,8 @@ CASES = [
     ('wws-info-recent-v5.html', _RECENT_DATA, ['综合战绩', '随机战', '排位战']),
     ('wws-info-recent-random-v5.html', _RECENT_DATA, ['近期随机', '随机战']),
     ('wws-info-recent-rank-v5.html', _RECENT_DATA, ['近期排位', '排位战']),
+    ('wws-ships-v5.html', _SHIPS_DATA, ['战舰筛选', '测试玩家', '大和', '出云', '等级≥6', '共 2 艘', '综合战绩', '随机战', '单野', '排位']),
+    ('wws-ships-v5.html', {**_SHIPS_DATA, 'userInfo': None}, ['战舰筛选', '大和', '等级≥6', '综合战绩']),
     ('wws-sx-v5.html', _SX_DATA, ['总船只', '钢铁', '煤炭', '研发点']),
     ('wws-box-christmas-v5.html', _BOX_DATA, ['圣诞箱中', '已拥有', '收集进度']),
     ('wws-clan-cw-v5.html', _CLAN_CW_DATA, ['近期战斗', '段位', '胜率']),

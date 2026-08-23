@@ -51,6 +51,7 @@ class Templates:
     WWS_INFO_RECENT_RANDOM: TemplateConfig = TemplateConfig("wws-info-recent-random-v5.html", 1200, 100)
     WWS_INFO_RECENT_RANK: TemplateConfig = TemplateConfig("wws-info-recent-rank-v5.html", 1200, 100)
     WWS_INFO_RECENTS: TemplateConfig = TemplateConfig("wws-info-recents-v5.html", 1200, 100)
+    WWS_SHIPS: TemplateConfig = TemplateConfig("wws-ships-v5.html", 1200, 100)
 
     # 公会（v5 统一风格）
     WWS_CLAN: TemplateConfig = TemplateConfig("wws-clan-v5.html", 1200, 100)

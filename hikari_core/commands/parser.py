@@ -11,6 +11,7 @@ from ..core.utils import match_keywords
 from ..features.account.info import get_AccountInfo
 from ..features.account.recent import get_RecentInfo, get_RecentRandom, get_RecentRank
 from ..features.account.recents import get_RecentsInfo
+from ..features.account.ships import get_Ships
 from ..features.api import get_ship_name
 from ..features.bind import change_BindInfo, delete_BindInfo, get_BindInfo, set_BindInfo, set_special_BindInfo
 from ..features.clan.cw_recent import get_cw_recent
@@ -158,6 +159,60 @@ async def _parse_ship_query_params(hikari: Hikari_Model) -> Hikari_Model:
         hikari.Input.ShipInfo.nameCn = ' '.join(str(i) for i in hikari.Input.Command_List)
     else:
         return hikari.error('您似乎准备用me查询单船战绩，请检查是否缺少船名')
+    return hikari
+
+
+async def _handle_ships(hikari: Hikari_Model) -> Hikari_Model:
+    """处理 get_Ships：ships 后面必须至少一个参数。
+
+    参数仅识别 等级 / 地区 / 战舰类型（constants 匹配并替换为规范值），
+    min/max 必须后跟数字且均可缺省（默认 min=5, max=0）。
+    先解析 min/max，避免其后的数字被当作等级匹配。
+    """
+    command_list = list(hikari.Input.Command_List)
+
+    # 服务器 + 昵称模式：先提取服务器关键词，剩余第一个为昵称
+    server, command_list = await match_keywords(command_list, servers)
+    if server:
+        if len(command_list) < 2:
+            return hikari.error('ships 请携带 服务器 + 昵称 + 筛选条件，如 ships 亚服 昵称 bb 10')
+        hikari.Input.Server = server
+        hikari.Input.AccountName = str(command_list[0])
+        command_list = command_list[1:]
+
+    # ships 后面必须至少一个参数（等级/地区/类型 或 min/max 均可）
+    if not command_list:
+        return hikari.error('ships 后面必须带参数，如 ships bb 10 japan min 6 max 10')
+
+    # 先解析 min / max（必须后跟数字，均可缺省，默认 min=5, max=0）
+    min_level = 5
+    max_level = 0
+    rest = []
+    i = 0
+    while i < len(command_list):
+        tok = str(command_list[i]).lower()
+        if tok in ('min', 'max'):
+            if i + 1 >= len(command_list) or not str(command_list[i + 1]).isdigit():
+                return hikari.error(f'{tok} 后面必须跟数字，如 {tok} 6')
+            if tok == 'min':
+                min_level = int(command_list[i + 1])
+            else:
+                max_level = int(command_list[i + 1])
+            i += 2
+        else:
+            rest.append(command_list[i])
+            i += 1
+    hikari.Input.ShipsMin = min_level
+    hikari.Input.ShipsMax = max_level
+    command_list = rest
+
+    # 等级 / 地区 / 战舰类型：命中即替换为 constants 中的规范值
+    hikari.Input.ShipInfo.country, command_list = await match_keywords(command_list, nations)
+    hikari.Input.ShipInfo.shipType, command_list = await match_keywords(command_list, shiptypes)
+    hikari.Input.ShipInfo.level, command_list = await match_keywords(command_list, levels)
+
+    if command_list:
+        return hikari.error(f'无法识别参数: {command_list[0]}，仅支持 等级/地区/战舰类型 与 min/max')
     return hikari
 
 
@@ -341,6 +396,7 @@ _HANDLERS = {
     get_RecentRandom: _handle_account_recent,
     get_RecentRank: _handle_account_recent,
     get_RecentsInfo: _handle_account_recent,
+    get_Ships: _handle_ships,
     get_ShipInfo: _handle_account_recent,
     get_ShipRecent: _handle_account_recent,
     get_BindInfo: _handle_bind,

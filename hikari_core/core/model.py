@@ -44,6 +44,8 @@ class Input_Model(BaseModel):
     CwSeasonId: Optional[int] = 0
     Recent_Day: Optional[int] = 0
     Recent_Date: Optional[str] = time.strftime('%Y-%m-%d', time.localtime())
+    ShipsMin: Optional[int] = 0  # ships 筛选最小等级，0 不限制
+    ShipsMax: Optional[int] = 0  # ships 筛选最大等级，0 不限制
     Select_Index: Optional[int] = None
     Select_Data: Optional[List] = None
     ShipInfo: Any = Field(default_factory=ShipInfo)

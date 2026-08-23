@@ -8,6 +8,7 @@ from ..core.model import Func
 from ..features.account.info import get_AccountInfo
 from ..features.account.recent import get_RecentInfo, get_RecentRandom, get_RecentRank
 from ..features.account.recents import get_RecentsInfo
+from ..features.account.ships import get_Ships
 from ..features.api import get_ship_name
 from ..features.bind import change_BindInfo, delete_BindInfo, get_BindInfo, set_BindInfo, set_special_BindInfo
 from ..features.clan.cw_recent import get_cw_recent
@@ -71,6 +72,8 @@ first_command_list = [  # 同指令中越长的匹配词越靠前；含英文别
     command(('rank', '排行榜'), None, get_ShipRank, rank_command_list),
     command(('bind', '绑定', 'set'), set_BindInfo),
     command(('recents', '单场近期'), get_RecentsInfo),
+    # ships 含 'ship' 子串，需排在 ship / ship.rank 之前
+    command(('ships',), get_Ships),
     command(('recent', '近期'), None, get_RecentInfo, recent_command_list),
     command(('ship', '单船'), None, get_ShipInfo, ship_command_list),
     # command(("record", "历史记录"), None, get_record),
@@ -90,6 +93,7 @@ _USAGE: Dict[Func, Dict[str, str]] = {
     get_RecentRandom: {'zh': '[天数或日期]', 'en': '[days or date]'},
     get_RecentRank: {'zh': '[天数或日期]', 'en': '[days or date]'},
     get_RecentsInfo: {'zh': '', 'en': ''},
+    get_Ships: {'zh': '<等级/地区/类型> [min N] [max N]', 'en': '<tier/nation/type> [min N] [max N]'},
     get_ShipInfo: {'zh': '<船名>', 'en': '<ship name>'},
     get_ShipRecent: {'zh': '<船名> [天数或日期]', 'en': '<ship name> [days or date]'},
     get_ShipRank: {'zh': '<服务器> <船名>', 'en': '<server> <ship name>'},

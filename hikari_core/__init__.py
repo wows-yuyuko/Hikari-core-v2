@@ -28,6 +28,7 @@ from .commands.router import (  # noqa: F401
     get_RecentRandom,
     get_RecentRank,
     get_RecentsInfo,
+    get_Ships,
     get_ShipInfo,
     get_ShipRecent,
     get_ShipRank,
