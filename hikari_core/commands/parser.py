@@ -20,7 +20,7 @@ from ..features.fun import check_christmas_box, get_BanInfo, get_sx_info, roll_s
 from ..features.ship.info import get_ShipInfo
 from ..features.ship.rank import get_ShipRank
 from ..features.ship.recent import get_ShipRecent
-from .router import render_suggest_message, route_command
+from .router import _is_identity_query, render_suggest_message, route_command
 
 
 async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
@@ -34,15 +34,10 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
             if suggest:
                 # 指令未识别，给出相似命令的智能提示
                 return hikari.error(render_suggest_message(suggest))
+            # 未匹配到任何指令且不是合法身份查询（me / 服务器+昵称）：给出提示
+            if hikari.Function == get_AccountInfo and not _is_identity_query(hikari.Input.Command_List):
+                return hikari.error('未识别的指令，请发送 wws help 查看帮助')
             hikari = await extract_with_me(hikari)
-            # wws me 单独使用（无任何查询内容）不允许
-            if (
-                hikari.Status == 'init'
-                and hikari.Function == get_AccountInfo
-                and hikari.Input.Search_Type == 1
-                and not hikari.Input.Command_List
-            ):
-                return hikari.error('请发送具体查询指令，wws me 不能单独使用（如：wws me 大和 / wws me recent 30）')
             hikari = await extract_with_function(hikari)
         return hikari
     except Exception:
@@ -61,8 +56,8 @@ async def extract_with_me(hikari: Hikari_Model) -> Hikari_Model:
                 _set_identity(hikari)
                 hikari.Input.Command_List.remove(i)
                 break
-        if not explicit_me and hikari.Input.Search_Type == 3:
-            # me 可缺省：未显式 me 且参数中没有服务器关键词时，默认查自己
+        if not explicit_me and hikari.Input.Search_Type == 3 and hikari.Function is not get_AccountInfo:
+            # me 可缺省：仅当有具体指令匹配（非兜底账号查询）且未指定服务器时，默认查自己
             server, _ = await match_keywords(hikari.Input.Command_List.copy(), servers)
             if not server:
                 hikari.Input.Search_Type = 1

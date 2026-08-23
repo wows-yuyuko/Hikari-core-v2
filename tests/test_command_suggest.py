@@ -297,11 +297,11 @@ async def test_ship_parse_me_mode_joins_remaining_tokens():
 
 
 # ============================================================
-# me 缺省与裸 me 限制
+# me 缺省与未识别提示
 # ============================================================
 
 async def test_me_omission_defaults_to_self():
-    """me 可缺省：未指定服务器时默认查自己；服务器+昵称模式不受影响。"""
+    """me 可缺省：有指令匹配且未指定服务器时默认查自己；服务器+昵称模式不受影响。"""
     from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
     from hikari_core.commands.parser import analyze_command
     from hikari_core.commands.router import get_BindInfo, get_sx_info
@@ -313,32 +313,28 @@ async def test_me_omission_defaults_to_self():
         )
         return await analyze_command(hikari)
 
-    # 水表：wws 大和 → 默认查自己
-    h = await parse('大和')
-    assert h.Status == 'init' and h.Function == get_AccountInfo
-    assert h.Input.Search_Type == 1
-
-    # 娱乐：wws sx → 默认查自己
+    # 娱乐：wws sx 有指令匹配 → 默认查自己
     h = await parse('sx')
     assert h.Status == 'init' and h.Function == get_sx_info
+    assert h.Input.Search_Type == 1
+
+    # 近期：wws recent 30 有指令匹配 → 默认查自己
+    h = await parse('recent 30')
+    assert h.Status == 'init'
     assert h.Input.Search_Type == 1
 
     # 服务器+昵称 不受影响
     h = await parse('asia 玩家名')
     assert h.Input.Search_Type == 3
 
-    # 显式 me 仍可用
-    h = await parse('me 大和')
-    assert h.Input.Search_Type == 1
-
-    # 绑定列表 me 仍可用（非默认查询，不被裸 me 拦截）
+    # 绑定列表 me 仍可用
     h = await parse('bind_list me')
     assert h.Status == 'init' and h.Function == get_BindInfo
     assert h.Input.Search_Type == 1
 
 
-async def test_bare_me_rejected():
-    """wws me 单独使用不允许。"""
+async def test_bare_me_allowed():
+    """wws me 单独使用正常（查询自己水表）。"""
     from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
     from hikari_core.commands.parser import analyze_command
 
@@ -347,8 +343,24 @@ async def test_bare_me_rejected():
         Input=Input_Model(Command_Text='me'),
     )
     hikari = await analyze_command(hikari)
-    assert hikari.Status == 'error'
-    assert '不能单独使用' in str(hikari.Output.Data)
+    assert hikari.Status == 'init'
+    assert hikari.Function == get_AccountInfo
+    assert hikari.Input.Search_Type == 1
+
+
+async def test_unmatched_word_gives_hint():
+    """无指令匹配且非身份查询的输入（wws 测试）给出未识别提示，而非静默查自己。"""
+    from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
+    from hikari_core.commands.parser import analyze_command
+
+    for text in ['测试', '大和']:
+        hikari = Hikari_Model(
+            UserInfo=UserInfo_Model(Platform='QQ', PlatformId='10000'),
+            Input=Input_Model(Command_Text=text),
+        )
+        hikari = await analyze_command(hikari)
+        assert hikari.Status == 'error', text
+        assert '未识别' in str(hikari.Output.Data), text
 
 
 # ============================================================

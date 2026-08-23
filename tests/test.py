@@ -25,7 +25,11 @@ async def start():
     is_out_image = True
     # await command("me ship 哥伦布")
     # await command("ban cn 西行寺雨季")
+    await command("me")
+    await command("近期")
+    await command("单船 大和")
     await command("测试")
+
     # await command("me sx")
     # await command("me sd")
     # await command("me recent 30")
