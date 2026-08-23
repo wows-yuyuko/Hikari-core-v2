@@ -11,10 +11,9 @@
 ```
 init_hikari_no_output (__init__.py:50)
   └─ analyze_command (analyze.py:32)
-       ├─ extract_with_special_name   (括号提取账号名, analyze.py:50)
        ├─ select_command              (关键词路由, command_select.py:111)
        │    └─ findFunction_and_replaceKeywords  (扁平表 + 子串匹配)
-       ├─ extract_with_me_or_at       (me/@ 提取, analyze.py:64)
+       ├─ extract_with_me             (me 身份提取, analyze.py:64)
        └─ extract_with_function       (按函数对象二次分发到 _HANDLERS, analyze.py:423)
   └─ hikari.Function(hikari)          (执行真正的 API 处理器)
 ```
@@ -87,6 +86,8 @@ init_hikari_no_output (__init__.py:50)
 ### 2.6 P1 — 括号提取 `(名字)` 是第三种身份指定方式，且有毒
 
 `extract_with_special_name`（analyze.py:50-61）正则 `(\(|（)(.*?)(\)|）)` 会把**任何**括号内容当账号名：`wws (1)` 的账号名是 `1`；船名带括号（`大和(测试)`）会被整体吞掉导致解析失败。与 me/@、server+name 三种身份指定方式并存，并与船名、备注产生歧义。
+
+**已实施（2026-08）：整体移除。** `extract_with_special_name` 及其调用、AccountName 回插逻辑均已删除，`大和(测试)` 现在就是完整船名；身份指定仅保留 `me` 与 `服务器+昵称` 两种方式。
 
 ### 2.7 P2 — 重复与死代码
 
@@ -184,7 +185,7 @@ class Router:
 
 ### 3.4 身份解析独立成 `identity.py`
 
-`Search_Type` 改用 `IntEnum`（`ME / AT / SERVER_NAME`）；优先级固定：token 命中服务器表 → server+name，否则 me/@。括号语法删除，或收紧为 `(服务器 名字)` 显式双参数，避免与船名冲突。
+`Search_Type` 改用 `IntEnum`（`ME / AT / SERVER_NAME`）；优先级固定：token 命中服务器表 → server+name，否则 me/@。括号语法已移除（见 §2.6），不再与船名冲突。
 
 ### 3.5 帮助自动生成
 
@@ -215,7 +216,7 @@ class Router:
 3. 删除 `levels` 重复的 `'4'`（data_source.py:48）；
 4. 合并重复的 `Func` Protocol，统一签名（command_select.py:28 vs model.py:7）；
 5. `_parse_ship_query_params` 船名改为"剩余 token 合并"，修复英文多词船名；
-6. 括号提取正则收紧为 `(服务器 名字)` 或移除。
+6. ✅ 括号提取已整体移除（见 §2.6），`大和(测试)` 即完整船名。
 
 ---
 
@@ -226,7 +227,7 @@ class Router:
 | D1 | `ship.rank` / `cw.rank` / `clan.rank` / `cw.recent` 点号风格是否保留 | 保留 / 移除（统一二级路由 `rank ship` 等）| **已确认：保留** |
 | D2 | `set`、`sd`、`recents`、`box` 等缩写别名 | 保留 / 移除 / 标记 deprecated | **已确认：全部保留** |
 | D3 | `工会`（错别字）等兼容别名 | 保留并注释 / 移除 | **已确认：移除，输错由智能提示兜底** |
-| D4 | `(括号)` 指定账号语法 | 移除 / 收紧为 `(服务器 名字)` | **已确认：保留** |
+| D4 | `(括号)` 指定账号语法 | 移除 / 收紧为 `(服务器 名字)` | **已实施：移除（2026-08）** |
 | D5 | 帮助文本 | 远程 txt 继续维护 / 自动生成（推荐）| **已实施：不自动生成；改为本地中英双语 H5 帮助页（help-zh.html / help-en.html），随 `command_language` 切换，版本号动态注入** |
 
 ## 7. 已实施：指令收敛 + 输错智能提示（feat/command-suggest 分支）

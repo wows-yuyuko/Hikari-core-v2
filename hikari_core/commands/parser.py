@@ -1,5 +1,4 @@
 import html
-import re
 import time
 import traceback
 from datetime import datetime
@@ -30,29 +29,13 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
             if not hikari.Input.Command_Text:
                 return hikari.error('请发送wws help查看帮助')
             hikari.Input.Command_Text = html.unescape(str(hikari.Input.Command_Text)).strip()
-            hikari = await extract_with_special_name(hikari)
+            hikari.Input.Command_List = hikari.Input.Command_Text.split()
             hikari.Function, hikari.Input.Command_List, suggest = await route_command(hikari.Input.Command_List)
             if suggest:
                 # 指令未识别，给出相似命令的智能提示
                 return hikari.error(render_suggest_message(suggest))
-            if hikari.Input.AccountName:
-                hikari.Input.Command_List.insert(0, hikari.Input.AccountName)
             hikari = await extract_with_me(hikari)
             hikari = await extract_with_function(hikari)
-        return hikari
-    except Exception:
-        logger.error(traceback.format_exc())
-        return hikari.error('解析指令时发生错误，请确认输入参数无误')
-
-
-async def extract_with_special_name(hikari: Hikari_Model) -> Hikari_Model:
-    try:
-        match = re.search(r'(\(|（)(.*?)(\)|）)', hikari.Input.Command_Text)
-        if match:
-            hikari.Input.AccountName = match.group(2)
-            hikari.Input.Command_List = hikari.Input.Command_Text.replace(match.group(0), '').split()
-        else:
-            hikari.Input.Command_List = hikari.Input.Command_Text.split()
         return hikari
     except Exception:
         logger.error(traceback.format_exc())
