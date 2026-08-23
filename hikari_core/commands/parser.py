@@ -150,20 +150,21 @@ async def _parse_account_query_params(hikari: Hikari_Model) -> Hikari_Model:
 
 
 async def _parse_ship_query_params(hikari: Hikari_Model) -> Hikari_Model:
-    """解析单船查询的 服务器 + 游戏昵称 + 船名 参数。"""
-    if hikari.Input.Search_Type == 3:
-        if len(hikari.Input.Command_List) != 3:
-            return hikari.error('您似乎准备用服务器+昵称查询单船战绩，请检查参数是否缺少或溢出，以空格分隔，顺序不限')
-        hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
-        if hikari.Input.Server:
-            hikari.Input.AccountName = str(hikari.Input.Command_List[0])
-            hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[1])
-        else:
-            return hikari.error('服务器参数输入错误')
-    elif len(hikari.Input.Command_List) == 1:
-        hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[0])
+    """解析单船查询：服务器+昵称+船名，或 me 模式（剩余 token 合并为完整船名，支持多词英文船名如 Jean Bart）。"""
+    server, remaining = await match_keywords(hikari.Input.Command_List, servers)
+    if server:
+        if len(remaining) != 2:
+            return hikari.error('您似乎准备用服务器+昵称查询单船战绩，请检查参数是否缺少或溢出，以空格分隔')
+        hikari.Input.Server = server
+        hikari.Input.AccountName = str(remaining[0])
+        hikari.Input.ShipInfo.nameCn = str(remaining[1])
+    elif hikari.Input.Command_List:
+        # me 模式（显式 me 或未指定服务器时默认查自己）：剩余 token 合并为完整船名
+        hikari.Input.Search_Type = 1
+        _set_identity(hikari)
+        hikari.Input.ShipInfo.nameCn = ' '.join(str(i) for i in hikari.Input.Command_List)
     else:
-        return hikari.error('您似乎准备用me查询单船战绩，请检查参数是否缺少或溢出，以空格分隔，顺序不限')
+        return hikari.error('您似乎准备用me查询单船战绩，请检查是否缺少船名')
     return hikari
 
 

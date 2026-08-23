@@ -11,6 +11,7 @@ from hikari_core.commands.router import (
     get_RecentInfo,
     get_ShipInfo,
     get_ShipRank,
+    get_ShipRecent,
     route_command,
     render_suggest_message,
     select_command,
@@ -232,6 +233,53 @@ async def test_help_templates_render():
         html = await tpl.render_async(data={'version_info': 'Version 1.2.5 | Latest 9.9'})
         assert keyword in html, name
         assert 'wws ship' in html, name
+
+
+# ============================================================
+# 单船查询参数解析（多词英文船名）
+# ============================================================
+
+async def test_ship_parse_me_mode_joins_remaining_tokens():
+    """me 模式（显式 me 或未指定服务器默认查自己）把剩余 token 合并为船名，支持多词英文船名。"""
+    from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
+    from hikari_core.commands.parser import analyze_command
+
+    async def parse(text):
+        hikari = Hikari_Model(
+            UserInfo=UserInfo_Model(Platform='QQ', PlatformId='10000'),
+            Input=Input_Model(Command_Text=text),
+        )
+        return await analyze_command(hikari)
+
+    # 无 me：默认查自己，多词英文船名合并
+    h = await parse('ship Jean Bart')
+    assert h.Status == 'init' and h.Function == get_ShipInfo
+    assert h.Input.Search_Type == 1
+    assert h.Input.ShipInfo.nameCn == 'Jean Bart'
+
+    # 显式 me 同样合并
+    h = await parse('ship me Jean Bart')
+    assert h.Input.ShipInfo.nameCn == 'Jean Bart'
+
+    # 单字中文船名不受影响
+    h = await parse('ship 大和')
+    assert h.Input.ShipInfo.nameCn == '大和'
+
+    # server 模式行为不变
+    h = await parse('ship asia 玩家名 大和')
+    assert h.Input.Search_Type == 3
+    assert h.Input.AccountName == '玩家名'
+    assert h.Input.ShipInfo.nameCn == '大和'
+
+    # recent 组合：多词船名 + 天数
+    h = await parse('ship Jean Bart recent 30')
+    assert h.Function == get_ShipRecent
+    assert h.Input.ShipInfo.nameCn == 'Jean Bart'
+    assert h.Input.Recent_Day == 30
+
+    # 缺船名
+    h = await parse('ship')
+    assert h.Status == 'error'
 
 
 # ============================================================
