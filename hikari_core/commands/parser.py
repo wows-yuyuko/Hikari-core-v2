@@ -35,6 +35,14 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
                 # 指令未识别，给出相似命令的智能提示
                 return hikari.error(render_suggest_message(suggest))
             hikari = await extract_with_me(hikari)
+            # wws me 单独使用（无任何查询内容）不允许
+            if (
+                hikari.Status == 'init'
+                and hikari.Function == get_AccountInfo
+                and hikari.Input.Search_Type == 1
+                and not hikari.Input.Command_List
+            ):
+                return hikari.error('请发送具体查询指令，wws me 不能单独使用（如：wws me 大和 / wws me recent 30）')
             hikari = await extract_with_function(hikari)
         return hikari
     except Exception:
@@ -43,15 +51,22 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
 
 
 async def extract_with_me(hikari: Hikari_Model) -> Hikari_Model:
-    """识别 'me' 身份；@提及 由平台侧处理，SDK 内部不再解析。"""
+    """身份解析：显式 me 或未指定服务器时默认查自己；@提及 由平台侧处理，SDK 内部不再解析。"""
     try:
+        explicit_me = False
         for i in hikari.Input.Command_List:
             if str(i).lower() == 'me':
+                explicit_me = True
                 hikari.Input.Search_Type = 1
-                hikari.Input.Platform = hikari.UserInfo.Platform
-                hikari.Input.PlatformId = hikari.UserInfo.PlatformId
+                _set_identity(hikari)
                 hikari.Input.Command_List.remove(i)
                 break
+        if not explicit_me and hikari.Input.Search_Type == 3:
+            # me 可缺省：未显式 me 且参数中没有服务器关键词时，默认查自己
+            server, _ = await match_keywords(hikari.Input.Command_List.copy(), servers)
+            if not server:
+                hikari.Input.Search_Type = 1
+                _set_identity(hikari)
         return hikari
     except Exception:
         logger.error(traceback.format_exc())

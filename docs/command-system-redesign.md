@@ -22,7 +22,7 @@ init_hikari_no_output (hikari_core/__init__.py)
 
 - **指令表**：`first_command_list` 扁平表 + 5 个二级列表（ship / recent / rank / clan）
 - **匹配**：大小写不敏感子串匹配，长词 / 含 `ship` 子串的英文别名需人工保证靠前
-- **身份指定**：`me`（查自己，`Search_Type=1`）/ `服务器+昵称`（`Search_Type=3`）；`@` 提及由接入端转换为 `me` 后传入，SDK 不再解析；括号指定账号语法已移除
+- **身份指定**：`me` 可缺省——未指定服务器关键词时默认查自己（`Search_Type=1`），显式 `me` 或 `服务器+昵称`（`Search_Type=3`）均可；`wws me` 单独使用（无任何查询内容）不允许；`@` 提及由接入端转换为 `me` 后传入，SDK 不再解析；括号指定账号语法已移除
 - **输错智能提示**：`route_command` 未命中时按相似度（前缀重合 + difflib）给出候选，`command_suggest_max` / `command_suggest_dedupe` 可配置
 - **中英文**：`command_language` 切换提示与帮助页语言；帮助为本地 H5（help-zh.html / help-en.html），不显示版本信息
 - **既有行为（已确认）**：点号风格（`ship.rank` / `cw.rank` / `clan.rank` / `cw.recent`）保留；缩写别名（`set` / `sd` / `recents` / `box`）保留

@@ -297,6 +297,61 @@ async def test_ship_parse_me_mode_joins_remaining_tokens():
 
 
 # ============================================================
+# me 缺省与裸 me 限制
+# ============================================================
+
+async def test_me_omission_defaults_to_self():
+    """me 可缺省：未指定服务器时默认查自己；服务器+昵称模式不受影响。"""
+    from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
+    from hikari_core.commands.parser import analyze_command
+    from hikari_core.commands.router import get_BindInfo, get_sx_info
+
+    async def parse(text):
+        hikari = Hikari_Model(
+            UserInfo=UserInfo_Model(Platform='QQ', PlatformId='10000'),
+            Input=Input_Model(Command_Text=text),
+        )
+        return await analyze_command(hikari)
+
+    # 水表：wws 大和 → 默认查自己
+    h = await parse('大和')
+    assert h.Status == 'init' and h.Function == get_AccountInfo
+    assert h.Input.Search_Type == 1
+
+    # 娱乐：wws sx → 默认查自己
+    h = await parse('sx')
+    assert h.Status == 'init' and h.Function == get_sx_info
+    assert h.Input.Search_Type == 1
+
+    # 服务器+昵称 不受影响
+    h = await parse('asia 玩家名')
+    assert h.Input.Search_Type == 3
+
+    # 显式 me 仍可用
+    h = await parse('me 大和')
+    assert h.Input.Search_Type == 1
+
+    # 绑定列表 me 仍可用（非默认查询，不被裸 me 拦截）
+    h = await parse('bind_list me')
+    assert h.Status == 'init' and h.Function == get_BindInfo
+    assert h.Input.Search_Type == 1
+
+
+async def test_bare_me_rejected():
+    """wws me 单独使用不允许。"""
+    from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
+    from hikari_core.commands.parser import analyze_command
+
+    hikari = Hikari_Model(
+        UserInfo=UserInfo_Model(Platform='QQ', PlatformId='10000'),
+        Input=Input_Model(Command_Text='me'),
+    )
+    hikari = await analyze_command(hikari)
+    assert hikari.Status == 'error'
+    assert '不能单独使用' in str(hikari.Output.Data)
+
+
+# ============================================================
 # 独立运行入口
 # ============================================================
 
