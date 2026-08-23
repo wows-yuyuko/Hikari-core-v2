@@ -70,5 +70,8 @@
 	},
 	{
 		"help-en.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/help-en.html"
+	},
+	{
+		"wws-ships-v5.html": "https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/wws-ships-v5.html"
 	}
 ]
