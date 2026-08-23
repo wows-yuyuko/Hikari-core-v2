@@ -2,10 +2,6 @@
 
 **战舰世界 yuyuko 平台 BOT SDK** —— 指令解析 + yuyuko API 查询 + 模板渲染出图。
 
-```bash
-pip install hikari-core
-```
-
 - 环境要求：Python 3.11 ~ 3.12
 - 依赖：`httpx` / `APScheduler` / `jinja2` / `pydantic` / `playwright` / `loguru` / `pillow`
 - 首次使用会自动下载 playwright chromium 浏览器（用于模板渲染截图）
