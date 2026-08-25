@@ -31,6 +31,7 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
                 return hikari.error('请发送wws help查看帮助')
             hikari.Input.Command_Text = html.unescape(str(hikari.Input.Command_Text)).strip()
             hikari.Input.Command_List = hikari.Input.Command_Text.split()
+            hikari.Input.Command_List = _merge_paren_groups(hikari.Input.Command_List)
             hikari.Function, hikari.Input.Command_List, suggest = await route_command(hikari.Input.Command_List)
             if suggest:
                 # 指令未识别，给出相似命令的智能提示
@@ -44,6 +45,47 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
     except Exception:
         logger.error(traceback.format_exc())
         return hikari.error('解析指令时发生错误，请确认输入参数无误')
+
+
+def _merge_paren_groups(command_list: list) -> list:
+    """把被半角括号 () 包裹的内容合并为单个 token（去掉括号）。
+
+    游戏昵称/船名不会包含 ()，故 (AI deal) 无歧义地表示一个含空格的昵称；
+    仅当 token 以 '(' 开头才视为分组开始，单个 token 内部带括号不受影响。
+    """
+    merged = []
+    i, n = 0, len(command_list)
+    while i < n:
+        tok = command_list[i]
+        if tok == '()':
+            i += 1
+            continue
+        if tok.startswith('('):
+            if tok.endswith(')') and len(tok) > 2:
+                # 单 token 分组：(AI) -> AI
+                merged.append(tok[1:-1])
+                i += 1
+                continue
+            parts = [tok[1:]]
+            i += 1
+            closed = False
+            while i < n:
+                cur = command_list[i]
+                if cur.endswith(')'):
+                    parts.append(cur[:-1])
+                    i += 1
+                    closed = True
+                    break
+                parts.append(cur)
+                i += 1
+            if closed:
+                merged.append(' '.join(p for p in parts if p))
+            else:
+                merged.append('(' + ' '.join(parts))
+        else:
+            merged.append(tok)
+            i += 1
+    return merged
 
 
 async def extract_with_me(hikari: Hikari_Model) -> Hikari_Model:

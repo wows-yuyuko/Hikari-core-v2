@@ -12,7 +12,8 @@
 ```
 init_hikari_no_output (hikari_core/__init__.py)
   └─ analyze_command (commands/parser.py)
-       ├─ Command_List = Command_Text.split()     (html.unescape + strip)
+       ├─ Command_List = Command_Text.split()      (html.unescape + strip)
+       │    └─ _merge_paren_groups                  (半角 () 内容合并为单 token，如 (AI deal))
        ├─ route_command (commands/router.py)      (扁平表路由 + 二级路由 + 智能提示)
        │    └─ _match_level                       (大小写不敏感子串匹配)
        ├─ extract_with_me                         (me 身份；@ 由接入端处理)
@@ -22,7 +23,7 @@ init_hikari_no_output (hikari_core/__init__.py)
 
 - **指令表**：`first_command_list` 扁平表 + 5 个二级列表（ship / recent / rank / clan）
 - **匹配**：大小写不敏感子串匹配，长词 / 含 `ship` 子串的英文别名需人工保证靠前
-- **身份指定**：`me` 可缺省——有指令匹配且未指定服务器关键词时默认查自己（`Search_Type=1`），显式 `me` 或 `服务器+昵称`（`Search_Type=3`）均可；`wws me` 单独使用正常（查询自己水表）；未匹配到任何指令且非身份查询的输入给出未识别提示；`@` 提及由接入端转换为 `me` 后传入，SDK 不再解析；括号指定账号语法已移除
+- **身份指定**：`me` 可缺省——有指令匹配且未指定服务器关键词时默认查自己（`Search_Type=1`），显式 `me` 或 `服务器+昵称`（`Search_Type=3`）均可；`wws me` 单独使用正常（查询自己水表）；未匹配到任何指令且非身份查询的输入给出未识别提示；`@` 提及由接入端转换为 `me` 后传入，SDK 不再解析；**括号分组昵称**：游戏昵称/船名不含 `()`，故被半角 `()` 包裹的内容合并为单个 token（`cn (AI deal) recent` 的昵称为 `AI deal`），仅 token 以 `(` 开头才合并，`大和(测试)` 这类单 token 内部括号不受影响
 - **输错智能提示**：`route_command` 未命中时按相似度（前缀重合 + difflib）给出候选，`command_suggest_max` / `command_suggest_dedupe` 可配置
 - **中英文**：`command_language` 切换提示与帮助页语言；帮助为本地 H5（help-zh.html / help-en.html），不显示版本信息
 - **既有行为（已确认）**：点号风格（`ship.rank` / `cw.rank` / `clan.rank` / `cw.recent`）保留；缩写别名（`set` / `sd` / `recents` / `box`）保留

@@ -297,6 +297,47 @@ async def test_ship_parse_me_mode_joins_remaining_tokens():
 
 
 # ============================================================
+# 括号分组昵称（(AI deal) 含空格昵称）
+# ============================================================
+
+async def test_paren_group_nickname_with_spaces():
+    """半角括号包裹的含空格昵称合并为单个 token：cn (AI deal) recent → AccountName='AI deal'。"""
+    from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
+    from hikari_core.commands.parser import analyze_command
+
+    async def parse(text):
+        hikari = Hikari_Model(
+            UserInfo=UserInfo_Model(Platform='QQ', PlatformId='10000'),
+            Input=Input_Model(Command_Text=text),
+        )
+        return await analyze_command(hikari)
+
+    # 服务器 + 括号昵称 + recent（昵称含空格被括号包裹）
+    h = await parse('cn (AI deal) recent')
+    assert h.Status == 'init' and h.Function == get_RecentInfo
+    assert h.Input.Server == 'cn'
+    assert h.Input.AccountName == 'AI deal'
+
+    # 括号昵称用于水表查询（无指令关键词）
+    h = await parse('asia (Jean Bart)')
+    assert h.Function == get_AccountInfo
+    assert h.Input.Server == 'asia'
+    assert h.Input.AccountName == 'Jean Bart'
+
+    # 不带括号的普通昵称不受影响
+    h = await parse('cn 西行寺 recent')
+    assert h.Input.AccountName == '西行寺'
+
+    # 单 token 括号：(AI) -> AI
+    h = await parse('cn (AI) recent')
+    assert h.Input.AccountName == 'AI'
+
+    # 船名查询不受影响（单 token 内部括号不合并）
+    h = await parse('ship 大和')
+    assert h.Input.ShipInfo.nameCn == '大和'
+
+
+# ============================================================
 # me 缺省与未识别提示
 # ============================================================
 
