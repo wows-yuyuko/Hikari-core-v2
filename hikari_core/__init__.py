@@ -66,9 +66,10 @@ logger.info(f'模板目录 as_uri: {template_path.as_uri()}')
 async def init_hikari(
         platform: str,
         PlatformId: str,
+        BotId: str,
         command_text: str = Field(default='', description='输入的指令'),
         GroupId: str = None,
-        Ignore_List: List | None = None, # noqa: B006
+        Ignore_List: List | None = None,  # noqa: B006
 ) -> Hikari_Model:
     """Hikari初始化
 
@@ -81,12 +82,13 @@ async def init_hikari(
     Returns:
         Hikari_Model: 可通过Hikari.Status和Hikari.Output.Data内数据判断是否输出
     """
-    return await output_hikari(await init_hikari_no_output(platform, PlatformId, command_text, GroupId, Ignore_List))
+    return await output_hikari(await init_hikari_no_output(platform, PlatformId, BotId, command_text, GroupId, Ignore_List))
 
 
 async def init_hikari_no_output(
         platform: str,
         PlatformId: str,
+        BotId: str,
         command_text: str = Field(default='', description='输入的指令'),
         GroupId: str | None = None,
         Ignore_List: List | None = None,  # noqa: B006
@@ -94,7 +96,7 @@ async def init_hikari_no_output(
     try:
         if Ignore_List is None:
             Ignore_List = []
-        hikari = Hikari_Model(UserInfo=UserInfo_Model(Platform=platform, PlatformId=PlatformId, GroupId=GroupId), Input=Input_Model(Command_Text=command_text))
+        hikari = Hikari_Model(UserInfo=UserInfo_Model(Platform=platform, PlatformId=PlatformId, BotId=BotId, GroupId=GroupId), Input=Input_Model(Command_Text=command_text))
         hikari = await analyze_command(hikari)
         if hikari.Status != 'init' or not hikari.Function:
             return hikari

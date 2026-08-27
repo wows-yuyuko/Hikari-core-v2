@@ -13,6 +13,7 @@ class Func(Protocol):
 class UserInfo_Model(BaseModel):
     Platform: str = 'QQ'
     PlatformId: str = '2622749113'
+    BotId: str = 'None'
     GroupId: Optional[str] = None
 
 
@@ -68,6 +69,7 @@ class Hikari_Model(BaseModel):
     template_content: str = Field(default='', description='模板内容')
     Input: Input_Model = Field(default=Input_Model(), description='输入数据')
     Output: Output_Model = Field(default=Output_Model(), description='输出数据')
+
     class Config:
         arbitrary_types_allowed = True
 
