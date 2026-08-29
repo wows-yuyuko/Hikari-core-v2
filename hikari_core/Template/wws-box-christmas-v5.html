@@ -27,6 +27,8 @@
     }
 
     /* ===== 顶部头像区域（与 wws-info-v5 家族一致） ===== */
+    {% set banner_dark = data['userInfo'] and data['userInfo']['avatar']['banner']['status'] == 2 and data['userInfo']['avatar']['banner'].get('dark') == 1 %}
+
     .page-header {
         border-radius: 36px;
         height: 300px;
@@ -40,6 +42,17 @@
         background-position: center;
         background-size: 100%;
     }
+
+    {% if banner_dark %}
+    .page-header .user-sign-time,
+    .page-header .user-server,
+    .page-header .user-signature {
+        color: #ffffff;
+    }
+    .page-header .user-info.no-color-name .mirage-text {
+        color: #ffffff;
+    }
+    {% endif %}
 
     .avatar-header {
         filter: drop-shadow(9px 9px 12px rgba(0, 0, 0, 0.3));
@@ -288,10 +301,10 @@
             <div class="masking-header">
                 <div class="avatar-header"></div>
                 <div class="clan-user-server">
-                    <div class="user-info ">
+                    <div class="user-info {% if data['userInfo'] and data['userInfo']['avatar']['colorName']['status'] != 2 %}no-color-name{% endif %}">
                         {#                    是否有工会#}
                         {% if data['userInfo']['clanInfo']['tag'] %}
-                            <span style="color: {{ data['userInfo']['clanInfo']['color'] }};">[{{ data['userInfo']['clanInfo']['tag'] }}]</span>
+                            <span style="color: {% if banner_dark %}#ffffff{% else %}{{ data['userInfo']['clanInfo']['color'] }}{% endif %};">[{{ data['userInfo']['clanInfo']['tag'] }}]</span>
                         {% endif %}
                         <span class="mirage-text">{{ data['userInfo']['userName'] }}</span></div>
                     <div class="user-sign-time">注册时间: <span

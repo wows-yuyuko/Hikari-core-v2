@@ -392,6 +392,85 @@ async def test_templates_render_and_structure():
         _check_structure(html, name)
 
 
+async def test_banner_dark_flag():
+    """banner.dark 契约：dark=1 输出深色白字样式，dark=0 / 缺失 保持原逻辑。"""
+    base = {
+        **_RECENT_DATA,
+        'userInfo': {
+            **_USER_INFO,
+            'accountId': 12345,
+            'avatar': {
+                **_AVATAR,
+                'banner': {'status': 2, 'data': 'data:image/png;base64,AAAA'},
+            },
+        },
+    }
+
+    def _with_dark(dark):
+        avatar = {**base['userInfo']['avatar'], 'banner': {**base['userInfo']['avatar']['banner'], 'dark': dark}}
+        return {**base, 'userInfo': {**base['userInfo'], 'avatar': avatar}}
+
+    html_dark = await _render('wws-info-recent-v5.html', _with_dark(1))
+    assert '.page-header .user-sign-time,' in html_dark, 'dark=1 时应输出深色白字样式'
+    assert 'no-color-name' in html_dark, '无彩色昵称时应带 no-color-name 标记'
+
+    html_light = await _render('wws-info-recent-v5.html', _with_dark(0))
+    assert '.page-header .user-sign-time,' not in html_light, 'dark=0 时保持原逻辑'
+    assert 'no-color-name' in html_light
+
+    html_default = await _render('wws-info-recent-v5.html', base)  # 未携带 dark -> 默认 0
+    assert '.page-header .user-sign-time,' not in html_default, 'dark 缺失时默认浅色'
+
+
+async def test_banner_is_dark():
+    """banner 亮度判定（服务端未返回 dark 时的兜底）：
+
+    取图片左 60% 区域，平均感知亮度 Y=0.299R+0.587G+0.114B 低于 128 判定为深色。
+    """
+    try:
+        from hikari_core.core.render_helpers import banner_is_dark, enrich_banner_dark
+    except ImportError:
+        return  # 依赖不完整的环境跳过该用例
+
+    import base64
+    import io
+
+    from PIL import Image
+
+    def _data_url(rgb, size=(100, 40)):
+        buf = io.BytesIO()
+        Image.new('RGB', size, rgb).save(buf, format='PNG')
+        return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+
+    def _two_tone(left_rgb, right_rgb):
+        img = Image.new('RGB', (100, 40), right_rgb)
+        for x in range(60):
+            for y in range(40):
+                img.putpixel((x, y), left_rgb)
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+
+    # 整图深浅
+    assert banner_is_dark(_data_url((20, 20, 20))) is True
+    assert banner_is_dark(_data_url((235, 235, 235))) is False
+    # 左 60% 决定结果
+    assert banner_is_dark(_two_tone((20, 20, 20), (235, 235, 235))) is True
+    assert banner_is_dark(_two_tone((235, 235, 235), (20, 20, 20))) is False
+    # 非法输入按浅色处理
+    assert banner_is_dark('not-a-real-base64!!') is False
+    assert banner_is_dark('data:image/png;base64,') is False
+
+    # 兜底补算：未带 dark 时补算，已带 dark 时保留服务端结果
+    data = {'userInfo': {'avatar': {'banner': {'status': 2, 'data': _data_url((20, 20, 20))}}}}
+    enrich_banner_dark(data)
+    assert data['userInfo']['avatar']['banner']['dark'] == 1
+
+    data2 = {'userInfo': {'avatar': {'banner': {'status': 2, 'data': _data_url((20, 20, 20)), 'dark': 0}}}}
+    enrich_banner_dark(data2)
+    assert data2['userInfo']['avatar']['banner']['dark'] == 0  # 服务端结果优先
+
+
 def run_all():
     tests = [
         v for k, v in sorted(globals().items())

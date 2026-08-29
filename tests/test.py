@@ -18,7 +18,7 @@ async def start():
     set_hikari_config(use_broswer='chromium', http2=False,
                       # proxy='http://localhost:7890',
                       proxy=None,
-                      yuyuko_url = 'http://127.0.0.1:8088',
+                      yuyuko_url='http://127.0.0.1:8088',
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
                       game_path='')
@@ -49,7 +49,7 @@ async def start():
 async def command(command_text: str):
     logger.info("============START===========================================================================")
     logger.info(f'command ==>> {command_text}')
-    hikari_data = await init_hikari(platform=platform, PlatformId=platform_id, command_text=str(command_text), GroupId=group_id)
+    hikari_data = await init_hikari(platform=platform, PlatformId=platform_id, BotId='0', command_text=str(command_text), GroupId=group_id)
     if hikari_data.Status == 'success':
         output_with_check_type(hikari_data, command_text)
     elif hikari_data.Status == 'wait':
