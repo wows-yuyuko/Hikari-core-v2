@@ -5,6 +5,7 @@
 - 环境要求：Python 3.11 ~ 3.12
 - 依赖：`httpx` / `APScheduler` / `jinja2` / `pydantic` / `playwright` / `loguru` / `pillow`
 - 首次使用会自动下载 playwright chromium 浏览器（用于模板渲染截图）
+- 建议在2G或以上内存的机器上部署 低于2G的在渲染大量数据时容易崩溃
 
 ---
 
