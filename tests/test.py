@@ -18,7 +18,7 @@ async def start():
     set_hikari_config(use_broswer='chromium', http2=False,
                       # proxy='http://localhost:7890',
                       proxy=None,
-                      yuyuko_url='http://127.0.0.1:8088',
+                      # yuyuko_url='http://127.0.0.1:8088',
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
                       game_path='')

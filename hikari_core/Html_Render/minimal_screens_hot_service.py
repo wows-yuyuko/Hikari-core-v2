@@ -71,7 +71,11 @@ class minimal_screens_hot_service:
                     '--no-sandbox',
                     '--disable-dev-shm-usage',
                     '--disable-gpu',  # 截图不需要GPU加速
-                    '--disable-software-rasterizer',
+                    # 渲染兼容性：不再禁用软件光栅化（去掉 --disable-software-rasterizer），
+                    # 并强制软件合成。无 GPU 服务器上大背景图偶发空白/花屏多与此有关，
+                    # 纯 CPU 光栅化+合成最稳定
+                    '--disable-gpu-compositing',
+                    '--force-color-profile=srgb',
                     # 允许加载本地资源和跨域
                     '--disable-web-security',
                     '--allow-file-access-from-files',
@@ -212,7 +216,18 @@ class minimal_screens_hot_service:
                 window.addEventListener('load', () => {
                     window.__screenshot_ready = true;
                 }, {once: true});
-                
+
+                // 2b. 字体就绪标记（避免截图时文字处于字体加载间隙）
+                window.__fonts_ready = false;
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(
+                        () => { window.__fonts_ready = true; },
+                        () => { window.__fonts_ready = true; }
+                    );
+                } else {
+                    window.__fonts_ready = true;
+                }
+
                 // 3. 图片加载追踪（包括 <img> 和 CSS background-image）
                 window.__images_loaded = 0;
                 window.__images_total = 0;
@@ -257,10 +272,15 @@ class minimal_screens_hot_service:
                             window.__images_total += seen.size;
                             for (const imgUrl of seen) {
                                 const img = new Image();
-                                img.onload = img.onerror = () => {
-                                    window.__images_loaded++;
-                                };
+                                const done = () => { window.__images_loaded++; };
                                 img.src = imgUrl;
+                                // 优先用 decode()：等待图片真正解码完成（更接近“可上屏”状态），
+                                // 比 onload 更能避免大 banner 背景图截图时空白；旧浏览器退回 onload
+                                if (typeof img.decode === 'function') {
+                                    img.decode().then(done, done);
+                                } else {
+                                    img.onload = img.onerror = done;
+                                }
                             }
                         }
                     } catch(e) {
@@ -337,6 +357,14 @@ class minimal_screens_hot_service:
             )
 
             # =========================
+            # 提前设置最终视口：让布局在就绪等待前定型
+            # （原先在图片就绪之后才 set_viewport_size，重新布局后
+            #   banner 背景来不及重绘就截图，是 page-header 偶发空白的诱因之一）
+            # =========================
+            view = kwargs["viewport"]
+            await page.set_viewport_size(view)
+
+            # =========================
             # 强制 reflow
             # =========================
             await page.evaluate("""
@@ -344,9 +372,15 @@ class minimal_screens_hot_service:
                                 document.body.offsetHeight;
                             }
                             """)
+            load_time = time.time() - load_start
+            logger.debug(f"页面加载: {load_time:.2f}s")
+
+            # 4. 智能等待渲染（load / 字体 / 图片解码 / 绘制稳定）
+            await self._smart_wait(page)
+
             # =========================
-            # 等待 compositor 提交两帧
-            # 解决半渲染问题
+            # 等待 compositor 提交两帧 + 微等待
+            # 解决半渲染 / 背景图未上屏问题
             # =========================
             await page.evaluate("""
                             () => new Promise(resolve => {
@@ -358,22 +392,6 @@ class minimal_screens_hot_service:
                             })
                             """)
             await page.wait_for_timeout(100)
-            load_time = time.time() - load_start
-            logger.debug(f"页面加载: {load_time:.2f}s")
-
-            # 4. 智能等待渲染
-            await self._smart_wait(page)
-            # 根据元素尺寸调整视口
-            view = kwargs["viewport"]
-            await page.set_viewport_size(view)
-
-            await page.evaluate("""
-                                () => new Promise(resolve => {
-                                    requestAnimationFrame(() => {
-                                        requestAnimationFrame(resolve);
-                                    });
-                                })
-                                """)
             # 5. 快速截图
             screenshot_start = time.time()
             image_data = await page.screenshot(
@@ -512,7 +530,7 @@ class minimal_screens_hot_service:
                     pass
 
     async def _smart_wait(self, page: Page):
-        """智能等待页面渲染完成"""
+        """智能等待页面渲染完成（load / 字体 / 图片解码 / 绘制稳定）"""
         try:
             # 1. 等待基本加载
             await page.wait_for_load_state('load', timeout=5000)
@@ -521,7 +539,12 @@ class minimal_screens_hot_service:
                 "window.__screenshot_ready === true",
                 timeout=3000
             )
-            # 3. 等待图片加载（如果有）
+            # 3. 等待字体就绪
+            await page.wait_for_function(
+                "window.__fonts_ready === true",
+                timeout=3000
+            )
+            # 4. 等待图片加载/解码完成（如果有）
             await page.wait_for_function(
                 """
                 () => {
@@ -531,8 +554,17 @@ class minimal_screens_hot_service:
                 """,
                 timeout=5000
             )
-
-            # 4. 微等待确保渲染稳定
+            # 5. 强制提交两帧，确保 CSS 背景图等已真正上屏
+            await page.evaluate(
+                """
+                () => new Promise(resolve => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => resolve());
+                    });
+                })
+                """
+            )
+            # 6. 微等待确保渲染稳定
             await asyncio.sleep(0.1)
         except Exception as e:
             logger.debug(f"智能等待超时/中断: {e}")
