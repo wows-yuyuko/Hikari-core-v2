@@ -41,6 +41,8 @@ from .commands.router import (  # noqa: F401
     get_BindInfo,
     set_BindInfo,
     set_special_BindInfo,
+    add_admin,
+    update_user_cache,
     check_christmas_box,
     get_BanInfo,
     get_sx_info,

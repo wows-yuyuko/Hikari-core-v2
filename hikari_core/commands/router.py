@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Dict, List, Tuple
 
+from ..core.admin import add_admin
 from ..core.config import hikari_config
 from ..core.constants import servers
 from ..core.model import Func
@@ -10,7 +11,14 @@ from ..features.account.recent import get_RecentInfo, get_RecentRandom, get_Rece
 from ..features.account.recents import get_RecentsInfo
 from ..features.account.ships import get_Ships
 from ..features.api import get_ship_name
-from ..features.bind import change_BindInfo, delete_BindInfo, get_BindInfo, set_BindInfo, set_special_BindInfo
+from ..features.bind import (
+    change_BindInfo,
+    delete_BindInfo,
+    get_BindInfo,
+    set_BindInfo,
+    set_special_BindInfo,
+    update_user_cache,
+)
 from ..features.clan.cw_recent import get_cw_recent
 from ..features.clan.cw_rank import get_CwRank
 from ..features.clan.info import get_ClanInfo
@@ -56,10 +64,14 @@ first_command_list = [  # 同指令中越长的匹配词越靠前；含英文别
     command(('check_version', '检查更新'), check_version),
     command(('update_style', '更新样式'), async_update_template),
     command(('update_ship', '更新战舰'), async_update_ship_cache),
+    # update 含于 update_ship / update_style，需排在其后
+    command(('update',), update_user_cache),
     command(('change_bind', '切换绑定', '更换绑定', '更改绑定'), change_BindInfo),
     command(('bind_list', '查询绑定', '绑定查询', '绑定列表', '查绑定'), get_BindInfo),
     command(('delete_bind', '删除绑定'), delete_BindInfo),
     command(('special_bind', '特殊绑定'), set_special_BindInfo),
+    # add_admin 用于添加管理员（校验串仅启动时生成一次，建议私信发送）
+    command(('add_admin',), add_admin),
     # search_ship 含 'ship' 子串，需排在 ship / ship.rank 之前
     command(('search_ship', '搜船名', '查船名', '船名'), get_ship_name),
     command(('ship.rank', '单船排行榜', '战舰排行榜'), get_ShipRank),
@@ -103,6 +115,8 @@ _USAGE: Dict[Func, Dict[str, str]] = {
     get_ClanInfo: {'zh': '<服务器> <公会TAG>', 'en': '<server> <clan tag>'},
     set_BindInfo: {'zh': '<服务器> <游戏昵称>', 'en': '<server> <nickname>'},
     set_special_BindInfo: {'zh': '<AID>', 'en': '<AID>'},
+    add_admin: {'zh': '<32位校验串>', 'en': '<32-char token>'},
+    update_user_cache: {'zh': 'me 或 <服务器> <游戏昵称>', 'en': 'me or <server> <nickname>'},
     change_BindInfo: {'zh': '[序号]', 'en': '[index]'},
     delete_BindInfo: {'zh': '<序号>', 'en': '<index>'},
     get_BindInfo: {'zh': 'me', 'en': 'me'},

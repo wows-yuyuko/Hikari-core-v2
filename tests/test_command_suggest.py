@@ -234,6 +234,132 @@ async def test_english_alias_routes():
         assert suggest == []
 
 
+async def test_update_command_routes():
+    """wws update：me / 服务器+昵称 / me 缺省 的路由与参数解析；不抢占 update_ship / update_style。"""
+    from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
+    from hikari_core.commands.parser import analyze_command
+    from hikari_core.commands.router import async_update_ship_cache, async_update_template, update_user_cache
+
+    async def parse(text):
+        hikari = Hikari_Model(
+            UserInfo=UserInfo_Model(Platform='QQ', PlatformId='10000'),
+            Input=Input_Model(Command_Text=text),
+        )
+        return await analyze_command(hikari)
+
+    # wws me update
+    h = await parse('me update')
+    assert h.Status == 'init' and h.Function == update_user_cache
+    assert h.Input.Search_Type == 1
+
+    # wws update（me 缺省）
+    h = await parse('update')
+    assert h.Function == update_user_cache
+    assert h.Input.Search_Type == 1
+
+    # wws asia nahida_official update
+    h = await parse('asia nahida_official update')
+    assert h.Status == 'init' and h.Function == update_user_cache
+    assert h.Input.Search_Type == 3
+    assert h.Input.Server == 'asia'
+    assert h.Input.AccountName == 'nahida_official'
+
+    # 参数缺失 → 报错
+    h = await parse('asia update')
+    assert h.Status == 'error'
+
+    # 不抢占 update_ship / update_style
+    assert (await route_command(['update_ship']))[0] == async_update_ship_cache
+    assert (await route_command(['update_style']))[0] == async_update_template
+
+
+async def test_admin_flow():
+    """管理员流程：独立生成/校验函数 + add_admin 指令 + 系统指令管理员门禁。"""
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    import hikari_core.core.admin as admin_mod
+    from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
+    from hikari_core.commands.parser import analyze_command
+    from hikari_core.commands.router import add_admin
+    from hikari_core.features.system import async_update_template, check_version
+
+    tmp = Path(tempfile.mkdtemp(prefix='hikari_admin_test_'))
+    orig_get_cache = admin_mod.get_cache_file
+    admin_mod.get_cache_file = lambda: tmp
+
+    import hikari_core.features.system as sys_mod
+
+    orig_update_template = sys_mod.update_template
+    sys_mod.update_template = lambda: True  # 避免管理员放行时真实联网更新模板
+
+    def make(text, platform_id='10000'):
+        return Hikari_Model(
+            UserInfo=UserInfo_Model(Platform='QQ', PlatformId=platform_id),
+            Input=Input_Model(Command_Text=text),
+        )
+
+    try:
+        # 路由：wws add_admin <token>
+        func, rest, suggest = await route_command(['add_admin', 'abc123'])
+        assert func == add_admin
+        assert suggest == []
+
+        # 初始：无 admin.txt → 非管理员
+        assert admin_mod.is_admin('10000') is False
+
+        # 独立生成器：无 admin.txt 时生成 32 位校验串并写入 checkAdmin.txt
+        token = admin_mod.generate_check_admin()
+        assert len(token) == 32
+        assert (tmp / 'checkAdmin.txt').read_text(encoding='utf-8').strip() == token
+
+        # 独立校验函数：错误串不通过；正确串通过（无副作用）
+        assert admin_mod.verify_check_admin('wrong') is False
+        assert admin_mod.verify_check_admin(token) is True
+        assert (tmp / 'checkAdmin.txt').exists()
+
+        # 指令：错误校验串 → failed，不写 admin.txt、不删 checkAdmin.txt
+        h = await analyze_command(make('add_admin wrong'))
+        assert h.Function == add_admin
+        h = await add_admin(h)
+        assert h.Status in ('failed', 'error')
+        assert not (tmp / 'admin.txt').exists()
+        assert (tmp / 'checkAdmin.txt').exists()
+
+        # 指令：正确校验串 → 写入 admin.txt 并删除 checkAdmin.txt
+        h = await analyze_command(make(f'add_admin {token}'))
+        h = await add_admin(h)
+        assert h.Status == 'success'
+        assert '10000' in (tmp / 'admin.txt').read_text(encoding='utf-8')
+        assert not (tmp / 'checkAdmin.txt').exists()
+        assert admin_mod.is_admin('10000') is True
+        assert admin_mod.is_admin('99999') is False
+
+        # 已有 admin.txt → 生成器不再生成
+        assert admin_mod.generate_check_admin() == ''
+        assert not (tmp / 'checkAdmin.txt').exists()
+
+        # 门禁：非管理员触发 check_version / update_style 被拦截（不联网）
+        h = await analyze_command(make('check_version', platform_id='99999'))
+        assert h.Function == check_version
+        h = await check_version(h)
+        assert h.Status == 'error' and '仅管理员' in str(h.Output.Data)
+
+        h = await analyze_command(make('update_style', platform_id='99999'))
+        h = await async_update_template(h)
+        assert h.Status == 'error' and '仅管理员' in str(h.Output.Data)
+
+        # 门禁：管理员放行 update_style（打桩 update_template → 成功）
+        h = await analyze_command(make('update_style', platform_id='10000'))
+        h = await async_update_template(h)
+        assert h.Status == 'success'
+    finally:
+        admin_mod.get_cache_file = orig_get_cache
+        sys_mod.update_template = orig_update_template
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 async def test_help_templates_render():
     """中英文帮助 H5 模板可正常渲染（无网络）。"""
     from hikari_core import env

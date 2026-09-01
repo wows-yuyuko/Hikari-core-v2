@@ -169,3 +169,47 @@ async def get_DefaultBindInfo(hikari: Hikari_Model, platformType, platformId):
                     return each
         else:
             return None
+
+
+@handle_yuyuko_errors()
+async def update_user_cache(hikari: Hikari_Model) -> Hikari_Model:
+    """更新用户缓存（wws me update 或 wws 服务器 游戏昵称 update）。
+
+    提交格式参考 platform/bind/list：以 platformType + platformId 标识平台用户，
+    并携带目标账号 server + accountId。
+    me 模式更新默认绑定账号；服务器+昵称模式按昵称解析后更新指定账号。
+    """
+    if hikari.Status != 'init':
+        return hikari.error('当前请求状态错误')
+
+    # 目标账号：me → 默认绑定账号；服务器+昵称 → 按昵称解析 accountId
+    if hikari.Input.Search_Type == 1:
+        default_bind = await get_DefaultBindInfo(hikari, hikari.Input.Platform, hikari.Input.PlatformId)
+        if not default_bind:
+            return hikari.error('未找到默认绑定账号，请先使用 wws bind 服务器 游戏昵称 绑定，或 wws change_bind 切换')
+        server = default_bind['server']
+        account_id = default_bind['accountId']
+        account_name = default_bind.get('userName', account_id)
+    else:
+        if not hikari.Input.Server or not hikari.Input.AccountName:
+            return hikari.error('请使用 wws me update 或 wws 服务器 游戏昵称 update')
+        account_id = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
+        if not isinstance(account_id, int):
+            return hikari.error(f'{account_id}')
+        server = hikari.Input.Server
+        account_name = hikari.Input.AccountName
+
+    url = f'{hikari_config.yuyuko_url}/api/user/platform/cache/update'
+    params = {
+        'platformType': hikari.Input.Platform,
+        'platformId': hikari.Input.PlatformId,
+        'server': server,
+        'accountId': account_id,
+    }
+    client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
+    resp = await client_yuyuko.post(url, json=params, timeout=20)
+    result = json.loads(resp.content)
+    if result['code'] == 200 and result['message'] == 'success':
+        return hikari.success(f'已更新 {server}：{account_name} 的用户缓存')
+    else:
+        return hikari.failed(f"{result['message']}")

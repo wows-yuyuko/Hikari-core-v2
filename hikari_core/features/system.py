@@ -14,6 +14,7 @@ import httpx
 from loguru import logger
 
 from hikari_core import __version__
+from hikari_core.core.admin import is_admin
 from hikari_core.core.cache_utils import get_cache_file, get_cache_file_str
 from hikari_core.core.config import hikari_config
 from hikari_core.core.constants import template_path
@@ -58,7 +59,9 @@ def _git_pull_main(repo_root: Path):
 
 @handle_yuyuko_errors(recreate_func="default")
 async def check_version(hikari: Hikari_Model):
-    """检查版本信息；检测到新版本时自动同步仓库 main 分支"""
+    """检查版本信息；检测到新版本时自动同步仓库 main 分支（仅管理员可用）"""
+    if not is_admin(hikari.UserInfo.PlatformId):
+        return hikari.error('该指令仅管理员可用')
     url = 'https://benx1n.oss-cn-beijing.aliyuncs.com/version.json'
     client_default = await get_client_default()
     resp = await client_default.get(url, timeout=20)
@@ -86,6 +89,9 @@ async def check_version(hikari: Hikari_Model):
 
 
 async def async_update_template(hikari: Hikari_Model = Hikari_Model()):
+    """更新模板样式（仅管理员可用）"""
+    if not is_admin(hikari.UserInfo.PlatformId):
+        return hikari.error('该指令仅管理员可用')
     try:
         # 在线程池中执行阻塞操作
         loop = asyncio.get_event_loop()
@@ -98,6 +104,9 @@ async def async_update_template(hikari: Hikari_Model = Hikari_Model()):
 
 
 async def async_update_ship_cache(hikari: Hikari_Model = Hikari_Model()):
+    """更新战舰资源（仅管理员可用）"""
+    if not is_admin(hikari.UserInfo.PlatformId):
+        return hikari.error('该指令仅管理员可用')
     try:
         # 在线程池中执行阻塞操作
         loop = asyncio.get_event_loop()

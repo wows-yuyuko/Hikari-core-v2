@@ -104,3 +104,16 @@ def set_hikari_config(  # noqa: PLR0913
         _scheduler.start()
         logger.info('初始化任务结束....')
         _initial_scheduler = False
+
+    # ============================================================
+    # 管理员校验串（启动时输出）
+    # 流程：启动检测 admin.txt，不存在则生成 32 位随机串写入 checkAdmin.txt
+    #       并输出到控制台；用户发送 wws add_admin <校验串> 验证后写入 admin.txt。
+    # SDK 接入端提示：建议引导用户通过私信发送校验串（避免群聊泄露），
+    # 接入端需保证机器人收到的私信消息也进入 init_hikari 指令流程，详见 docs/admin-guide.md
+    # ============================================================
+    from hikari_core.core.admin import generate_check_admin
+
+    token = generate_check_admin()
+    if token:
+        logger.info(f'管理员校验串已生成（请私信发送给机器人）：wws add_admin {token}')

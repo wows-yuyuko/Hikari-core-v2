@@ -13,7 +13,14 @@ from ..features.account.recent import get_RecentInfo, get_RecentRandom, get_Rece
 from ..features.account.recents import get_RecentsInfo
 from ..features.account.ships import get_Ships
 from ..features.api import get_ship_name
-from ..features.bind import change_BindInfo, delete_BindInfo, get_BindInfo, set_BindInfo, set_special_BindInfo
+from ..features.bind import (
+    change_BindInfo,
+    delete_BindInfo,
+    get_BindInfo,
+    set_BindInfo,
+    set_special_BindInfo,
+    update_user_cache,
+)
 from ..features.clan.cw_recent import get_cw_recent
 from ..features.clan.cw_rank import get_CwRank
 from ..features.clan.info import get_ClanInfo
@@ -308,6 +315,22 @@ async def _handle_change_delete_bind(hikari: Hikari_Model) -> Hikari_Model:
     return hikari
 
 
+async def _handle_update_user_cache(hikari: Hikari_Model) -> Hikari_Model:
+    """处理 update_user_cache：wws me update / wws 服务器 游戏昵称 update。"""
+    if hikari.Input.Search_Type == 1:
+        return hikari  # me：目标为默认绑定账号
+    if hikari.Input.Search_Type != 3:
+        return hikari.error('请使用 wws me update 或 wws 服务器 游戏昵称 update')
+    if len(hikari.Input.Command_List) != 2:
+        return hikari.error('您似乎准备更新指定账号缓存，请检查参数中是否包含服务器和游戏昵称，以空格分隔，顺序不限')
+    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
+    if hikari.Input.Server:
+        hikari.Input.AccountName = str(hikari.Input.Command_List[0])
+    else:
+        return hikari.error('服务器名输入错误')
+    return hikari
+
+
 async def _handle_ban_box(hikari: Hikari_Model) -> Hikari_Model:
     """处理 get_BanInfo / get_sx_info / check_christmas_box。"""
     if hikari.Input.Search_Type != 3:
@@ -446,6 +469,7 @@ _HANDLERS = {
     set_special_BindInfo: _handle_bind,
     change_BindInfo: _handle_bind,
     delete_BindInfo: _handle_bind,
+    update_user_cache: _handle_update_user_cache,
     get_BanInfo: _handle_ban_box,
     get_sx_info: _handle_ban_box,
     check_christmas_box: _handle_ban_box,
