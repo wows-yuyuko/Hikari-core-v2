@@ -5,14 +5,14 @@ from hikari_core.core.http_client import get_client_yuyuko
 from hikari_core.core.http_error_handler import handle_yuyuko_errors
 from hikari_core.core.model import Hikari_Model
 from hikari_core.core.template_registry import Templates
-from hikari_core.features.api import get_ship_byName
+from hikari_core.features.api import get_user_ship_byName
 
 
 @handle_yuyuko_errors()
 async def get_ShipRank(hikari: Hikari_Model):
     """查询单船排行榜"""
     if hikari.Status == 'init':
-        shipList = await get_ship_byName(hikari)
+        shipList = await get_user_ship_byName(hikari)
         if shipList:
             if len(shipList) < 2:
                 hikari.Input.ShipInfo = shipList[0]

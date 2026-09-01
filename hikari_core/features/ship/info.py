@@ -7,14 +7,14 @@ from hikari_core.core.http_client import get_client_yuyuko
 from hikari_core.core.http_error_handler import handle_yuyuko_errors
 from hikari_core.core.model import Hikari_Model
 from hikari_core.core.template_registry import Templates
-from hikari_core.features.api import check_yuyuko_cache, get_AccountIdByName, get_ship_byName
+from hikari_core.features.api import check_yuyuko_cache, get_AccountIdByName, get_user_ship_byName
 
 
 @handle_yuyuko_errors()
 async def get_ShipInfo(hikari: Hikari_Model) -> Hikari_Model:  # noqa: PLR0915
     """查询单船水表"""
     if hikari.Status == 'init':
-        ship_list = await get_ship_byName(hikari)
+        ship_list = await get_user_ship_byName(hikari)
         if ship_list:
             if len(ship_list) < 2:
                 hikari.Input.ShipInfo = ship_list[0]

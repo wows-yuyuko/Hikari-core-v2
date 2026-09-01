@@ -58,7 +58,9 @@ async def get_ship_name(hikari: Hikari_Model):
     else:
         return hikari.failed('没有符合的船只')
 
+
 async def get_ship_byName(hikari: Hikari_Model) -> List:
+    """搜索战舰"""
     try:
         ship_name = hikari.Input.ShipInfo.nameCn
         ship_name_select_index = None
@@ -88,18 +90,33 @@ async def get_ship_byName(hikari: Hikari_Model) -> List:
         await recreate_client_yuyuko()
 
 
-
-async def get_all_shipList(hikari: Hikari_Model):
+async def get_user_ship_byName(hikari: Hikari_Model) -> List:
+    """搜索用户战舰"""
     try:
-        url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/ship/search'
-        params = {'country': '', 'level': '', 'shipName': '', 'shipType': '', 'groupType': 'default'}
+        ship_name = hikari.Input.ShipInfo.nameCn
+        ship_name_select_index = None
+        result = ship_name.split('.')
+        if len(result) == 2 and result[1].isdigit():
+            ship_name = result[0]
+            ship_name_select_index = int(result[1])
+        url = f'{hikari_config.yuyuko_url}/public/wows/encyclopedia/userShip/search'
+        params = {'country': '', 'level': '', 'shipName': ship_name, 'shipType': '', 'groupType': 'default'}
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = json.loads(resp.content)
-        if result['code'] == 200 and result['data']:
-            return result['data']
+        if result.get('code') == 200 and result.get('data'):
+            code_data = result['data']
+            # 转换为 ShipInfo 对象列表
+            ship_list = []
+            for ship_dict in code_data:
+                ship_list.append(ShipInfo(ship_dict))
+            # 如果指定了序号选择
+            if ship_name_select_index and ship_name_select_index <= len(ship_list):
+                return [ship_list[ship_name_select_index - 1]]
+
+            return ship_list
         else:
-            return None
+            return []
     except PoolTimeout:
         await recreate_client_yuyuko()
 
