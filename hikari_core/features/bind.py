@@ -182,34 +182,49 @@ async def update_user_cache(hikari: Hikari_Model) -> Hikari_Model:
     if hikari.Status != 'init':
         return hikari.error('当前请求状态错误')
 
-    # 目标账号：me → 默认绑定账号；服务器+昵称 → 按昵称解析 accountId
-    if hikari.Input.Search_Type == 1:
-        default_bind = await get_DefaultBindInfo(hikari, hikari.Input.Platform, hikari.Input.PlatformId)
-        if not default_bind:
-            return hikari.error('未找到默认绑定账号，请先使用 wws bind 服务器 游戏昵称 绑定，或 wws change_bind 切换')
-        server = default_bind['server']
-        account_id = default_bind['accountId']
-        account_name = default_bind.get('userName', account_id)
-    else:
-        if not hikari.Input.Server or not hikari.Input.AccountName:
-            return hikari.error('请使用 wws me update 或 wws 服务器 游戏昵称 update')
-        account_id = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
-        if not isinstance(account_id, int):
-            return hikari.error(f'{account_id}')
-        server = hikari.Input.Server
-        account_name = hikari.Input.AccountName
-
+    # 解析平台目标
+    platform_info = await _resolve_platform_target(hikari)
+    platform_type, platform_id = platform_info
+    # 发送更新请求
     url = f'{hikari_config.yuyuko_url}/api/user/platform/cache/update'
     params = {
-        'platformType': hikari.Input.Platform,
-        'platformId': hikari.Input.PlatformId,
-        'server': server,
-        'accountId': account_id,
+        'platformType': platform_type,
+        'platformId': platform_id
     }
+
     client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
-    resp = await client_yuyuko.post(url, json=params, timeout=20)
+    resp = await client_yuyuko.get(url, params=params, timeout=20)
     result = json.loads(resp.content)
+
     if result['code'] == 200 and result['message'] == 'success':
-        return hikari.success(f'已更新 {server}：{account_name} 的用户缓存')
+        return hikari.success('已更新用户缓存')
     else:
         return hikari.failed(f"{result['message']}")
+
+
+async def _resolve_platform_target(hikari: Hikari_Model):
+    """
+    解析平台目标，返回 (platform_type, platform_id) 或错误信息字符串。
+
+    Returns:
+        tuple: (platform_type, platform_id) 成功时
+        str: 错误信息失败时
+    """
+    # me 模式：默认绑定账号
+    if hikari.Input.Search_Type == 1:
+        return hikari.Input.Platform, hikari.Input.PlatformId
+
+    # 服务器+昵称模式
+    if not hikari.Input.Server or not hikari.Input.AccountName:
+        return '请使用 wws me update 或 wws 服务器 游戏昵称 update'
+
+    account_id = await get_AccountIdByName(
+        hikari,
+        hikari.Input.Server,
+        hikari.Input.AccountName
+    )
+
+    if not isinstance(account_id, int):
+        return f'{account_id}'
+
+    return hikari.Input.Server, account_id
