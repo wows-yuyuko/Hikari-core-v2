@@ -6,6 +6,7 @@ from typing import Optional
 
 from loguru import logger
 
+from .router import _is_identity_query, render_suggest_message, route_command
 from ..core.admin import get_pending_check_token, is_admin, verify_and_add_admin
 from ..core.constants import levels, nations, servers, shiptypes
 from ..core.model import Hikari_Model
@@ -23,14 +24,13 @@ from ..features.bind import (
     set_special_BindInfo,
     update_user_cache,
 )
-from ..features.clan.cw_recent import get_cw_recent
 from ..features.clan.cw_rank import get_CwRank
+from ..features.clan.cw_recent import get_cw_recent
 from ..features.clan.info import get_ClanInfo
 from ..features.fun import check_christmas_box, get_BanInfo, get_sx_info, roll_ship
 from ..features.ship.info import get_ShipInfo
 from ..features.ship.rank import get_ShipRank
 from ..features.ship.recent import get_ShipRecent
-from .router import _is_identity_query, render_suggest_message, route_command
 
 
 async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:

@@ -1,7 +1,7 @@
 import json
 
 from hikari_core.core.config import hikari_config
-from hikari_core.core.constants import levels, nations, shiptypes
+from hikari_core.core.constants import nations, shiptypes
 from hikari_core.core.http_client import get_client_yuyuko
 from hikari_core.core.http_error_handler import handle_yuyuko_errors
 from hikari_core.core.model import Hikari_Model

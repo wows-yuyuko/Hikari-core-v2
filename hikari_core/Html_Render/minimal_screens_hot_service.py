@@ -4,20 +4,20 @@ import hashlib
 import io
 import json
 import os
+import platform
 import subprocess
 import sys
 import tempfile
 import time
-import platform
 from pathlib import Path
 from typing import Optional, List, Dict
-from loguru import logger
 
 from PIL import Image
+from loguru import logger
 from playwright.async_api import async_playwright, Browser, Page
 
-
 from hikari_core.core.cache_utils import get_cache_file
+
 
 class minimal_screens_hot_service:
     _instance = None

@@ -1,7 +1,7 @@
+import os
 import time
 import traceback
-import os
-from typing import List, Optional
+from typing import List
 
 import jinja2
 from jinja2.exceptions import UndefinedError

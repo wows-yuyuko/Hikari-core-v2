@@ -4,7 +4,6 @@
 """
 
 import json
-from loguru import logger
 
 from hikari_core.core.config import hikari_config
 from hikari_core.core.http_client import get_client_yuyuko

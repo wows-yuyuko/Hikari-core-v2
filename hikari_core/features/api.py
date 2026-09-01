@@ -2,21 +2,16 @@ import asyncio
 import gzip
 import json
 import traceback
-from asyncio.exceptions import TimeoutError
 from base64 import b64encode
-from pathlib import Path
 from typing import List
 
-import httpx
-from httpx import ConnectTimeout, PoolTimeout
+from httpx import PoolTimeout
 from loguru import logger
 
 from hikari_core.core.config import hikari_config
 from hikari_core.core.http_client import (
-    get_client_default,
     get_client_wg,
     get_client_yuyuko,
-    recreate_client_default,
     recreate_client_wg,
     recreate_client_yuyuko,
 )

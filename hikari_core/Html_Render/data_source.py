@@ -4,12 +4,9 @@ from pathlib import Path
 from typing import Literal, Union
 
 import jinja2
-import time
-import tempfile
 
 from .browser import get_new_page
 from .minimal_screens_hot_service import minimal_screens_hot_service
-
 
 TEMPLATES_PATH = str(Path(__file__).parent / 'templates')
 

@@ -2,15 +2,11 @@ import gzip
 import hashlib
 import io
 import time
-import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 import httpx
-from loguru import logger
-
-from .constants import template_path
 
 
 async def match_keywords(match_list, lists) -> Tuple[Optional[str], List]:
