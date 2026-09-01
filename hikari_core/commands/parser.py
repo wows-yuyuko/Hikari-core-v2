@@ -2,9 +2,11 @@ import html
 import time
 import traceback
 from datetime import datetime
+from typing import Optional
 
 from loguru import logger
 
+from ..core.admin import get_pending_check_token, is_admin, verify_and_add_admin
 from ..core.constants import levels, nations, servers, shiptypes
 from ..core.model import Hikari_Model
 from ..core.utils import match_keywords
@@ -37,6 +39,11 @@ async def analyze_command(hikari: Hikari_Model) -> Hikari_Model:
             if not hikari.Input.Command_Text:
                 return hikari.error('请发送wws help查看帮助')
             hikari.Input.Command_Text = html.unescape(str(hikari.Input.Command_Text)).strip()
+            # 管理员校验：把启动时控制台输出的 32 位校验串直接发送给机器人即可（建议私信）。
+            # 发送者已在全局管理员缓存中则直接放行，不进入校验流程。
+            admin_result = await _try_verify_admin(hikari)
+            if admin_result is not None:
+                return admin_result
             hikari.Input.Command_List = hikari.Input.Command_Text.split()
             hikari.Input.Command_List = _merge_paren_groups(hikari.Input.Command_List)
             hikari.Function, hikari.Input.Command_List, suggest = await route_command(hikari.Input.Command_List)
@@ -93,6 +100,26 @@ def _merge_paren_groups(command_list: list) -> list:
             merged.append(tok)
             i += 1
     return merged
+
+
+async def _try_verify_admin(hikari: Hikari_Model) -> Optional[Hikari_Model]:
+    """管理员校验拦截：消息内容等于待校验串时完成验证+写入，返回结果；否则返回 None 继续正常解析。"""
+    try:
+        # 已在全局管理员缓存中 → 无需校验，直接放行正常指令解析
+        if is_admin(hikari.UserInfo.PlatformId):
+            return None
+        token = get_pending_check_token()
+        if not token:
+            return None
+        if hikari.Input.Command_Text != token:
+            return None
+        # 验证 + 写入统一入口（一步完成）
+        if verify_and_add_admin(hikari.UserInfo.PlatformId, token):
+            return hikari.success('管理员添加成功，现在可以使用 check_version / update_style / update_ship')
+        return hikari.failed('管理员添加失败，请检查缓存目录写入权限')
+    except Exception:
+        logger.error(traceback.format_exc())
+        return None
 
 
 async def extract_with_me(hikari: Hikari_Model) -> Hikari_Model:

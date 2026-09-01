@@ -3,10 +3,14 @@
 流程（SDK 接入端提示：建议走私信，详细说明见 docs/admin-guide.md）：
 1. 机器人启动成功后，控制台输出 32 位随机校验串
    （由 ``generate_check_admin`` 生成，写入 get_cache_file()/checkAdmin.txt）；
-2. 用户把校验串私信发送给机器人，接入端需保证私信消息也进入 init_hikari 指令流程；
-3. 用户发送 ``wws add_admin <校验串>``，校验（``verify_check_admin``）通过后
-   把发送者平台ID写入 get_cache_file()/admin.txt，并删除 checkAdmin.txt；
-4. 再次启动时检测到 admin.txt 存在，则不再生成校验串。
+2. 用户把校验串**直接私信发送给机器人**（无需任何指令前缀），
+   接入端需保证私信消息也进入 init_hikari 指令流程；
+3. ``verify_and_add_admin`` 校验（``verify_check_admin``）通过后
+   把发送者平台ID写入 get_cache_file()/admin.txt，删除 checkAdmin.txt，
+   并同步到全局缓存 ``_ADMIN_IDS``；
+4. 每次启动把 admin.txt 中的管理员ID读入全局缓存（``load_admin_cache``），
+   校验入口先判断缓存，命中则不再走校验流程；
+5. 再次启动时检测到 admin.txt 存在，则不再生成校验串。
 """
 
 import secrets
@@ -16,11 +20,13 @@ from pathlib import Path
 from loguru import logger
 
 from hikari_core.core.cache_utils import get_cache_file
-from hikari_core.core.model import Hikari_Model
 
 ADMIN_FILE = 'admin.txt'
 CHECK_FILE = 'checkAdmin.txt'
 TOKEN_LENGTH = 32  # 校验串字符数（十六进制）
+
+# 全局管理员缓存（启动时由 load_admin_cache 载入，添加管理员时同步更新）
+_ADMIN_IDS: set = set()
 
 
 def _admin_file() -> Path:
@@ -31,15 +37,37 @@ def _check_file() -> Path:
     return get_cache_file() / CHECK_FILE
 
 
-def is_admin(platform_id) -> bool:
-    """判断平台用户是否为管理员（admin.txt 中逐行保存的用户ID）。"""
+def load_admin_cache() -> None:
+    """启动时把 admin.txt 中的管理员ID读入全局缓存。"""
+    global _ADMIN_IDS  # noqa: PLW0602
+    _ADMIN_IDS = set()
     try:
         path = _admin_file()
-        if not path.exists():
-            return False
-        target = str(platform_id).strip()
-        for line in path.read_text(encoding='utf-8').splitlines():
-            if line.strip() == target:
+        if path.exists():
+            _ADMIN_IDS = {
+                line.strip()
+                for line in path.read_text(encoding='utf-8').splitlines()
+                if line.strip()
+            }
+    except Exception:
+        logger.error(traceback.format_exc())
+
+
+def is_admin(platform_id) -> bool:
+    """判断平台用户是否为管理员（优先全局缓存，缓存未命中时兜底读文件并同步）。"""
+    pid = str(platform_id).strip()
+    if pid in _ADMIN_IDS:
+        return True
+    try:
+        path = _admin_file()
+        if path.exists():
+            ids = {
+                line.strip()
+                for line in path.read_text(encoding='utf-8').splitlines()
+                if line.strip()
+            }
+            if pid in ids:
+                _ADMIN_IDS.update(ids)
                 return True
     except Exception:
         logger.error(traceback.format_exc())
@@ -62,15 +90,21 @@ def generate_check_admin() -> str:
     return token
 
 
-def verify_check_admin(token) -> bool:
-    """校验用户发送的校验串是否与 checkAdmin.txt 一致（独立校验函数，无副作用）。"""
+def get_pending_check_token():
+    """读取当前待校验串（checkAdmin.txt），不存在时返回 None。"""
     path = _check_file()
     if not path.exists():
-        return False
+        return None
     try:
-        stored = path.read_text(encoding='utf-8').strip()
+        return path.read_text(encoding='utf-8').strip() or None
     except Exception:
-        return False
+        logger.error(traceback.format_exc())
+        return None
+
+
+def verify_check_admin(token) -> bool:
+    """校验用户发送的校验串是否与 checkAdmin.txt 一致（独立校验函数，无副作用）。"""
+    stored = get_pending_check_token()
     return bool(stored) and str(token).strip() == stored
 
 
@@ -83,7 +117,7 @@ def remove_check_admin() -> None:
 
 
 def add_admin_id(platform_id) -> bool:
-    """将平台用户ID写入 admin.txt（追加去重）。"""
+    """将平台用户ID写入 admin.txt（追加去重），并同步全局缓存。"""
     try:
         path = _admin_file()
         ids = []
@@ -95,22 +129,24 @@ def add_admin_id(platform_id) -> bool:
         if target not in ids:
             ids.append(target)
         path.write_text('\n'.join(ids) + '\n', encoding='utf-8')
+        _ADMIN_IDS.add(target)
         return True
     except Exception:
         logger.error(traceback.format_exc())
         return False
 
 
-async def add_admin(hikari: Hikari_Model) -> Hikari_Model:
-    """wws add_admin <32位校验串> —— 校验通过后把发送者添加为管理员（建议私信发送）。"""
-    if hikari.Status != 'init':
-        return hikari.error('当前请求状态错误')
-    if not hikari.Input.Command_List:
-        return hikari.error('请发送 wws add_admin <32位校验串>（建议通过私信发送给机器人）')
-    token = str(hikari.Input.Command_List[0])
+def verify_and_add_admin(platform_id, token) -> bool:
+    """校验串验证 + 写入管理员ID 统一入口（一步执行完成）。
+
+    发送者已在全局缓存（管理员）时直接成功，不再走校验流程。
+    """
+    pid = str(platform_id).strip()
+    if pid in _ADMIN_IDS:
+        return True
     if not verify_check_admin(token):
-        return hikari.failed('校验串无效或已过期，请以机器人启动时控制台输出的最新校验串重试')
-    if not add_admin_id(hikari.UserInfo.PlatformId):
-        return hikari.error('管理员添加失败，请检查缓存目录写入权限')
+        return False
+    if not add_admin_id(pid):
+        return False
     remove_check_admin()
-    return hikari.success('管理员添加成功，现在可以使用 check_version / update_style / update_ship')
+    return True

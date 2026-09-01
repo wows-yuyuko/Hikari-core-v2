@@ -107,13 +107,15 @@ def set_hikari_config(  # noqa: PLR0913
 
     # ============================================================
     # 管理员校验串（启动时输出）
-    # 流程：启动检测 admin.txt，不存在则生成 32 位随机串写入 checkAdmin.txt
-    #       并输出到控制台；用户发送 wws add_admin <校验串> 验证后写入 admin.txt。
+    # 流程：先把 admin.txt 中的管理员ID读入全局缓存；若不存在 admin.txt，
+    #       生成 32 位随机串写入 checkAdmin.txt 并输出到控制台。
+    #       用户把校验串直接私信发送给机器人（无需指令前缀）即可完成验证+写入。
     # SDK 接入端提示：建议引导用户通过私信发送校验串（避免群聊泄露），
     # 接入端需保证机器人收到的私信消息也进入 init_hikari 指令流程，详见 docs/admin-guide.md
     # ============================================================
-    from hikari_core.core.admin import generate_check_admin
+    from hikari_core.core.admin import generate_check_admin, load_admin_cache
 
+    load_admin_cache()
     token = generate_check_admin()
     if token:
-        logger.info(f'管理员校验串已生成（请私信发送给机器人）：wws add_admin {token}')
+        logger.info(f'管理员校验串已生成（请私信发送给机器人）：{token}')

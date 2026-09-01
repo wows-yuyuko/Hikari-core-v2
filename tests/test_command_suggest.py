@@ -274,7 +274,7 @@ async def test_update_command_routes():
 
 
 async def test_admin_flow():
-    """管理员流程：独立生成/校验函数 + add_admin 指令 + 系统指令管理员门禁。"""
+    """管理员：统一验证+写入入口 + 全局缓存 + 直接发送校验串自动添加 + 系统指令门禁。"""
     import shutil
     import tempfile
     from pathlib import Path
@@ -282,7 +282,6 @@ async def test_admin_flow():
     import hikari_core.core.admin as admin_mod
     from hikari_core import Hikari_Model, Input_Model, UserInfo_Model
     from hikari_core.commands.parser import analyze_command
-    from hikari_core.commands.router import add_admin
     from hikari_core.features.system import async_update_template, check_version
 
     tmp = Path(tempfile.mkdtemp(prefix='hikari_admin_test_'))
@@ -301,44 +300,63 @@ async def test_admin_flow():
         )
 
     try:
-        # 路由：wws add_admin <token>
-        func, rest, suggest = await route_command(['add_admin', 'abc123'])
-        assert func == add_admin
-        assert suggest == []
-
-        # 初始：无 admin.txt → 非管理员
+        admin_mod.load_admin_cache()
+        # 初始：无 admin.txt → 非管理员，无待校验串
         assert admin_mod.is_admin('10000') is False
+        assert admin_mod.get_pending_check_token() is None
 
-        # 独立生成器：无 admin.txt 时生成 32 位校验串并写入 checkAdmin.txt
+        # 独立生成器：32 位校验串写入 checkAdmin.txt
         token = admin_mod.generate_check_admin()
         assert len(token) == 32
-        assert (tmp / 'checkAdmin.txt').read_text(encoding='utf-8').strip() == token
+        assert admin_mod.get_pending_check_token() == token
 
-        # 独立校验函数：错误串不通过；正确串通过（无副作用）
-        assert admin_mod.verify_check_admin('wrong') is False
-        assert admin_mod.verify_check_admin(token) is True
-        assert (tmp / 'checkAdmin.txt').exists()
-
-        # 指令：错误校验串 → failed，不写 admin.txt、不删 checkAdmin.txt
-        h = await analyze_command(make('add_admin wrong'))
-        assert h.Function == add_admin
-        h = await add_admin(h)
-        assert h.Status in ('failed', 'error')
+        # 统一入口：错误串 → False（不写不删）
+        assert admin_mod.verify_and_add_admin('10000', 'wrong') is False
         assert not (tmp / 'admin.txt').exists()
         assert (tmp / 'checkAdmin.txt').exists()
+        assert admin_mod.is_admin('10000') is False
 
-        # 指令：正确校验串 → 写入 admin.txt 并删除 checkAdmin.txt
-        h = await analyze_command(make(f'add_admin {token}'))
-        h = await add_admin(h)
-        assert h.Status == 'success'
+        # 统一入口：正确串 → True（写 admin.txt、删 checkAdmin.txt、进缓存）
+        assert admin_mod.verify_and_add_admin('10000', token) is True
         assert '10000' in (tmp / 'admin.txt').read_text(encoding='utf-8')
         assert not (tmp / 'checkAdmin.txt').exists()
-        assert admin_mod.is_admin('10000') is True
-        assert admin_mod.is_admin('99999') is False
+        assert admin_mod.is_admin('10000') is True  # 缓存命中
+
+        # 统一入口：已是管理员（缓存命中）→ 直接 True，不再走校验
+        assert admin_mod.verify_and_add_admin('10000', 'whatever') is True
 
         # 已有 admin.txt → 生成器不再生成
         assert admin_mod.generate_check_admin() == ''
+
+        # 启动缓存加载：手动追加 ID 后 load_admin_cache 生效
+        with open(tmp / 'admin.txt', 'a', encoding='utf-8') as f:
+            f.write('20000\n')
+        admin_mod.load_admin_cache()
+        assert admin_mod.is_admin('20000') is True
+        assert admin_mod.is_admin('99999') is False
+
+        # 直接发送校验串 → analyze_command 自动验证+写入（无指令前缀）
+        (tmp / 'admin.txt').unlink()
+        admin_mod.load_admin_cache()
+        token2 = admin_mod.generate_check_admin()
+        assert len(token2) == 32
+        h = await analyze_command(make(token2, platform_id='30000'))
+        assert h.Status == 'success'
+        assert '管理员添加成功' in str(h.Output.Data)
+        assert '30000' in (tmp / 'admin.txt').read_text(encoding='utf-8')
         assert not (tmp / 'checkAdmin.txt').exists()
+        assert admin_mod.is_admin('30000') is True
+
+        # 管理员发送普通消息 → 不被校验拦截，走正常解析（未识别）
+        h = await analyze_command(make('qwertyuiop', platform_id='30000'))
+        assert h.Status == 'error'
+        assert '未识别' in str(h.Output.Data)
+
+        # 非管理员 + 无待校验串 → 正常解析（未识别）
+        (tmp / 'admin.txt').unlink()
+        admin_mod.load_admin_cache()
+        h = await analyze_command(make('qwertyuiop', platform_id='99999'))
+        assert h.Status == 'error'
 
         # 门禁：非管理员触发 check_version / update_style 被拦截（不联网）
         h = await analyze_command(make('check_version', platform_id='99999'))
@@ -351,7 +369,10 @@ async def test_admin_flow():
         assert h.Status == 'error' and '仅管理员' in str(h.Output.Data)
 
         # 门禁：管理员放行 update_style（打桩 update_template → 成功）
-        h = await analyze_command(make('update_style', platform_id='10000'))
+        with open(tmp / 'admin.txt', 'w', encoding='utf-8') as f:
+            f.write('30000\n')
+        admin_mod.load_admin_cache()
+        h = await analyze_command(make('update_style', platform_id='30000'))
         h = await async_update_template(h)
         assert h.Status == 'success'
     finally:
