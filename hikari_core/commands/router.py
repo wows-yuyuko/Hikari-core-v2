@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+import time
 from typing import Dict, List, Tuple
 
 from ..core.config import hikari_config
@@ -138,6 +139,24 @@ def _is_server_token(token) -> bool:
     return str(token).casefold() in _SERVER_KEYWORDS
 
 
+def _is_param_token(token) -> bool:
+    """是否为"参数型" token：服务器关键词 / 天数(≤3位数字) / 日期(YYYY-MM-DD)。
+
+    参数型 token 是合法身份查询或分支兜底指令的参数，**永不应**被当作
+    打错的命令词参与相似度建议（这是"服务器+昵称 被误报未识别"一类 bug 的根因）。
+    """
+    t = str(token)
+    if _is_server_token(t):
+        return True
+    if t.isdigit() and len(t) <= 3:
+        return True
+    try:
+        time.strptime(t, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
+
+
 def _is_identity_query(match_list) -> bool:
     """判断无指令关键词的输入是否为合法的身份查询（me / 服务器+昵称）。
 
@@ -155,7 +174,14 @@ def _is_identity_query(match_list) -> bool:
 
 
 async def _match_level(match_list, command_List, default_func) -> Tuple[command, List, bool]:
-    """匹配一层指令（大小写不敏感的子串匹配）。
+    """匹配一层指令（大小写不敏感的**整词**匹配）。
+
+    与旧实现的差异：
+    - 旧实现是"子串包含"匹配（token 里含有关键词即命中），要求指令表
+      按长度人工排序（长词靠前），昵称/船名含命令词子串时还会被误路由、
+      误删。现改为 token 与关键词**整词相等**才命中，列表顺序只作为
+      同一 token 命中多个命令时的确定性 tie-break（由不变量测试保证
+      别名在兄弟指令间不冲突）。
 
     Args:
         match_list (List): 待匹配列表
@@ -170,13 +196,8 @@ async def _match_level(match_list, command_List, default_func) -> Tuple[command,
         for kw in com.keywords or ():
             kw_l = str(kw).casefold()
             for i, match_kw in enumerate(match_list):
-                mk = str(match_kw)
-                idx = mk.casefold().find(kw_l)
-                if idx + 1:
-                    # 大小写不敏感删除命中的关键词（对齐 match_keywords）
-                    match_list[i] = mk[:idx] + mk[idx + len(kw):]
-                    if not match_list[i]:  # 为空时才删除，防止未加空格没有被split切割
-                        match_list.remove('')
+                if str(match_kw).casefold() == kw_l:
+                    match_list.pop(i)
                     return com, match_list, True
     return command(None, default_func, None), match_list, False
 
@@ -256,6 +277,28 @@ def _suggest(match_list, command_List) -> List[dict]:
     return scored[: hikari_config.command_suggest_max]
 
 
+def _suggest_guarded(match_list, command_List) -> List[dict]:
+    """对未命中的剩余 token 计算建议，但绝不把合法身份/参数误判为命令错字。
+
+    一级 miss 与二级 miss 共用本函数，消除"合法查询被误报未识别"这一类问题：
+    - 剩余 token 中出现服务器关键词 → 属于"服务器+昵称"数据查询形态，
+      剩余 token 全部是数据（昵称/船名/天数…），不做任何命令猜测；
+    - 剔除 me / 天数(≤3位数字) / 日期 等纯参数 token 后，剩余的
+      "疑似命令词"才参与相似度匹配（_suggest）。
+
+    Returns:
+        建议列表，每项 {'path': (command...), 'handler': Func, 'score': float, 'kw': 命中的关键词}
+    """
+    if not match_list or hikari_config.command_suggest_max <= 0:
+        return []
+    if any(_is_server_token(t) for t in match_list):
+        return []
+    candidates = [t for t in match_list if not _is_param_token(t) and str(t).casefold() != 'me']
+    if not candidates:
+        return []
+    return _suggest(candidates, command_List)
+
+
 def _display_alias(com, kw) -> str:
     """按当前语言选择展示用的指令别名。
 
@@ -308,18 +351,18 @@ async def route_command(search_list) -> Tuple[Func, List, List[dict]]:
         if first.second_select:
             sub, search_list, sub_matched = await _match_level(search_list, first.second_select, first.default_func)
             if not sub_matched:
-                # 二级指令未命中：对剩余 token 计算该指令分支下的子命令建议，
+                # 二级指令未命中：对剩余 token 计算该指令分支下的子命令建议
+                # （_suggest_guarded：身份/参数 token 不参与），
                 # 效果与分支兜底功能相同的建议无意义，剔除
                 suggestions = [
-                    s for s in _suggest(search_list, first.second_select)
+                    s for s in _suggest_guarded(search_list, first.second_select)
                     if s['handler'] != first.default_func
                 ]
             return sub.func, search_list, suggestions
         return first.default_func, search_list, []
     if not first_matched:
-        # 一级完全未命中：合法身份查询（me/@/服务器+昵称）不触发智能提示
-        if not _is_identity_query(search_list):
-            suggestions = _suggest(search_list, first_command_list)
+        # 一级完全未命中：合法身份/参数查询由 _suggest_guarded 内部排除，不触发提示
+        suggestions = _suggest_guarded(search_list, first_command_list)
     return first.func, search_list, suggestions
 
 

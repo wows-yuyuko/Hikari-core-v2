@@ -27,6 +27,7 @@ from ..features.bind import (
 from ..features.clan.cw_rank import get_CwRank
 from ..features.clan.cw_recent import get_cw_recent
 from ..features.clan.info import get_ClanInfo
+from ..features.clan.rank import get_ClanRank
 from ..features.fun import check_christmas_box, get_BanInfo, get_sx_info, roll_ship
 from ..features.ship.info import get_ShipInfo
 from ..features.ship.rank import get_ShipRank
@@ -122,23 +123,54 @@ async def _try_verify_admin(hikari: Hikari_Model) -> Optional[Hikari_Model]:
         return None
 
 
+# ============================================================
+# 身份解析（单一入口）
+# ============================================================
+
+# 不参与"统一服务器前置提取"的功能：
+# - roll / search_ship：参数词汇（国别词）与服务器关键词存在重叠——'europe' 既是
+#   欧服服务器词又是 欧洲 国别词（'Russia' 仅是服务器词，苏联的国别关键词是
+#   'ussr'/'苏联'，不重叠），全局提取会把 'roll europe …' 的国别误吞成服务器；
+# - 绑定族：历史遗留语义（special_bind 走 AID、me+服务器 旧写法、纯数字序号等），
+#   待产品收敛（见 docs 设计债 5），维持各自的独立解析。
+_NO_SERVER_SLOT_FUNCS = frozenset({
+    roll_ship,
+    get_ship_name,
+    get_BindInfo,
+    set_BindInfo,
+    set_special_BindInfo,
+    change_BindInfo,
+    delete_BindInfo,
+})
+
+
 async def extract_with_me(hikari: Hikari_Model) -> Hikari_Model:
-    """身份解析：显式 me 或未指定服务器时默认查自己；@提及 由平台侧处理，SDK 内部不再解析。"""
+    """身份解析（单一入口，路由守卫与解析共用同一口径）：显式 me / 服务器+昵称 / me 缺省。
+
+    - 显式 me：Search_Type=1，平台身份指向发送者；
+    - 存在服务器关键词且功能允许服务器槽位（见 _NO_SERVER_SLOT_FUNCS）：
+      前置提取到 Input.Server 并从 Command_List 移除，Search_Type=3——
+      此后各 _handle_* 不再各自重复 match 服务器（消除口径分叉）；
+    - 均无（有具体指令匹配且非兜底账号查询）：me 缺省，Search_Type=1。
+    @提及 由平台侧转换为 me，SDK 内部不再解析。
+    """
     try:
-        explicit_me = False
-        for i in hikari.Input.Command_List:
+        for i in list(hikari.Input.Command_List):
             if str(i).lower() == 'me':
-                explicit_me = True
                 hikari.Input.Search_Type = 1
                 _set_identity(hikari)
                 hikari.Input.Command_List.remove(i)
                 break
-        if not explicit_me and hikari.Input.Search_Type == 3 and hikari.Function is not get_AccountInfo:
+        if hikari.Input.Search_Type != 3:
+            return hikari
+        server, rest = await match_keywords(list(hikari.Input.Command_List), servers)
+        if server and hikari.Function not in _NO_SERVER_SLOT_FUNCS:
+            hikari.Input.Server = server
+            hikari.Input.Command_List = rest
+        elif not server and hikari.Function is not get_AccountInfo:
             # me 可缺省：仅当有具体指令匹配（非兜底账号查询）且未指定服务器时，默认查自己
-            server, _ = await match_keywords(hikari.Input.Command_List.copy(), servers)
-            if not server:
-                hikari.Input.Search_Type = 1
-                _set_identity(hikari)
+            hikari.Input.Search_Type = 1
+            _set_identity(hikari)
         return hikari
     except Exception:
         logger.error(traceback.format_exc())
@@ -206,26 +238,26 @@ def _extract_day_and_date_params(hikari: Hikari_Model) -> None:
 
 
 async def _parse_account_query_params(hikari: Hikari_Model) -> Hikari_Model:
-    """解析 Search_Type == 3 时的 服务器 + 游戏昵称 参数。"""
+    """解析 Search_Type == 3 时的昵称参数（服务器已在 extract_with_me 前置提取到 Input.Server）。"""
     if hikari.Input.Search_Type != 3:
         return hikari
-    if len(hikari.Input.Command_List) != 2:
-        return hikari.error('您似乎准备用游戏昵称查询水表，请检查参数中是否包含服务器和游戏昵称，以空格分隔，顺序不限')
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
-    if hikari.Input.Server:
-        hikari.Input.AccountName = str(hikari.Input.Command_List[0])
-    else:
+    if not hikari.Input.Server:
         return hikari.error('服务器名输入错误')
+    if len(hikari.Input.Command_List) != 1:
+        return hikari.error('您似乎准备用游戏昵称查询水表，请检查参数中是否包含服务器和游戏昵称，以空格分隔，顺序不限')
+    hikari.Input.AccountName = str(hikari.Input.Command_List[0])
     return hikari
 
 
 async def _parse_ship_query_params(hikari: Hikari_Model) -> Hikari_Model:
-    """解析单船查询：服务器+昵称+船名，或 me 模式（剩余 token 合并为完整船名，支持多词英文船名如 Jean Bart）。"""
-    server, remaining = await match_keywords(hikari.Input.Command_List, servers)
-    if server:
+    """解析单船查询：服务器+昵称+船名，或 me 模式（剩余 token 合并为完整船名，支持多词英文船名如 Jean Bart）。
+
+    服务器已在 extract_with_me 前置提取到 Input.Server。
+    """
+    if hikari.Input.Server:
+        remaining = hikari.Input.Command_List
         if len(remaining) != 2:
             return hikari.error('您似乎准备用服务器+昵称查询单船战绩，请检查参数是否缺少或溢出，以空格分隔')
-        hikari.Input.Server = server
         hikari.Input.AccountName = str(remaining[0])
         hikari.Input.ShipInfo.nameCn = str(remaining[1])
     elif hikari.Input.Command_List:
@@ -247,12 +279,10 @@ async def _handle_ships(hikari: Hikari_Model) -> Hikari_Model:
     """
     command_list = list(hikari.Input.Command_List)
 
-    # 服务器 + 昵称模式：先提取服务器关键词，剩余第一个为昵称
-    server, command_list = await match_keywords(command_list, servers)
-    if server:
+    # 服务器 + 昵称模式：服务器已在 extract_with_me 前置提取（Input.Server），剩余第一个为昵称
+    if hikari.Input.Server:
         if len(command_list) < 2:
             return hikari.error('ships 请携带 服务器 + 昵称 + 筛选条件，如 ships 亚服 昵称 bb 10')
-        hikari.Input.Server = server
         hikari.Input.AccountName = str(command_list[0])
         command_list = command_list[1:]
 
@@ -343,32 +373,24 @@ async def _handle_change_delete_bind(hikari: Hikari_Model) -> Hikari_Model:
 
 
 async def _handle_update_user_cache(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 update_user_cache：wws me update / wws 服务器 游戏昵称 update。"""
+    """处理 update_user_cache：wws me update / wws 服务器 游戏昵称 update（服务器已前置提取）。"""
     if hikari.Input.Search_Type == 1:
         return hikari  # me：目标为默认绑定账号
-    if hikari.Input.Search_Type != 3:
+    if hikari.Input.Search_Type != 3 or not hikari.Input.Server:
         return hikari.error('请使用 wws me update 或 wws 服务器 游戏昵称 update')
-    if len(hikari.Input.Command_List) != 2:
+    if len(hikari.Input.Command_List) != 1:
         return hikari.error('您似乎准备更新指定账号缓存，请检查参数中是否包含服务器和游戏昵称，以空格分隔，顺序不限')
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
-    if hikari.Input.Server:
-        hikari.Input.AccountName = str(hikari.Input.Command_List[0])
-    else:
-        return hikari.error('服务器名输入错误')
+    hikari.Input.AccountName = str(hikari.Input.Command_List[0])
     return hikari
 
 
 async def _handle_ban_box(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 get_BanInfo / get_sx_info / check_christmas_box。"""
+    """处理 get_BanInfo / get_sx_info / check_christmas_box（服务器已前置提取）。"""
     if hikari.Input.Search_Type != 3:
         return hikari
-    if len(hikari.Input.Command_List) != 2:
+    if not hikari.Input.Server or len(hikari.Input.Command_List) != 1:
         return hikari.error('您似乎准备用游戏昵称查询，请检查参数中是否包含服务器和游戏昵称，以空格分隔，顺序不限')
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
-    if hikari.Input.Server:
-        hikari.Input.AccountName = str(hikari.Input.Command_List[0])
-    elif hikari.Function == get_BanInfo and hikari.Input.Server != 'cn':
-        return hikari.error('服务器名输入错误,目前仅支持国服查询')
+    hikari.Input.AccountName = str(hikari.Input.Command_List[0])
     return hikari
 
 
@@ -389,28 +411,28 @@ async def _handle_ship_name_roll(hikari: Hikari_Model) -> Hikari_Model:
 
 
 async def _handle_ship_rank(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 get_ShipRank。"""
-    if len(hikari.Input.Command_List) != 2:
-        return hikari.error('请检查参数中是否包含服务器和船名，以空格分隔，顺序不限')
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
-    if hikari.Input.Server:
-        hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[0])
-    else:
+    """处理 get_ShipRank（服务器已前置提取到 Input.Server）。"""
+    if not hikari.Input.Server:
+        if len(hikari.Input.Command_List) == 1:
+            return hikari.error('请检查参数中是否包含服务器和船名，以空格分隔，顺序不限')
         return hikari.error('服务器名输入错误')
+    if len(hikari.Input.Command_List) != 1:
+        return hikari.error('请检查参数中是否包含服务器和船名，以空格分隔，顺序不限')
+    hikari.Input.ShipInfo.nameCn = str(hikari.Input.Command_List[0])
     return hikari
 
 
 async def _handle_clan_info(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 get_ClanInfo。"""
+    """处理 get_ClanInfo / get_ClanRank（服务器已前置提取到 Input.Server）。"""
     if hikari.Input.Search_Type != 3:
         return hikari
-    if len(hikari.Input.Command_List) != 2:
-        return hikari.error('您似乎准备用公会TAG查询水表，请检查参数中是否包含服务器和公会TAG，以空格分隔，顺序不限')
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
-    if hikari.Input.Server:
-        hikari.Input.ClanName = str(hikari.Input.Command_List[0])
-    else:
+    if not hikari.Input.Server:
+        if len(hikari.Input.Command_List) == 1:
+            return hikari.error('您似乎准备用公会TAG查询水表，请检查参数中是否包含服务器和公会TAG，以空格分隔，顺序不限')
         return hikari.error('服务器名输入错误')
+    if len(hikari.Input.Command_List) != 1:
+        return hikari.error('您似乎准备用公会TAG查询水表，请检查参数中是否包含服务器和公会TAG，以空格分隔，顺序不限')
+    hikari.Input.ClanName = str(hikari.Input.Command_List[0])
     return hikari
 
 
@@ -424,8 +446,7 @@ async def _handle_cw(hikari: Hikari_Model) -> Hikari_Model:
 
 
 async def _handle_cw_rank(hikari: Hikari_Model) -> Hikari_Model:
-    """处理 get_CwRank — 服务器 + 可选赛季号。"""
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
+    """处理 get_CwRank — 服务器 + 可选赛季号（服务器已前置提取）。"""
     if len(hikari.Input.Command_List) == 1:
         digits = _pop_digits_from_list(hikari.Input.Command_List)
         if digits:
@@ -444,19 +465,19 @@ async def _handle_cw_recent(hikari: Hikari_Model) -> Hikari_Model:
 
 
 async def _parse_cw_recent_by_name(hikari: Hikari_Model) -> Hikari_Model:
-    """通过 服务器 + 公会TAG 解析 CW 近期战绩参数。"""
-    hikari.Input.Server, hikari.Input.Command_List = await match_keywords(hikari.Input.Command_List, servers)
+    """通过 服务器 + 公会TAG 解析 CW 近期战绩参数（服务器已前置提取）。"""
     if not hikari.Input.Server:
         return hikari.error('服务器名输入错误')
 
-    hikari.Input.ClanName = str(hikari.Input.Command_List[0])
-    remaining = len(hikari.Input.Command_List)
+    rest = hikari.Input.Command_List
+    hikari.Input.ClanName = str(rest[0])
+    remaining = len(rest)
 
     if remaining == 2:
-        hikari.Input.CwSeasonId = int(hikari.Input.Command_List[1])
+        hikari.Input.CwSeasonId = int(rest[1])
     elif remaining == 3:
-        hikari.Input.CwSeasonId = int(hikari.Input.Command_List[1])
-        hikari.Input.Recent_Day = int(hikari.Input.Command_List[2])
+        hikari.Input.CwSeasonId = int(rest[1])
+        hikari.Input.Recent_Day = int(rest[2])
     else:
         return hikari.error('请检查参数中是否包含服务器、公会TAG、赛季数字、团队数字(可选)')
     return hikari
@@ -504,6 +525,7 @@ _HANDLERS = {
     roll_ship: _handle_ship_name_roll,
     get_ShipRank: _handle_ship_rank,
     get_ClanInfo: _handle_clan_info,
+    get_ClanRank: _handle_clan_info,  # clan.rank / rank clan / clan rank：与 clan 信息同为 服务器+公会TAG 绑定
     get_CwRank: _handle_cw,
     get_cw_recent: _handle_cw,
 }
