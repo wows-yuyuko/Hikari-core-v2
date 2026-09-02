@@ -89,14 +89,14 @@ def generate_check_admin() -> str:
         return ''
     return token
 
-def verify_and_add_admin(platform_id, token) -> bool:
+def verify_and_add_admin(platform_id, token) -> int:
     """校验串验证 + 写入管理员ID 统一入口（一步执行完成）。
 
     发送者已在全局缓存（管理员）时直接成功，不再走校验流程。
     """
     pid = str(platform_id).strip()
     if pid in _ADMIN_IDS:
-        return True
+        return 2
     """校验用户发送的校验串是否与 checkAdmin.txt 一致（独立校验函数，无副作用）。"""
     try:
         stored = get_pending_check_token()
@@ -104,10 +104,10 @@ def verify_and_add_admin(platform_id, token) -> bool:
             add_admin_id(platform_id)
             """验证成功后删除 checkAdmin.txt。"""
             _check_file().unlink(missing_ok=True)
-            return True
+            return 1
     except Exception:
         logger.error(traceback.format_exc())
-    return False
+    return 0
 
 
 def get_pending_check_token():
