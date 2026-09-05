@@ -18,7 +18,7 @@ async def start():
     set_hikari_config(use_broswer='chromium', http2=False,
                       # proxy='http://localhost:7890',
                       proxy=None,
-                      # yuyuko_url='http://127.0.0.1:8088',
+                      yuyuko_url='http://127.0.0.1:8088',
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
                       game_path='')
@@ -27,7 +27,7 @@ async def start():
     # await command("me ship 哥伦布")
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
-    await command("cn simbo0414 recent 15")
+    await command("me")
     # await command("近期")
     # await command("单船 大和")
     # await command("测试")

@@ -1,43 +1,4 @@
-let pr_number = document.querySelector('.pr-number').innerText;
-pr_number = parseInt(pr_number);
-let color = "";
-// 重构
-const getPrColor = (pr) => {
-    if (pr === 0) {
-        return "rgb(130, 130, 130)"; // #828282
-    } else if (pr < 750) {
-        return "rgb(244, 67, 54)"; // #F44336
-    } else if (pr < 1100) {
-        return "rgb(255, 152, 0)"; // #FF9800
-    } else if (pr < 1350) {
-        return "rgb(255, 193, 7)"; // #FFC107
-    } else if (pr < 1550) {
-        return "rgb(139, 195, 74)"; // #8BC34A
-    } else if (pr < 1750) {
-        return "rgb(76, 175, 80)"; // #4CAF50
-    } else if (pr < 2100) {
-        return "rgb(0, 188, 212)"; // #00BCD4
-    } else if (pr < 2450) {
-        return "rgb(156, 39, 176)"; // #9C27B0
-    } else {
-        return "rgb(103, 58, 183)"; // #673AB7
-    }
-};
-
-color = getPrColor(pr_number);
-
-document.querySelector(".pr").style.background = "linear-gradient(90deg, " +
-    "rgba" + color.slice(3, -1) + ", 0.6), " +
-    "rgba" + color.slice(3, -1) + ", 0.8), " +
-    "rgba" + color.slice(3, -1) + ", 0.9), " +
-    "rgba" + color.slice(3, -1) + ", 1), " +
-    "rgba" + color.slice(3, -1) + ", 0.9), " +
-    "rgba" + color.slice(3, -1) + ", 0.8), " +
-    "rgba" + color.slice(3, -1) + ", 0.6))"
-document.querySelector(".pr").style.color = "#333333ff";
-
-
-//调整工会默认颜色
+// PR 颜色不再由 JS 按数值计算：模板已按 prInfo['color'] 直接设置 .pr 背景
 const firstSpan = document.querySelector('.user-info span:first-child');
 
 if (firstSpan) {

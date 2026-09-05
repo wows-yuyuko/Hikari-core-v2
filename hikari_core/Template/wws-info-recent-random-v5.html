@@ -83,7 +83,9 @@
             </div>
         </div>
 
-        <div class="pr">
+        {% if data['userInfo']['prStatus'] != 1 %}
+        <div class="pr"
+             style="background: {{ data['battleTypeInfo']['PVP']['prInfo']['color'] }};">
             <div class="svg-waves">
                 <svg viewBox="0 0 500 200" preserveAspectRatio="none">
                     <path class="wave-path" d="M0,100 C150,200 350,0 500,100 L500,200 L0,200 Z"></path>
@@ -92,6 +94,7 @@
             <span class="pr-number">{{ data['battleTypeInfo']['PVP']['prInfo']['value'] }}&nbsp;&nbsp;&nbsp;&nbsp;<span
                     class="pr-text">{{ data['battleTypeInfo']['PVP']['prInfo']['name'] }}</span></span>
         </div>
+        {% endif %}
 
         <div class="recnet-time">
             <span style="display:inline-block;padding:2px 10px;border-radius:10px;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#ffffff;font-size:14px;margin-right:8px;vertical-align:middle;">近期随机</span>
@@ -158,7 +161,7 @@
                 <div class="information-col-item">类型</div>
                 <div class="information-col-item">场次</div>
                 <div class="information-col-item">胜率</div>
-                <div class="information-col-item">PR</div>
+                {% if data['userInfo']['prStatus'] != 1 %}<div class="information-col-item">PR</div>{% endif %}
                 <div class="information-col-item">场均</div>
                 <div class="information-col-item">击杀</div>
                 <div class="information-col-item">命中</div>
@@ -170,8 +173,10 @@
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['win'] }}%
                     </div>
+                    {% if data['userInfo']['prStatus'] != 1 %}
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_SOLO']['prInfo']['color'] }};">{{ data['battleTypeInfo']['PVP_SOLO']['prInfo']['value'] }}</div>
+                    {% endif %}
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ data['battleTypeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['damage'] }}</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['battleTypeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['frags']) }}</div>
@@ -186,8 +191,10 @@
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['win'] }}%
                     </div>
+                    {% if data['userInfo']['prStatus'] != 1 %}
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV2']['prInfo']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV2']['prInfo']['value'] }}</div>
+                    {% endif %}
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['damage'] }}</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['battleTypeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['frags']) }}</div>
@@ -202,8 +209,10 @@
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['win'] }}%
                     </div>
+                    {% if data['userInfo']['prStatus'] != 1 %}
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV3']['prInfo']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV3']['prInfo']['value'] }}</div>
+                    {% endif %}
                     <div class="information-col-item"
                          style="color: {{ data['battleTypeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ data['battleTypeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['damage'] }}</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['battleTypeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['frags']) }}</div>
@@ -218,7 +227,7 @@
                 <div class="ship-col-item flex-4">等级</div>
                 <div class="ship-col-item flex-8">战舰</div>
                 <div class="ship-col-item flex-3">场次</div>
-                <div class="ship-col-item flex-3">PR</div>
+                {% if data['userInfo']['prStatus'] != 1 %}<div class="ship-col-item flex-3">PR</div>{% endif %}
                 <div class="ship-col-item flex-3">胜率</div>
                 <div class="ship-col-item flex-4">场均</div>
                 <div class="ship-col-item flex-3">击杀</div>
@@ -237,8 +246,10 @@
                             <div class="ship-box ship-name" style="font-size: 25px;letter-spacing: 3px;">{{ ship['shipInfo']['nameCn'] }}</div>
                         </div>
                         <div class="ship-col-item flex-3">{{ ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] }}</div>
+                        {% if data['userInfo']['prStatus'] != 1 %}
                         <div class="ship-col-item flex-3"
                              style="color: {{ ship['typeInfo']['PVP']['prInfo']['color'] }};">{{ ship['typeInfo']['PVP']['prInfo']['value'] }}</div>
+                        {% endif %}
                         <div class="ship-col-item flex-3"
                              style="color: {{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['win'] }}%
                         </div>
