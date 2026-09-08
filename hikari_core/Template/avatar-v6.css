@@ -91,14 +91,14 @@
     font-size: 25px;
 }
 
-/* 深色 banner：白字 */
-.page-header .user-sign-time,
-.page-header .user-server,
-.page-header .user-signature {
+/* 深色 banner：白字（模板通过 .dark-banner 类启用，浅色 banner 保持黑字） */
+.page-header.dark-banner .user-sign-time,
+.page-header.dark-banner .user-server,
+.page-header.dark-banner .user-signature {
     color: #ffffff;
 }
 
-.page-header .user-info.no-color-name .mirage-text {
+.page-header.dark-banner .user-info.no-color-name .mirage-text {
     color: #ffffff;
 }
 
@@ -136,7 +136,6 @@
 
 .wave-path {
     fill: rgba(255, 255, 255, 0.2);
-    animation: wave-animation 3s ease-in-out infinite alternate;
 }
 
 .pr-number {
@@ -155,28 +154,4 @@
 .pr-text {
     font-size: 36px;
     font-weight: 600;
-}
-
-/* ---------- 动画 ---------- */
-
-@keyframes wave-animation {
-    0%, 100% {
-        d: path("M0,100 C150,200 350,0 500,100 L500,200 L0,200 Z");
-    }
-    50% {
-        d: path("M0,80 C150,180 350,-20 500,80 L500,200 L0,200 Z");
-    }
-}
-
-@keyframes ran-7e872de5 {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-        text-shadow: 0 0 10px currentColor;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
 }

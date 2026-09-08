@@ -1,10 +1,12 @@
 /* ==========================================================
-   Hikari 模板体系 v6 — 主样式（wws-info-v6 专用）
-   重写要点：
-   - 去掉固定 450px 高度 / 硬编码 line-height，改用 Grid + Flex 居中
-   - 统计区 / 表格 / 最高记录 / 图表统一 100px 边距，节奏一致
-   - 小节标题条与表体同宽，左右不再悬空
-   - 表格行斑马纹 + 分隔线，提升可读性
+   Hikari 模板体系 v6 — 全局统一样式（全模板共用）
+
+   视觉规范：
+   - 毛玻璃卡片（20px 圆角）+ 统一 50px 页边距（与 page-header 对齐）
+   - 小节标题条：通栏 + 左侧紫色渐变强调条（.random-header）
+   - 数据表格：表头灰底 + 斑马纹 + 分隔线（.information-body / .information-col）
+   - 统计卡：Flex 垂直居中，无硬编码高度/行高（.item-top / .bottom-mini-item）
+   - 类名兼容：保留 main-v5 全部类名，视觉统一为 v6
    ========================================================== */
 
 * {
@@ -30,8 +32,17 @@ body {
     font-weight: bold;
 }
 
+/* ---------- 布局弹性工具 ---------- */
+
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+.flex-3 { flex: 3; }
+.flex-4 { flex: 4; }
+.flex-8 { flex: 8; }
+.flex-10 { flex: 10; }
+
 /* ==========================================================
-   毛玻璃底色（有海报背景时使用）
+   毛玻璃底色
    ========================================================== */
 
 .one-background-color {
@@ -42,7 +53,7 @@ body {
     box-shadow: 0 4px 14px rgba(120, 100, 180, 0.12);
 }
 
-/* 表格行玻璃条（保留类名，v6 表格改用内建分隔线，默认不使用） */
+/* 表格行玻璃条（保留类名兼容） */
 .two-background-color {
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(4px);
@@ -58,25 +69,189 @@ body {
 }
 
 /* ==========================================================
-   最后战斗时间 / 数据记录
+   通用标题 / 徽章
    ========================================================== */
 
-.recnet-time {
-    margin-top: 24px;
-    display: flex;
-    justify-content: center;
-    gap: 60px;
-    font-size: 26px;
-    font-weight: normal;
-    color: #5f6472;
+/* 大字头标题条（排行榜等） */
+.title-header {
+    margin: 40px 50px 30px;
+    height: 120px;
+    line-height: 120px;
+    text-align: center;
+    font-size: 44px;
+    font-weight: bold;
+    color: #ffffff;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    box-shadow: 0 4px 16px rgba(106, 17, 203, 0.25);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.recnet-time .time-item {
-    display: inline-block;
+/* 序号徽标（选择列表） */
+.sec {
+    margin: 15px;
+    height: 50px;
+    width: 50px;
+    text-align: center;
+    line-height: 50px;
+    border-radius: 25px;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: #ffffff;
+    font-weight: normal;
+    flex-shrink: 0;
+}
+
+/* 服务器徽章 */
+.server-border {
+    width: 150px;
+    height: 40px;
+    line-height: 40px;
+    background: rgba(245, 240, 255, 0.6);
+    border: 2px solid rgba(180, 160, 230, 0.6);
+    border-radius: 20px;
+    font-size: 30px;
+}
+
+.server-style {
+    font-weight: bold;
+}
+
+/* 水面大字（单船页） */
+.ship-header {
+    margin: -10px 400px 20px;
+    text-align: center;
+    font-size: 55px;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: break-all;
+    overflow: hidden;
+}
+
+/* 舰船标题玻璃面板：与 overview-change 同款（配合 one-background-color 使用） */
+.ship-title-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 40px 8px 26px;
+    border-radius: 20px;
+    color: #3c3c4c;
+    max-width: 100%;
 }
 
 /* ==========================================================
-   核心数据区（3 大卡 + 6 小卡，无固定高度撑开）
+   数据表格（信息列 / 标签行）
+   ========================================================== */
+
+/* 小节标题条：通栏 + 左侧紫渐变强调条 */
+.random-header {
+    position: relative;
+    margin: 30px 50px 0;
+    height: 58px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    letter-spacing: 3px;
+    color: #3c3c4c;
+}
+
+.random-header::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 30px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #6a11cb 0%, #2575fc 100%);
+}
+
+.random-table-header .random-col-item {
+    line-height: 60px;
+}
+
+/* 简单表格（选择列表等） */
+.table-style {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.table-style th,
+.table-style td {
+    padding: 12px;
+    border: 1px solid rgba(180, 160, 230, 0.35);
+}
+
+/* 信息表容器 */
+.information-body {
+    margin: 16px 50px 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.30);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1.5px solid rgba(180, 160, 230, 0.35);
+    box-shadow: 0 4px 14px rgba(120, 100, 180, 0.10);
+}
+
+/* 信息表行（兼容 v5 markup：首行自动表头、斑马纹、分隔线） */
+.information-col {
+    display: flex;
+    align-items: center;
+    height: 62px;
+    text-align: center;
+    font-size: 28px;
+    line-height: 1.3;
+}
+
+.information-col + .information-col {
+    border-top: 1px solid rgba(180, 160, 230, 0.22);
+}
+
+.information-col:first-child,
+.information-col.header-col {
+    background: rgba(0, 0, 0, 0.07);
+    font-weight: normal;
+    font-size: 26px;
+    color: #4a4a5a;
+}
+
+.information-col:not(:first-child):nth-child(even) {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.information-col-item {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.information-col-item:first-child {
+    flex: 1.4;
+}
+
+/* 记录时间小标题（近期模板） */
+.recent-time-header {
+    margin: 20px 50px 0;
+    width: 200px;
+    height: 56px;
+    line-height: 56px;
+    border-radius: 16px;
+    text-align: center;
+    font-size: 26px;
+    color: #3c3c4c;
+}
+
+/* ==========================================================
+   统计卡（大卡 + 小卡，Flex 居中）
    ========================================================== */
 
 .overview-change {
@@ -103,16 +278,22 @@ body {
     gap: 10px;
 }
 
-.stat-label {
+/* 大卡文字（v6 命名 + v5 兼容命名） */
+.stat-label,
+.item-top-top {
     font-size: 30px;
     font-weight: normal;
     color: #4a4a5a;
+    line-height: 1.3;
+    height: auto;
 }
 
-.stat-value {
+.stat-value,
+.item-top-bottom {
     font-size: 56px;
     font-weight: bold;
     line-height: 1.1;
+    height: auto;
 }
 
 .item-bottom {
@@ -121,7 +302,9 @@ body {
     gap: 18px;
 }
 
-.bottom-mini-item {
+.bottom-mini-item,
+.bottom-mini-item-left,
+.bottom-mini-item-right {
     height: 130px;
     border-radius: 20px;
     display: flex;
@@ -132,131 +315,117 @@ body {
     min-width: 0;
 }
 
-.mini-label {
+/* 小卡文字 */
+.mini-label,
+.mini-item-top {
     font-size: 26px;
     font-weight: normal;
     color: #4a4a5a;
+    line-height: 1.3;
+    height: auto;
 }
 
-.mini-value {
+.mini-value,
+.mini-item-bottom {
     font-size: 34px;
     font-weight: bold;
+    line-height: 1.2;
+    height: auto;
 }
 
 /* ==========================================================
-   小节标题条（与表体同宽 100px 边距，左侧紫色强调条）
-   ========================================================== */
-
-.random-header {
-    position: relative;
-    margin: 30px 50px 0;
-    height: 58px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30px;
-    letter-spacing: 3px;
-    color: #3c3c4c;
-}
-
-.random-header::before {
-    content: '';
-    position: absolute;
-    left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 8px;
-    height: 30px;
-    border-radius: 4px;
-    background: linear-gradient(180deg, #6a11cb 0%, #2575fc 100%);
-}
-
-/* ==========================================================
-   数据表格（战舰类型 / 战斗类型）
-   ========================================================== */
-
-.information-body {
-    margin: 16px 50px 0;
-    border-radius: 16px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.30);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1.5px solid rgba(180, 160, 230, 0.35);
-    box-shadow: 0 4px 14px rgba(120, 100, 180, 0.10);
-}
-
-.information-col {
-    display: grid;
-    grid-template-columns: 1.4fr repeat(6, 1fr);
-    align-items: center;
-    height: 64px;
-    text-align: center;
-    font-size: 28px;
-}
-
-.information-body.no-pr .information-col {
-    grid-template-columns: 1.4fr repeat(5, 1fr);
-}
-
-.information-col + .information-col {
-    border-top: 1px solid rgba(180, 160, 230, 0.22);
-}
-
-.information-col.header-col {
-    background: rgba(0, 0, 0, 0.07);
-    font-weight: normal;
-    font-size: 26px;
-    color: #4a4a5a;
-}
-
-.information-col:not(.header-col):nth-child(even) {
-    background: rgba(255, 255, 255, 0.28);
-}
-
-.information-col-item {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* ==========================================================
-   最高记录（6 格一行）
+   最高记录
    ========================================================== */
 
 .frag-data {
     margin: 16px 50px 0;
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    display: flex;
+    gap: 18px;
+}
+
+.frag-data-col {
+    display: flex;
+    flex: 1;
+    min-width: 0;
     gap: 18px;
 }
 
 .frag-item {
+    flex: 1;
     height: 126px;
+    min-width: 0;
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-width: 0;
 }
 
 .frag-key {
     font-size: 26px;
     font-weight: normal;
     color: #4a4a5a;
+    line-height: 1.3;
+    height: auto;
 }
 
 .frag-value {
     font-size: 32px;
     font-weight: bold;
+    line-height: 1.2;
+    height: auto;
 }
 
 /* ==========================================================
-   图表（等级场次 / 胜率 双轴）
+   单船数据区（wws-ship 系列）
+   ========================================================== */
+
+.ship-data-col {
+    display: flex;
+    height: 90px;
+    align-items: center;
+}
+
+.ship-data-col + .ship-data-col {
+    border-top: 1px solid rgba(180, 160, 230, 0.22);
+}
+
+.ship-information-col {
+    color: #606266;
+    height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.ship-col-item {
+    text-align: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.ship-col-item-ship {
+    overflow: hidden;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 0 0 0 15px;
+    flex: 1.4;
+    min-width: 0;
+}
+
+.ship-name {
+    text-align: left;
+    margin-left: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+    width: 0;
+}
+
+/* ==========================================================
+   图表
    ========================================================== */
 
 .chart-box {
@@ -269,8 +438,31 @@ body {
 }
 
 .chart-bar {
-    flex: 1;
+    flex: 6;
     min-width: 0;
+}
+
+.chart-pie {
+    flex: 4;
+    min-width: 0;
+}
+
+/* ==========================================================
+   时间行
+   ========================================================== */
+
+.recnet-time {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    font-size: 26px;
+    font-weight: normal;
+    color: #5f6472;
+}
+
+.recnet-time .time-item {
+    display: inline-block;
 }
 
 /* ==========================================================

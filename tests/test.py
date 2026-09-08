@@ -1,5 +1,6 @@
 import asyncio
 import time
+import traceback
 
 from loguru import logger
 
@@ -29,12 +30,12 @@ async def start():
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
     await command("me")
-    # await command("近期")
-    # await command("单船 大和")
+    # await command("近期 90")
+    await command("单船 大和")
     # await command("测试")
     #
-    # await command("近期随机")
-    # await command("近期排位")
+    # await command("近期随机 90")
+    # await command("近期排位 90")
     # await command("me sx")
     # await command("me sd")
     # await command("me recent 30")
@@ -42,26 +43,27 @@ async def start():
     # await command("me clan")
     # await command("clan asia YU")
     # await command("战舰排行榜 国服 大和")
-    # await command("me ship 无比 recent 2024-05-30")
     # await command("公会战排行榜 20")
-    # await command('asia nahida_official ship 大')
 
 
 async def command(command_text: str):
-    logger.info("============START===========================================================================")
-    logger.info(f'command ==>> {command_text}')
-    hikari_data = await init_hikari(platform=platform, PlatformId=platform_id, BotId='0', command_text=str(command_text), GroupId=group_id)
-    if hikari_data.Status == 'success':
-        output_with_check_type(hikari_data, command_text)
-    elif hikari_data.Status == 'wait':
-        output_with_check_type(hikari_data, command_text + 'select')
-        hikari_data.Input.Select_Index = 1
-        hikari_data = await callback_hikari(hikari_data)
-        output_with_check_type(hikari_data, command_text)
-    elif hikari_data.Status == 'failed':
-        logger.error(hikari_data.Output.Data)
-    elif hikari_data.Status in ['error', 'failed']:
-        raise IOError(hikari_data.Output.Data)
+    try:
+        logger.info("============START===========================================================================")
+        logger.info(f'command ==>> {command_text}')
+        hikari_data = await init_hikari(platform=platform, PlatformId=platform_id, BotId='0', command_text=str(command_text), GroupId=group_id)
+        if hikari_data.Status == 'success':
+            output_with_check_type(hikari_data, command_text)
+        elif hikari_data.Status == 'wait':
+            output_with_check_type(hikari_data, command_text + 'select')
+            hikari_data.Input.Select_Index = 1
+            hikari_data = await callback_hikari(hikari_data)
+            output_with_check_type(hikari_data, command_text)
+        elif hikari_data.Status == 'failed':
+            logger.error(hikari_data.Output.Data)
+        elif hikari_data.Status in ['error', 'failed']:
+            raise IOError(hikari_data.Output.Data)
+    except Exception:
+        logger.error(traceback.format_exc())
     logger.info("============END============================================================================")
 
 

@@ -6,89 +6,19 @@
     <link href="{{ template_path.as_uri() }}/main-v6.css" rel="stylesheet" type="text/css">
     <link href="{{ template_path.as_uri() }}/avatar-v6.css" rel="stylesheet" type="text/css">
 </head>
-<style>
-
-    {# ===== 海报背景 ===== #}
-    {% if data['userInfo']['avatar']['poster']['status'] == 2 %}
-    .main-content {
-        background: url("{{ data['userInfo']['avatar']['poster']['data'] }}") no-repeat;
-        background-position: center;
-        background-size: cover;
-        min-height: 100vh;
-    }
-    {% endif %}
-
-    {# ===== 彩色昵称 ===== #}
-    {% if data['userInfo']['avatar']['colorName']['status'] == 2 %}
-    .mirage-text {
-        background: {{ data['userInfo']['avatar']['colorName']['data'] }};
-        background-size: 200% 200%;
-        color: transparent;
-        -webkit-background-clip: text;
-        background-clip: text;
-        animation: ran-7e872de5 3s linear infinite;
-    }
-    {% endif %}
-
-    {% set banner_dark = data['userInfo'] and data['userInfo']['avatar']['banner']['status'] == 2 and data['userInfo']['avatar']['banner'].get('dark') == 1 %}
-    {% set show_pr = data['userInfo']['prStatus'] != 1 %}
-
-    .page-header {
-        {% if data['userInfo']['avatar']['banner']['status'] == 2 %}
-        background: url("{{ data['userInfo']['avatar']['banner']['data'] }}") no-repeat;
-        {% endif %}
-        background-position: center;
-        background-size: 100%;
-    }
-
-    .avatar-header {
-        {% if data['userInfo']['avatar']['avatar']['status'] == 2 %}
-        background: url("{{ data['userInfo']['avatar']['avatar']['data'] }}") no-repeat;
-        {% else %}
-        background: url("{{ data['userInfo']['dogTag'] }}") no-repeat;
-        {% endif %}
-        background-position: center;
-        background-size: 100%;
-    }
-</style>
+{% from 'partials/info-v6-macros.html' import info_header_style, info_header, info_pr, footer_box with context %}
+{{ info_header_style() }}
+{% set show_pr = data['userInfo']['prStatus'] != 1 %}
 <body>
 <div class="main-content">
     <div class="page-box">
 
         {# ==================== 头部 ==================== #}
-        <div class="page-header">
-            <div class="masking-header">
-                <div class="avatar-header"></div>
-                <div class="clan-user-server">
-                    <div class="user-info {% if data['userInfo']['avatar']['colorName']['status'] != 2 %}no-color-name{% endif %}">
-                        {% if data['userInfo']['clanInfo']['tag'] %}
-                            <span style="color: {% if banner_dark %}#ffffff{% else %}{{ data['userInfo']['clanInfo']['color'] }}{% endif %};">[{{ data['userInfo']['clanInfo']['tag'] }}]</span>
-                        {% endif %}
-                        <span class="mirage-text">{{ data['userInfo']['userName'] }}</span>
-                    </div>
-                    <div class="user-sign-time">注册时间: {{ time.strftime('%Y-%m-%d %H:%M', time.localtime(int(abs(data['userInfo']['accountCreateTime'])))) }}
-                    </div>
-                    <div class="user-server">服务器: {{ data['userInfo']['serverCn'] }} / {{ data['userInfo']['accountId'] }}</div>
-                    {% if data['userInfo']['avatar']['sign']['status'] == 2 %}
-                        <div class="user-signature">
-                            {{ data['userInfo']['avatar']['sign']['data'] }}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+        {{ info_header(register=True) }}
 
         {# ==================== PR 条（v2 结构顶层 prInfo） ==================== #}
         {% if show_pr and data['prInfo']['value'] > 0 %}
-        <div class="pr" style="background: {{ data['prInfo']['color'] }};">
-            <div class="svg-waves">
-                <svg viewBox="0 0 500 200" preserveAspectRatio="none">
-                    <path class="wave-path" d="M0,100 C150,200 350,0 500,100 L500,200 L0,200 Z"></path>
-                </svg>
-            </div>
-            <span class="pr-number">{{ data['prInfo']['value'] }}
-                <span class="pr-text">{{ data['prInfo']['name'] }}</span></span>
-        </div>
+        {{ info_pr(data['prInfo']) }}
         {% endif %}
 
         {# ==================== 时间信息 ==================== #}
@@ -157,8 +87,8 @@
 
         {# ==================== 战舰类型 ==================== #}
         <div class="random-header one-background-color">战舰类型</div>
-        <div class="information-body {% if not show_pr %}no-pr{% endif %}">
-            <div class="information-col header-col">
+        <div class="information-body">
+            <div class="information-col">
                 <div class="information-col-item">类型</div>
                 <div class="information-col-item">场次</div>
                 <div class="information-col-item">胜率</div>
@@ -194,8 +124,8 @@
 
         {# ==================== 战斗类型 ==================== #}
         <div class="random-header one-background-color">战斗类型</div>
-        <div class="information-body {% if not show_pr %}no-pr{% endif %}">
-            <div class="information-col header-col">
+        <div class="information-body">
+            <div class="information-col">
                 <div class="information-col-item">类型</div>
                 <div class="information-col-item">场次</div>
                 <div class="information-col-item">胜率</div>
@@ -256,10 +186,7 @@
             <div class="chart-bar"></div>
         </div>
 
-        <div class="footer">
-            <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>
-            <p>©github:wows-yuyuko</p>
-        </div>
+        {{ footer_box() }}
     </div>
 </div>
 </body>
