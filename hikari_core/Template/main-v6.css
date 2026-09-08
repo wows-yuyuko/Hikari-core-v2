@@ -15,6 +15,14 @@
     box-sizing: border-box;
 }
 
+/* 垂直节奏：
+   --gap-block  板块与板块之间的间距
+   --gap-inner  小节标题条 与 其内容 之间的间距 */
+:root {
+    --gap-block: 32px;
+    --gap-inner: 16px;
+}
+
 body {
     font-family: "Microsoft YaHei Bold", "Microsoft YaHei", "PingFang SC", sans-serif;
 }
@@ -118,16 +126,17 @@ body {
     font-weight: bold;
 }
 
-/* 水面大字（单船页） */
+/* 水面大字（单船页）：宽度按内容自适应，上限与 page-header 同宽(1400px) */
 .ship-header {
-    margin: -10px 400px 20px;
+    margin: var(--gap-block) auto 20px;
+    width: fit-content;
+    max-width: 1400px;
     text-align: center;
     font-size: 55px;
     font-weight: bold;
-    text-overflow: ellipsis;
     white-space: nowrap;
-    word-break: break-all;
     overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* 舰船标题玻璃面板：与 overview-change 同款（配合 one-background-color 使用） */
@@ -141,6 +150,14 @@ body {
     max-width: 100%;
 }
 
+/* 舰名：超长时省略 */
+.ship-title-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* ==========================================================
    数据表格（信息列 / 标签行）
    ========================================================== */
@@ -148,7 +165,7 @@ body {
 /* 小节标题条：通栏 + 左侧紫渐变强调条 */
 .random-header {
     position: relative;
-    margin: 30px 50px 0;
+    margin: var(--gap-block) 50px 0;
     height: 58px;
     border-radius: 16px;
     display: flex;
@@ -190,7 +207,7 @@ body {
 
 /* 信息表容器 */
 .information-body {
-    margin: 16px 50px 0;
+    margin: var(--gap-inner) 50px 0;
     border-radius: 16px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.30);
@@ -240,7 +257,7 @@ body {
 
 /* 记录时间小标题（近期模板） */
 .recent-time-header {
-    margin: 20px 50px 0;
+    margin: var(--gap-block) 50px 0;
     width: 200px;
     height: 56px;
     line-height: 56px;
@@ -258,7 +275,7 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 22px;
-    margin: 30px 50px 0;
+    margin: var(--gap-block) 50px 0;
 }
 
 .overview-change-item {
@@ -338,7 +355,7 @@ body {
    ========================================================== */
 
 .frag-data {
-    margin: 16px 50px 0;
+    margin: var(--gap-inner) 50px 0;
     display: flex;
     gap: 18px;
 }
@@ -429,7 +446,7 @@ body {
    ========================================================== */
 
 .chart-box {
-    margin: 30px 50px 40px;
+    margin: var(--gap-block) 50px 40px;
     height: 480px;
     border-radius: 20px;
     padding: 14px 8px;
@@ -452,7 +469,7 @@ body {
    ========================================================== */
 
 .recnet-time {
-    margin-top: 24px;
+    margin-top: var(--gap-block);
     display: flex;
     justify-content: center;
     gap: 60px;
@@ -470,7 +487,7 @@ body {
    ========================================================== */
 
 .footer {
-    margin: 0 50px 30px;
+    margin: 0 50px var(--gap-block);
     text-align: center;
     font-size: 22px;
     line-height: 1.8;

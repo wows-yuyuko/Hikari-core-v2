@@ -8,7 +8,7 @@
 .page-header {
     border-radius: 36px;
     height: 300px;
-    margin: 50px 50px 30px;
+    margin: 50px 50px 0;
     display: flex;
     justify-content: flex-start;
     box-shadow: 0 5px 20px #252525;
@@ -111,7 +111,7 @@
     font-weight: bold;
     font-size: 35px;
     border-radius: 26px;
-    margin: 28px 50px 0;
+    margin: var(--gap-block) 50px 0;
     height: 96px;
     position: relative;
     overflow: hidden;

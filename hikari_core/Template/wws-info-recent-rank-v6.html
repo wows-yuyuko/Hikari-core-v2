@@ -18,7 +18,6 @@
         {% endif %}
 
         <div class="recnet-time">
-            <span style="display:inline-block;padding:2px 10px;border-radius:10px;background:linear-gradient(135deg,#a855f7,#6366f1);color:#ffffff;font-size:14px;margin-right:8px;vertical-align:middle;">近期排位</span>
             <span>记录时间：</span><span>{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(int(abs(data['recordTime']/1000)))) }}—{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(time.time())) }}</span>
         </div>
 
