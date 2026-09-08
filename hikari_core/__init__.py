@@ -183,6 +183,7 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
                     wait=0,
                     viewport={'width': hikari.Output.Width, 'height': hikari.Output.Height},
                     use_browser=hikari_config.use_broswer,
+                    type=hikari_config.image_type,
                 )
                 hikari.Output.Data_Type = type(hikari.Output.Data)
         return hikari

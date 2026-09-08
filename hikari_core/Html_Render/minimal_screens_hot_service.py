@@ -5,6 +5,7 @@ import io
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -394,12 +395,28 @@ class minimal_screens_hot_service:
             await page.wait_for_timeout(100)
             # 5. 快速截图
             screenshot_start = time.time()
-            image_data = await page.screenshot(
-                type='jpeg',  # JPEG最快
-                quality=85,
-                full_page=True,  # 只截取可视区域
-                omit_background=False,
-            )
+            # 输出格式：jpeg(默认，最快) / png / webp
+            image_type = str(kwargs.get('type') or 'jpeg').lower()
+            quality = kwargs.get('quality')
+            if image_type == 'png':
+                image_data = await page.screenshot(
+                    type='png',
+                    full_page=True,  # 只截取可视区域
+                    omit_background=False,
+                )
+            elif image_type == 'webp':
+                image_data = await page.screenshot(
+                    type='webp',
+                    full_page=True,  # 只截取可视区域
+                    omit_background=False,
+                )
+            else:
+                image_data = await page.screenshot(
+                    type='jpeg',  # JPEG最快
+                    quality=quality if quality is not None else 85,
+                    full_page=True,  # 只截取可视区域
+                    omit_background=False,
+                )
 
             screenshot_time = time.time() - screenshot_start
             logger.debug(f"截图耗时: {screenshot_time:.2f}s")
@@ -668,6 +685,25 @@ class minimal_screens_hot_service:
         return output.getvalue()
 
     @staticmethod
+    def _expected_revision(browser: str) -> str:
+        """读取当前安装的 Playwright 所期望的浏览器构建号（如 chromium-1234 中的 1234）。
+
+        Playwright 每次发版都会配套升级浏览器内核；升级 playwright 后若仍用旧缓存内核，
+        可能出现 CDP 协议不兼容 / 新功能（如 webp 截图）不可用的问题，需要据此触发重装。
+        """
+        try:
+            import playwright
+            browsers_json = Path(playwright.__file__).resolve().parent / 'driver' / 'package' / 'browsers.json'
+            if browsers_json.exists():
+                data = json.loads(browsers_json.read_text(encoding='utf-8'))
+                for item in data.get('browsers', []):
+                    if item.get('name') == browser:
+                        return str(item.get('revision', ''))
+        except Exception as e:
+            logger.debug(f"读取 playwright 期望浏览器版本失败: {e}")
+        return ''
+
+    @staticmethod
     def setup_playwright(browser: str = "chromium") -> str:
         """
         设置 Playwright 环境
@@ -677,12 +713,28 @@ class minimal_screens_hot_service:
         browsers_path = get_cache_file() / "browsers"
         # 2. 创建目录
         browsers_path.mkdir(parents=True, exist_ok=True)
-        # 3. 设置环境变量（永久生效）
+        # 3. 版本匹配校验：缓存标记里需记录当前 playwright 期望的构建号，
+        #    升级 playwright 后标记过期 → 自动重新安装配套浏览器内核
+        expected_revision = minimal_screens_hot_service._expected_revision(browser)
         env_file = browsers_path / f".{browser}-env"
+        marker_ok = False
         if env_file.exists():
+            marker_text = env_file.read_text(encoding='utf-8', errors='ignore')
+            marker_ok = bool(expected_revision) and f"REVISION={expected_revision}" in marker_text
+            if not marker_ok:
+                logger.info(
+                    f"检测到 Playwright 升级或标记过期（期望 {browser} 构建 {expected_revision or '未知'}），"
+                    f"将重新安装 {browser}"
+                )
+                try:
+                    env_file.unlink()
+                except OSError:
+                    pass
+        if env_file.exists() and marker_ok:
             return minimal_screens_hot_service.find_executable(browser, browsers_path)
-        with open(env_file, 'w') as f:
+        with open(env_file, 'w', encoding='utf-8') as f:
             f.write(f"PLAYWRIGHT_BROWSERS_PATH={browsers_path}\n")
+            f.write(f"REVISION={expected_revision}\n")
 
         # 4. 临时设置环境变量
         os.environ['PLAYWRIGHT_DOWNLOAD_HOST'] = 'https://npmmirror.com/mirrors/playwright/'
@@ -736,6 +788,11 @@ class minimal_screens_hot_service:
             if pattern:
                 matches = list(browser_path.glob(pattern))
                 if matches:
+                    # 多版本缓存共存时取构建号最大的（升级 playwright 后避免仍命中旧内核）
+                    def _build_revision(p: Path) -> int:
+                        m = re.search(rf'{re.escape(browser_type)}-(\d+)', str(p))
+                        return int(m.group(1)) if m else 0
+                    matches.sort(key=_build_revision, reverse=True)
                     return str(matches[0])
         except Exception as e:
             logger.error(f"无法找到浏览器: {e}")

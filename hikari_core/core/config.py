@@ -16,6 +16,7 @@ class Config_Model(BaseModel):
     token: Optional[str] = '123456:111111111111'
     auto_rendering: bool = True
     auto_image: bool = True
+    image_type: str = 'jpeg'  # 截图输出格式: jpeg / png / webp
     use_broswer: Optional[str] = 'chromium'
     yuyuko_url: Optional[str] = 'https://v3-api.wows.shinoaki.com'
     yuyuko_type: Optional[str] = 'BOT'
@@ -45,6 +46,7 @@ def set_hikari_config(  # noqa: PLR0913
     command_suggest_max: int = 3,
     command_suggest_dedupe: bool = True,
     command_language: str = 'zh',
+    image_type: str = 'jpeg',
 ):
     """配置Hikari-core
 
@@ -54,6 +56,7 @@ def set_hikari_config(  # noqa: PLR0913
         token (str): #请加群联系雨季获取api_key和token Q群:967546463
         auto_rendering (bool): 自动填充模板，默认启用
         auto_image (bool): 是否自动渲染，默认启用，若auto_rending未启用则该项配置无效
+        image_type (str): 截图输出图片格式 jpeg/png/webp，默认 jpeg（png/webp 经 Pillow 处理，质量略慢但无损/体积更小）
         use_broswer (str): chromium/firefox，默认chromium，性能大约为firefox三倍
         game_path (str):缓存文件夹路径，推荐设置在bot目录下，不配置默认为当前项目的data/wows-yuyuko目录下
         yuyuko_url (str):yuyuko请求地址
@@ -76,6 +79,11 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.command_suggest_max = command_suggest_max
     hikari_config.command_suggest_dedupe = command_suggest_dedupe
     hikari_config.command_language = 'en' if str(command_language).lower().startswith('en') else 'zh'
+    image_type = str(image_type).lower()
+    if image_type not in ('jpeg', 'png', 'webp'):
+        logger.warning(f'不支持的 image_type={image_type}，已回退为 jpeg')
+        image_type = 'jpeg'
+    hikari_config.image_type = image_type
     # 为空则使用默认路径
     from hikari_core.core.cache_utils import get_cache_file, initial_cache_file
 
