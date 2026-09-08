@@ -16,7 +16,7 @@ from .core.config import hikari_config, set_hikari_config  # noqa:F401 set_hikar
 from .core.constants import template_path
 from .core.model import Hikari_Model, Input_Model, UserInfo_Model
 from .core.render_helpers import set_render_params
-from .Html_Render import html_to_pic, html_to_pic_by_gif
+from .Html_Render import html_to_pic
 from .commands.parser import analyze_command
 # 供外部 bot 使用的公共指令 API（显式导出，替代通配导入）
 from .commands.router import (  # noqa: F401
@@ -175,8 +175,7 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
                 except Exception:
                     logger.error(traceback.format_exc())
             hikari.Output.Data = content
-            hikari.Output.Data_Type = type(hikari.Output.Data)
-
+            hikari.Output.Data_Type = str(type(hikari.Output.Data))
             if hikari_config.auto_image:
                 hikari.Output.Data = await html_to_pic(
                     content,
@@ -185,7 +184,8 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
                     use_browser=hikari_config.use_broswer,
                     type=hikari_config.image_type,
                 )
-                hikari.Output.Data_Type = type(hikari.Output.Data)
+                # 记录实际输出的图片格式（jpeg / png / webp），供接入端按格式发送
+                hikari.Output.Data_Type = hikari_config.image_type
         return hikari
     except UndefinedError as e:
         logger.error(traceback.format_exc())

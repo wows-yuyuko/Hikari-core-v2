@@ -405,8 +405,11 @@ class minimal_screens_hot_service:
                     omit_background=False,
                 )
             elif image_type == 'webp':
+                # Playwright >=1.62 原生支持 webp：quality 缺省或 >=100 时驱动会走「无损」编码，
+                # 体积明显大于 jpeg@85，故与 jpeg 一致默认 85（有损）
                 image_data = await page.screenshot(
                     type='webp',
+                    quality=quality if quality is not None else 85,
                     full_page=True,  # 只截取可视区域
                     omit_background=False,
                 )

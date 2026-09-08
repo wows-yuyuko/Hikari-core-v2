@@ -73,6 +73,7 @@ async def on_user_reply(stored_hikari, reply_index: int):
 | `token` | yuyuko API 凭据 |
 | `proxy` | 访问 WG 的代理（如 `http://localhost:7890`） |
 | `auto_rendering` / `auto_image` | 是否自动渲染模板 / 是否自动截图出图 |
+| `image_type` | 截图输出图片格式：`jpeg`（默认）/ `png` / `webp`，会同步到 `Output.Data_Type` |
 | `use_broswer` | `chromium`（默认）/ `firefox` |
 | `game_path` | 缓存目录路径（推荐放在 bot 目录下） |
 | `command_language` | `zh`（默认）/ `en`，切换指令提示与帮助页语言 |

@@ -21,6 +21,7 @@ async def start():
                       yuyuko_url='http://127.0.0.1:8088',
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
+                      image_type='webp',
                       game_path='')
     global is_out_image
     is_out_image = True
@@ -74,7 +75,7 @@ def output_with_check_type(hikari_data: Hikari_Model, command: str):
         file = get_cache_file() / 'temp_image' / (command.replace(' ', '-') + '.html')
         with open(file, 'w', encoding='utf-8') as f:
             f.write(hikari_data.template_content)
-        img = get_cache_file() / 'temp_image' / (command.replace(' ', '-') + '.jpg')
+        img = get_cache_file() / 'temp_image' / (command.replace(' ', '-') + '.' + str(hikari_data.Output.Data_Type))
         with open(img, 'wb') as f:
             f.write(hikari_data.Output.Data)
     elif isinstance(hikari_data.Output.Data, str):
