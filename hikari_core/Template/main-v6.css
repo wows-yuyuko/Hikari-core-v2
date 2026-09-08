@@ -1,0 +1,290 @@
+/* ==========================================================
+   Hikari 模板体系 v6 — 主样式（wws-info-v6 专用）
+   重写要点：
+   - 去掉固定 450px 高度 / 硬编码 line-height，改用 Grid + Flex 居中
+   - 统计区 / 表格 / 最高记录 / 图表统一 100px 边距，节奏一致
+   - 小节标题条与表体同宽，左右不再悬空
+   - 表格行斑马纹 + 分隔线，提升可读性
+   ========================================================== */
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Microsoft YaHei Bold", "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+.page-box {
+    width: 1500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content,
+body {
+    width: 1500px;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+/* ==========================================================
+   毛玻璃底色（有海报背景时使用）
+   ========================================================== */
+
+.one-background-color {
+    background: rgba(245, 240, 255, 0.42);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1.5px solid rgba(180, 160, 230, 0.45);
+    box-shadow: 0 4px 14px rgba(120, 100, 180, 0.12);
+}
+
+/* 表格行玻璃条（保留类名，v6 表格改用内建分隔线，默认不使用） */
+.two-background-color {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.three-background-color {
+    background: #D9D9D9;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 2px solid #C0C0C0;
+}
+
+/* ==========================================================
+   最后战斗时间 / 数据记录
+   ========================================================== */
+
+.recnet-time {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    font-size: 26px;
+    font-weight: normal;
+    color: #5f6472;
+}
+
+.recnet-time .time-item {
+    display: inline-block;
+}
+
+/* ==========================================================
+   核心数据区（3 大卡 + 6 小卡，无固定高度撑开）
+   ========================================================== */
+
+.overview-change {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin: 30px 50px 0;
+}
+
+.overview-change-item {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+}
+
+.item-top {
+    height: 210px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.stat-label {
+    font-size: 30px;
+    font-weight: normal;
+    color: #4a4a5a;
+}
+
+.stat-value {
+    font-size: 56px;
+    font-weight: bold;
+    line-height: 1.1;
+}
+
+.item-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.bottom-mini-item {
+    height: 130px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.mini-label {
+    font-size: 26px;
+    font-weight: normal;
+    color: #4a4a5a;
+}
+
+.mini-value {
+    font-size: 34px;
+    font-weight: bold;
+}
+
+/* ==========================================================
+   小节标题条（与表体同宽 100px 边距，左侧紫色强调条）
+   ========================================================== */
+
+.random-header {
+    position: relative;
+    margin: 30px 50px 0;
+    height: 58px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    letter-spacing: 3px;
+    color: #3c3c4c;
+}
+
+.random-header::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 30px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #6a11cb 0%, #2575fc 100%);
+}
+
+/* ==========================================================
+   数据表格（战舰类型 / 战斗类型）
+   ========================================================== */
+
+.information-body {
+    margin: 16px 50px 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.30);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1.5px solid rgba(180, 160, 230, 0.35);
+    box-shadow: 0 4px 14px rgba(120, 100, 180, 0.10);
+}
+
+.information-col {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(6, 1fr);
+    align-items: center;
+    height: 64px;
+    text-align: center;
+    font-size: 28px;
+}
+
+.information-body.no-pr .information-col {
+    grid-template-columns: 1.4fr repeat(5, 1fr);
+}
+
+.information-col + .information-col {
+    border-top: 1px solid rgba(180, 160, 230, 0.22);
+}
+
+.information-col.header-col {
+    background: rgba(0, 0, 0, 0.07);
+    font-weight: normal;
+    font-size: 26px;
+    color: #4a4a5a;
+}
+
+.information-col:not(.header-col):nth-child(even) {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.information-col-item {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================
+   最高记录（6 格一行）
+   ========================================================== */
+
+.frag-data {
+    margin: 16px 50px 0;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 18px;
+}
+
+.frag-item {
+    height: 126px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.frag-key {
+    font-size: 26px;
+    font-weight: normal;
+    color: #4a4a5a;
+}
+
+.frag-value {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+/* ==========================================================
+   图表（等级场次 / 胜率 双轴）
+   ========================================================== */
+
+.chart-box {
+    margin: 30px 50px 40px;
+    height: 480px;
+    border-radius: 20px;
+    padding: 14px 8px;
+    display: flex;
+    align-items: stretch;
+}
+
+.chart-bar {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ==========================================================
+   页脚
+   ========================================================== */
+
+.footer {
+    margin: 0 50px 30px;
+    text-align: center;
+    font-size: 22px;
+    line-height: 1.8;
+    color: #6b7080;
+}
+
+.footer p {
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.4);
+}

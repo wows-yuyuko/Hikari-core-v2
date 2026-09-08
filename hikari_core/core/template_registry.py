@@ -46,7 +46,9 @@ class Templates:
     # 水表（v5 统一风格）
     WWS_SHIP: TemplateConfig = TemplateConfig("wws-ship-v5.html", 800, 100)
     WWS_SHIP_RECENT: TemplateConfig = TemplateConfig("wws-ship-recent-v5.html", 800, 100)
-    WWS_INFO: TemplateConfig = TemplateConfig("wws-info-v5.html", 920, 1000)
+    WWS_INFO: TemplateConfig = TemplateConfig("wws-info-v6.html", 920, 1000)
+    # 旧接口(/user/info v1 数据)兼容层,最新代码已不调用,保留按需回退
+    WWS_INFO_V5: TemplateConfig = TemplateConfig("wws-info-v5.html", 920, 1000)
     WWS_INFO_RECENT: TemplateConfig = TemplateConfig("wws-info-recent-v5.html", 1200, 100)
     WWS_INFO_RECENT_RANDOM: TemplateConfig = TemplateConfig("wws-info-recent-random-v5.html", 1200, 100)
     WWS_INFO_RECENT_RANK: TemplateConfig = TemplateConfig("wws-info-recent-rank-v5.html", 1200, 100)
