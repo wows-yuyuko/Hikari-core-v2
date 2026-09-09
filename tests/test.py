@@ -8,7 +8,7 @@ from hikari_core import Hikari_Model, callback_hikari, init_hikari, get_cache_fi
 from hikari_core.core.config import set_hikari_config
 
 platform = 'QQ_OFFICIAL'
-platform_id = '4978A94EF5DF0B67A1D0E00AFB5A2C32D'
+platform_id = '4978A94EF5DF0B67A1D0E00AFB5A2C32'
 group_id = None
 is_out_image = False
 
@@ -26,12 +26,12 @@ async def start():
                       game_path='')
     global is_out_image
     is_out_image = True
-    await command("asia nahida_official ship 哥伦布")
+    # await command("asia nahida_official ship 哥伦布")
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
-    # await command("me")
-    # await command("近期 90")
-    # await command("单船 大和")
+    await command("me")
+    await command("近期 90")
+    await command("单船 大和")
     # await command("测试")
     #
     # await command("近期随机 90")

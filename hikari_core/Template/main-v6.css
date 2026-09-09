@@ -19,7 +19,7 @@
    --gap-block  板块与板块之间的间距
    --gap-inner  小节标题条 与 其内容 之间的间距 */
 :root {
-    --gap-block: 32px;
+    --gap-block: 16px;
     --gap-inner: 16px;
 }
 
@@ -128,7 +128,7 @@ body {
 
 /* 水面大字（单船页）：宽度按内容自适应，上限与 page-header 同宽(1400px) */
 .ship-header {
-    margin: var(--gap-block) auto 20px;
+    margin: var(--gap-block) auto 0px;
     width: fit-content;
     max-width: 1400px;
     text-align: center;
@@ -251,7 +251,8 @@ body {
     white-space: nowrap;
 }
 
-.information-col-item:first-child {
+/* 带类型标签的表格（data-battle-type）：首列"类型"加宽，其余等宽 */
+.data-battle-type .information-col-item:first-child {
     flex: 1.4;
 }
 
