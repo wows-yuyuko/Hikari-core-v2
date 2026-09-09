@@ -21,6 +21,8 @@ async def get_ShipRank(hikari: Hikari_Model):
                 Templates.SELECT_SHIP.apply_to(hikari)
                 return hikari.wait(shipList)
         else:
+            if hikari.Status == 'failed':
+                return hikari
             return hikari.failed('找不到船，请确认船名是否正确，可以使用【wws 查船名】查询船只中英文')
     elif hikari.Status == 'wait':
         if hikari.Input.Select_Data and hikari.Input.Select_Index and hikari.Input.Select_Index <= len(hikari.Input.Select_Data):

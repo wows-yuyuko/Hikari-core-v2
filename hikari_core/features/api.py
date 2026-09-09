@@ -104,8 +104,10 @@ async def get_user_ship_byName(hikari: Hikari_Model) -> List:
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = json.loads(resp.content)
-        if result.get('code') == 200 and result.get('data'):
-            code_data = result['data']
+        if result.get('code') != 200:
+            hikari.failed(result['message'])
+        code_data = result.get('data')
+        if code_data:
             # 转换为 ShipInfo 对象列表
             ship_list = []
             for ship_dict in code_data:

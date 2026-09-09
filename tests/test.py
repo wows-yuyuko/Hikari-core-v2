@@ -19,14 +19,14 @@ async def start():
     set_hikari_config(use_broswer='chromium', http2=False,
                       # proxy='http://localhost:7890',
                       proxy=None,
-                      yuyuko_url='http://127.0.0.1:8088',
+                      # yuyuko_url='http://127.0.0.1:8088',
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
                       image_type='webp',
                       game_path='')
     global is_out_image
     is_out_image = True
-    await command("me ship 哥伦布")
+    await command("me ship 新泽西")
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
     # await command("me")

@@ -72,7 +72,7 @@ async def get_client_yuyuko(UserModel) -> AsyncClient:
     return _client_yuyuko
 
 
-async def get_client_yuyuko(UserModel, Authorization: str) -> AsyncClient:
+async def get_client_yuyuko_auth(UserModel, Authorization: str) -> AsyncClient:
     user_info_json = UserModel.json()
     global _client_yuyuko
     if _client_yuyuko:
