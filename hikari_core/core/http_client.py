@@ -72,6 +72,18 @@ async def get_client_yuyuko(UserModel) -> AsyncClient:
     return _client_yuyuko
 
 
+async def get_client_yuyuko(UserModel, Authorization: str) -> AsyncClient:
+    user_info_json = UserModel.json()
+    global _client_yuyuko
+    if _client_yuyuko:
+        _client_yuyuko.headers.update({'YUYUKO-INFO': user_info_json})
+    else:
+        _client_yuyuko = await create_client_yuyuko()
+        _client_yuyuko.headers.update({'YUYUKO-INFO': user_info_json})
+    _client_yuyuko.headers.update({'Authorization': Authorization})
+    return _client_yuyuko
+
+
 async def get_client_wg() -> AsyncClient:
     return _client_wg if _client_wg else await create_client_wg()
 
@@ -97,6 +109,7 @@ async def recreate_client_wg():
         logger.info('重新创建wg连接池')
         await _client_wg.aclose()
     _client_wg = await create_client_wg()
+
 
 async def recreate_client_default():
     global _client_default
