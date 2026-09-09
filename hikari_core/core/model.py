@@ -73,6 +73,11 @@ class Hikari_Model(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    @property
+    def is_me(self) -> bool:
+        """当前查询是否为 me 模式（Search_Type == 1）"""
+        return self.Input.Search_Type == 1
+
     def error(self, error_data):
         self.Status = 'error'
         self.Output.Data = error_data
