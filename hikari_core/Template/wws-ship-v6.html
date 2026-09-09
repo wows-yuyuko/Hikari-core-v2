@@ -56,8 +56,8 @@
                     </div>
                     <div class="mid-item-bottom item-bottom">
                         <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">侦察</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['shipsSpotted']) }}</div>
+                            <div class="mini-item-top">存活率</div>
+<div class="mini-item-bottom">{{ '%.1f' | format(data['typeInfo']['PVP']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
                         </div>
                         <div class="change-win-box bottom-mini-item-right one-background-color">
                             <div class="mini-item-top">击落</div>
@@ -111,8 +111,8 @@
                     </div>
                     <div class="mid-item-bottom item-bottom">
                         <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">侦察</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['shipsSpotted']) }}</div>
+                            <div class="mini-item-top">存活率</div>
+<div class="mini-item-bottom">{{ '%.1f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
                         </div>
                         <div class="change-win-box bottom-mini-item-right one-background-color">
                             <div class="mini-item-top">击落</div>
@@ -149,6 +149,7 @@
                 {% if data['userInfo']['prStatus'] != 1 %}<div class="information-col-item">PR</div>{% endif %}
                 <div class="information-col-item">场均</div>
                 <div class="information-col-item">击杀</div>
+<div class="information-col-item">存活</div>
                 <div class="information-col-item">命中</div>
             </div>
             {% if data['typeInfo']['PVP_SOLO']['battle'] %}
@@ -165,6 +166,7 @@
                     <div class="information-col-item"
                          style="color: {{ data['typeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ data['typeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['damage'] }}</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['PVP_SOLO']['battleInfo']['avgInfo']['frags']) }}</div>
+<div class="information-col-item">{{ '%.1f' | format(data['typeInfo']['PVP_SOLO']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['PVP_SOLO']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['PVP_SOLO']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['PVP_SOLO']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
                 </div>
             {% endif %}
@@ -183,6 +185,7 @@
                     <div class="information-col-item"
                          style="color: {{ data['typeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ data['typeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['damage'] }}</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['PVP_DIV2']['battleInfo']['avgInfo']['frags']) }}</div>
+<div class="information-col-item">{{ '%.1f' | format(data['typeInfo']['PVP_DIV2']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['PVP_DIV2']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['PVP_DIV2']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['PVP_DIV2']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
                 </div>
             {% endif %}
@@ -201,6 +204,7 @@
                     <div class="information-col-item"
                          style="color: {{ data['typeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ data['typeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['damage'] }}</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['PVP_DIV3']['battleInfo']['avgInfo']['frags']) }}</div>
+<div class="information-col-item">{{ '%.1f' | format(data['typeInfo']['PVP_DIV3']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['PVP_DIV3']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['PVP_DIV3']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['PVP_DIV3']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
                 </div>
             {% endif %}
@@ -219,6 +223,7 @@
                     <div class="information-col-item"
                          style="color: {{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damage'] }}</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['frags']) }}</div>
+<div class="information-col-item">{{ '%.1f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
                     <div class="information-col-item">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
                 </div>
             {% endif %}

@@ -57,8 +57,8 @@
                 </div>
                 <div class="item-bottom">
                     <div class="bottom-mini-item one-background-color">
-                        <div class="mini-label">侦察</div>
-                        <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['avgInfo']['shipsSpotted']) }}</div>
+                        <div class="mini-label">存活率</div>
+                        <div class="mini-value">{{ '%.1f' | format(main['shipInfo']['battleInfo']['survived'] / main['shipInfo']['battleInfo']['battle'] * 100 if main['shipInfo']['battleInfo']['battle'] else 0) }}%</div>
                     </div>
                     <div class="bottom-mini-item one-background-color">
                         <div class="mini-label">击落</div>
@@ -95,6 +95,7 @@
                 {% if show_pr %}<div class="information-col-item">PR</div>{% endif %}
                 <div class="information-col-item">场均</div>
                 <div class="information-col-item">击杀</div>
+                <div class="information-col-item">存活</div>
                 <div class="information-col-item">命中</div>
             </div>
             {% set ship_types = [
@@ -116,6 +117,7 @@
                         {% endif %}
                         <div class="information-col-item" style="color: {{ info['PVP']['shipInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(info['PVP']['shipInfo']['avgInfo']['damage']) }}</div>
                         <div class="information-col-item">{{ '%.2f' | format(info['PVP']['shipInfo']['avgInfo']['frags']) }}</div>
+                        <div class="information-col-item">{{ '%.1f' | format(info['PVP']['shipInfo']['battleInfo']['survived'] / info['PVP']['shipInfo']['battleInfo']['battle'] * 100 if info['PVP']['shipInfo']['battleInfo']['battle'] else 0) }}%</div>
                         <div class="information-col-item">{{ '%.2f' | format(info['PVP']['shipInfo']['hitRatioInfo'][ratio_key]) }}%</div>
                     </div>
                 {% endif %}
@@ -132,6 +134,7 @@
                 {% if show_pr %}<div class="information-col-item">PR</div>{% endif %}
                 <div class="information-col-item">场均</div>
                 <div class="information-col-item">击杀</div>
+                <div class="information-col-item">存活</div>
                 <div class="information-col-item">命中</div>
             </div>
             {% for bt, bt_name in [('PVP_SOLO', '单野'), ('PVP_DIV2', '自行车'), ('PVP_DIV3', '三轮车'), ('RANK_SOLO', '排位')] %}
@@ -146,6 +149,7 @@
                         {% endif %}
                         <div class="information-col-item" style="color: {{ info['shipInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(info['shipInfo']['avgInfo']['damage']) }}</div>
                         <div class="information-col-item">{{ '%.2f' | format(info['shipInfo']['avgInfo']['frags']) }}</div>
+                        <div class="information-col-item">{{ '%.1f' | format(info['shipInfo']['battleInfo']['survived'] / info['shipInfo']['battleInfo']['battle'] * 100 if info['shipInfo']['battleInfo']['battle'] else 0) }}%</div>
                         <div class="information-col-item">{{ '%.2f' | format(info['shipInfo']['hitRatioInfo']['ratioMain']) }}%</div>
                     </div>
                 {% endif %}

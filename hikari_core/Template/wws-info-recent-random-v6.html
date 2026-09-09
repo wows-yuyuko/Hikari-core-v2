@@ -47,8 +47,8 @@
                 </div>
                 <div class="mid-item-bottom item-bottom">
                     <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
-                        <div class="mini-item-top">侦察</div>
-                        <div class="mini-item-bottom">{{ '%.2f' | format(data['battleTypeInfo']['PVP']['battleInfo']['avgInfo']['shipsSpotted']) }}</div>
+                        <div class="mini-item-top">存活率</div>
+<div class="mini-item-bottom">{{ '%.1f' | format(data['battleTypeInfo']['PVP']['battleInfo']['battleInfo']['survived'] / data['battleTypeInfo']['PVP']['battleInfo']['battleInfo']['battle'] * 100 if data['battleTypeInfo']['PVP']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
                     </div>
                     <div class="change-win-box bottom-mini-item-right one-background-color">
                         <div class="mini-item-top">击落</div>

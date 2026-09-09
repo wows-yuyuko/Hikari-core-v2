@@ -418,28 +418,81 @@ body {
 
 .ship-col-item {
     text-align: center;
-    flex: 1;
     min-width: 0;
 }
 
 .ship-col-item-ship {
     overflow: hidden;
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
-    padding: 0 0 0 15px;
-    flex: 1.4;
+    padding: 0;
     min-width: 0;
 }
 
 .ship-name {
-    text-align: left;
-    margin-left: 10px;
+    text-align: center;
+    margin-left: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     flex-grow: 1;
     width: 0;
+}
+
+/* 舰船行 · 等级徽章（国旗 | 类型图+等级 上下 | 舰图，三列同高）
+   调整大小：改 .ship-badges 里的 --fw/--fh（国旗高=三列高度）与 --tw/--th（类型图）即可 */
+.ship-badges {
+    --fw: 68px;   /* 国旗宽 */
+    --fh: 52px;   /* 国旗高（三列统一高度） */
+    --tw: 25px;   /* 类型图宽 */
+    --th: 20px;   /* 类型图高 */
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sb-flagbox {
+    position: relative;
+    width: var(--fw);
+    height: var(--fh);
+    flex-shrink: 0;
+}
+
+.sb-flag {
+    position: absolute;
+    inset: 0;
+}
+
+/* 类型图 + 等级：上下堆叠，高度与国旗一致 */
+.sb-lv {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: var(--fh);
+}
+
+.sb-type {
+    width: var(--tw);
+    height: var(--th);
+    box-sizing: border-box;
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.sb-level {
+    font-weight: normal;
+    font-size: 18px;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+/* 舰图高度与国旗一致（三列同高） */
+.sb-ship-img {
+    height: var(--fh);
 }
 
 /* ==========================================================
