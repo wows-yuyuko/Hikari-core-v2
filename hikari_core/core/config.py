@@ -14,6 +14,7 @@ class Config_Model(BaseModel):
     proxy: Optional[str] = None
     http2: bool = True
     token: Optional[str] = '123456:111111111111'
+    Authorization: Optional[str] = None  # 自定义 Authorization（如 data_user 私有接口鉴权），为空时回退用 token
     auto_rendering: bool = True
     auto_image: bool = True
     image_type: str = 'jpeg'  # 截图输出格式: jpeg / png / webp
@@ -47,6 +48,7 @@ def set_hikari_config(  # noqa: PLR0913
     command_suggest_dedupe: bool = True,
     command_language: str = 'zh',
     image_type: str = 'jpeg',
+    Authorization: Optional[str] = None,
 ):
     """配置Hikari-core
 
@@ -64,6 +66,7 @@ def set_hikari_config(  # noqa: PLR0913
         command_suggest_dedupe (bool): 相同功能的多别名只提示一条，默认开启
         command_language (str): 指令提示语言，zh=中文(默认)，en=英文（提示英文指令与英文参数用法）
         save_template_html (bool): 渲染图片时额外保存一份 HTML 到缓存目录 template_html/，默认关闭
+        Authorization (str): 自定义 Authorization（如 data_user 私有接口鉴权），为空时回退用 token
     """
     global hikari_config  # noqa: PLW0602
     hikari_config.proxy = proxy
@@ -84,6 +87,7 @@ def set_hikari_config(  # noqa: PLR0913
         logger.warning(f'不支持的 image_type={image_type}，已回退为 jpeg')
         image_type = 'jpeg'
     hikari_config.image_type = image_type
+    hikari_config.Authorization = Authorization
     # 为空则使用默认路径
     from hikari_core.core.cache_utils import get_cache_file, initial_cache_file
 

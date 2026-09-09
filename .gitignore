@@ -172,3 +172,6 @@ tests/*.png
 tests/data/
 # echarts 运行时由 OSS 清单（update_style）拉取，不纳入 git 跟踪
 hikari_core/Template/echarts.js
+
+# 私有扩展（不入库）：wws auth/授权 等私有功能实现
+hikari_core/features/data_user/

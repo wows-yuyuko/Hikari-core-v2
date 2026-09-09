@@ -3,9 +3,11 @@ from difflib import SequenceMatcher
 import time
 from typing import Dict, List, Tuple
 
+from loguru import logger
+
 from ..core.config import hikari_config
 from ..core.constants import servers
-from ..core.model import Func
+from ..core.model import Func, Hikari_Model
 from ..features.account.info import get_AccountInfo
 from ..features.account.recent import get_RecentInfo, get_RecentRandom, get_RecentRank
 from ..features.account.recents import get_RecentsInfo
@@ -28,6 +30,23 @@ from ..features.ship.info import get_ShipInfo
 from ..features.ship.rank import get_ShipRank
 from ..features.ship.recent import get_ShipRecent
 from ..features.system import async_update_ship_cache, async_update_template, check_version, get_help
+
+# ============================================================
+# 私有扩展（data_user）：实现位于 hikari_core/features/data_user/（已 gitignore，不入库）。
+# 模块缺失（他人 clone / 自动更新后）时指令优雅降级，不阻塞整个路由模块加载。
+# ============================================================
+try:  # noqa: SIM105
+    from ..features.data_user.bind import get_user_wows_auth as _get_user_wows_auth
+except Exception:
+    logger.warning('未加载 data_user 私有模块，wws auth / wws 授权 指令将提示未部署')
+    _get_user_wows_auth = None
+
+
+async def _data_user_auth(hikari: Hikari_Model):
+    """wws auth / wws 授权：查询 data_user 私有服务的授权信息（未部署时优雅降级）"""
+    if _get_user_wows_auth is None:
+        return hikari.failed('该功能未部署')
+    return await _get_user_wows_auth(hikari)
 
 
 @dataclass
@@ -70,6 +89,8 @@ first_command_list = [  # 同指令中越长的匹配词越靠前；含英文别
     command(('bind_list', '查询绑定', '绑定查询', '绑定列表', '查绑定'), get_BindInfo),
     command(('delete_bind', '删除绑定'), delete_BindInfo),
     command(('special_bind', '特殊绑定'), set_special_BindInfo),
+    # 私有扩展指令：wws auth / wws 授权（实现见 features/data_user，已 gitignore）
+    command(('auth', '授权'), _data_user_auth),
     # search_ship 含 'ship' 子串，需排在 ship / ship.rank 之前
     command(('search_ship', '搜船名', '查船名', '船名'), get_ship_name),
     command(('ship.rank', '单船排行榜', '战舰排行榜'), get_ShipRank),
@@ -125,6 +146,7 @@ _USAGE: Dict[Func, Dict[str, str]] = {
     check_version: {'zh': '', 'en': ''},
     async_update_template: {'zh': '', 'en': ''},
     async_update_ship_cache: {'zh': '', 'en': ''},
+    _data_user_auth: {'zh': '', 'en': ''},
     get_help: {'zh': '', 'en': ''},
 }
 

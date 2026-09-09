@@ -69,10 +69,19 @@ async def get_client_yuyuko(UserModel) -> AsyncClient:
     else:
         _client_yuyuko = await create_client_yuyuko()
         _client_yuyuko.headers.update({'YUYUKO-INFO': user_info_json})
+    # 还原默认 Authorization，避免 get_client_yuyuko_auth 设置的自定义头泄漏到后续普通请求
+    _client_yuyuko.headers.update({'Authorization': hikari_config.token})
     return _client_yuyuko
 
 
-async def get_client_yuyuko_auth(UserModel, Authorization: str) -> AsyncClient:
+async def get_client_yuyuko_auth(UserModel) -> AsyncClient:
+    """获取 yuyuko 客户端并设置自定义 Authorization（如 data_user 私有接口鉴权）。
+
+    直接取 ``hikari_config.Authorization``；未配置时抛出异常。
+    """
+    auth = hikari_config.Authorization
+    if not auth:
+        raise ValueError('未配置 Authorization，请通过 set_hikari_config(Authorization=...) 设置')
     user_info_json = UserModel.json()
     global _client_yuyuko
     if _client_yuyuko:
@@ -80,7 +89,7 @@ async def get_client_yuyuko_auth(UserModel, Authorization: str) -> AsyncClient:
     else:
         _client_yuyuko = await create_client_yuyuko()
         _client_yuyuko.headers.update({'YUYUKO-INFO': user_info_json})
-    _client_yuyuko.headers.update({'Authorization': Authorization})
+    _client_yuyuko.headers.update({'Authorization': auth})
     return _client_yuyuko
 
 
