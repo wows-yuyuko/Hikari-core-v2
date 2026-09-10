@@ -229,8 +229,7 @@
         <div class="information-body one-background-color data-battle-type">
             <div class="ship-data-col two-background-color">
                 <div class="ship-col-item flex-4">类型</div>
-                <div class="ship-col-item flex-4">等级</div>
-                <div class="ship-col-item flex-8">战舰</div>
+                <div class="ship-col-item flex-10">战舰</div>
                 <div class="ship-col-item flex-3">场次</div>
                 {% if data['userInfo']['prStatus'] != 1 %}<div class="ship-col-item flex-3">PR</div>{% endif %}
                 <div class="ship-col-item flex-3">胜率</div>
@@ -253,20 +252,13 @@
                         {% elif ship['type'] == 'RANK_SOLO' %}
                             <div class="ship-col-item flex-4">排位</div>
                         {% endif %}
-                        <div class="ship-col-item flex-4">
-    <div class="ship-badges">
-        <div class="sb-flagbox">
-            <span class="sb-flag" style="background: url('{{ ship['shipInfo']['countryImage'] }}') center/contain no-repeat;"></span>
-        </div>
-        <div class="sb-lv">
-            <span class="sb-level">{{ ship['shipInfo']['levelStr'] }}</span>
-            <span class="sb-type" style="background-image: url('{{ ship['shipInfo']['shipTypeImage'] }}');"></span>
-        </div>
-            <div class="ship-box sb-ship-img" style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;width: 42px;"></div>
-    </div>
-</div>
-                        <div class="ship-col-item ship-col-item-ship flex-8">
-                            
+                        <div class="ship-col-item ship-cell flex-10">
+                            <div class="sb-flagbox">
+                                <span class="sb-flag" style="background: url('{{ ship['shipInfo']['countryImage'] }}') center/contain no-repeat;"></span>
+                            </div>
+                            <span class="sb-type" style="background-image: url('{{ ship['shipInfo']['shipTypeImage'] }}');"></span>
+                            <span class="sb-level">{{ ship['shipInfo']['levelStr'] }}</span>
+                            <div class="ship-box sb-ship-img" style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;"></div>
                             <div class="ship-box ship-name" style="font-size: 25px;letter-spacing: 3px;">{{ ship['shipInfo']['nameCn'] }}</div>
                         </div>
                         <div class="ship-col-item flex-3">{{ ship['battleInfo']['battleInfo']['battle'] }}</div>
@@ -293,8 +285,7 @@
             <div class="ship-data-col two-background-color">
                 <div class="ship-col-item flex-4">时间</div>
                 <div class="ship-col-item flex-4">类型</div>
-                <div class="ship-col-item flex-4">等级</div>
-                <div class="ship-col-item flex-8">战舰</div>
+                <div class="ship-col-item flex-10">战舰</div>
                 <div class="ship-col-item flex-3">场次</div>
                 {% if data['userInfo']['prStatus'] != 1 %}<div class="ship-col-item flex-3">PR</div>{% endif %}
                 <div class="ship-col-item flex-3">胜率</div>
@@ -328,20 +319,13 @@
                         {% elif ship['type'] == 'RANK_SOLO' %}
                             <div class="ship-col-item flex-4">排位</div>
                         {% endif %}
-                        <div class="ship-col-item flex-4">
-    <div class="ship-badges">
-        <div class="sb-flagbox">
-            <span class="sb-flag" style="background: url('{{ ship['shipInfo']['countryImage'] }}') center/contain no-repeat;"></span>
-        </div>
-        <div class="sb-lv">
-            <span class="sb-level">{{ ship['shipInfo']['levelStr'] }}</span>
-            <span class="sb-type" style="background-image: url('{{ ship['shipInfo']['shipTypeImage'] }}');"></span>
-        </div>
-            <div class="ship-box sb-ship-img" style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;width: 42px;"></div>
-    </div>
-</div>
-                        <div class="ship-col-item ship-col-item-ship flex-8">
-                            
+                        <div class="ship-col-item ship-cell flex-10">
+                            <div class="sb-flagbox">
+                                <span class="sb-flag" style="background: url('{{ ship['shipInfo']['countryImage'] }}') center/contain no-repeat;"></span>
+                            </div>
+                            <span class="sb-type" style="background-image: url('{{ ship['shipInfo']['shipTypeImage'] }}');"></span>
+                            <span class="sb-level">{{ ship['shipInfo']['levelStr'] }}</span>
+                            <div class="ship-box sb-ship-img" style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;"></div>
                             <div class="ship-box ship-name" style="font-size: 25px;letter-spacing: 3px;">{{ ship['shipInfo']['nameCn'] }}</div>
                         </div>
                         <div class="ship-col-item flex-3">{{ ship['battleInfo']['battleInfo']['battle'] }}</div>
