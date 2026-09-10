@@ -18,7 +18,7 @@
         {% endif %}
 
         <div class="recnet-time">
-            <span>记录时间：</span><span>{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(int(abs(data['recordTime']/1000)))) }}—{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(time.time())) }}</span>
+            <span>记录时间：{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(int(abs(data['recordTime']/1000)))) }}—{{ time.strftime('%Y-%m-%d %H:%M',time.localtime(time.time())) }}</span>
         </div>
         {% if data['battleTypeInfo']['PVP']['battle'] %}
             <div class="overview-change">
@@ -224,7 +224,7 @@
             <div class="random-header one-background-color">随机战</div>
             <div class="information-body one-background-color data-battle-type">
                 <div class="ship-data-col two-background-color">
-                    <div class="ship-col-item flex-10">战舰</div>
+                    <div class="ship-col-item flex-8">战舰</div>
                     <div class="ship-col-item flex-3">场次</div>
                     {% if data['userInfo']['prStatus'] != 1 %}<div class="ship-col-item flex-3">PR</div>{% endif %}
                     <div class="ship-col-item flex-3">胜率</div>
@@ -236,7 +236,7 @@
                 {% for ship in data['shipInfoBattleList'] %}
                     {% if ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle']>0 %}
                         <div class="ship-data-col">
-                            <div class="ship-col-item ship-cell flex-10">
+                            <div class="ship-col-item ship-cell flex-8">
                                 <div class="sb-flagbox">
                                     <span class="sb-flag" style="background: url('{{ ship['shipInfo']['countryImage'] }}') center/contain no-repeat;"></span>
                                 </div>

@@ -30,7 +30,7 @@ async def start():
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
     # await command("me")
-    await command("近期 90")
+    await command("近期 30")
     # await command("单船 大和")
     # await command("测试")
     #

@@ -108,7 +108,7 @@
         <div class="random-header one-background-color">排位战</div>
         <div class="information-body one-background-color data-battle-type">
             <div class="ship-data-col two-background-color">
-                <div class="ship-col-item flex-10">战舰</div>
+                <div class="ship-col-item flex-8">战舰</div>
                 <div class="ship-col-item flex-3">场次</div>
                 {% if data['userInfo']['prStatus'] != 1 %}<div class="ship-col-item flex-3">PR</div>{% endif %}
                 <div class="ship-col-item flex-3">胜率</div>
@@ -119,7 +119,7 @@
             {% for ship in data['shipInfoBattleList'] %}
                 {% if ship['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle']>0 %}
             <div class="ship-data-col">
-                <div class="ship-col-item ship-cell flex-10">
+                <div class="ship-col-item ship-cell flex-8">
                     <div class="sb-flagbox">
                         <span class="sb-flag" style="background: url('{{ ship['shipInfo']['countryImage'] }}') center/contain no-repeat;"></span>
                     </div>
