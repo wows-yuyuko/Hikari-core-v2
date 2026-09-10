@@ -443,12 +443,14 @@ body {
 
 /* 舰船行 · 战舰列（国旗 | 类型 | 等级 | 舰图 | 名称，同一行五列）
    调整大小：改 .ship-cell 里的 --fw/--fh（国旗宽高）、--tw/--th（类型图）、--sw/--sh（舰图）即可
-   调整间距：改 .ship-cell 里的 --g-flag-type / --g-type-level / --g-level-img / --g-img-name 即可 */
+   调整间距：改 .ship-cell 里的 --g-flag-type / --g-type-level / --g-level-img / --g-img-name 即可
+   等级列宽：改 .ship-cell 里的 --lw（固定列宽，等级内容再长也不会顶歪右侧舰图列） */
 .ship-cell {
     --fw: 60px;   /* 国旗宽 */
     --fh: 40px;   /* 国旗高（各列统一高度） */
     --tw: 28px;   /* 类型图宽 */
     --th: 18px;   /* 类型图高 */
+    --lw: 40px;   /* 等级列宽（固定值，务必 ≥ 最长等级文案宽度） */
     --sw: 70px;   /* 舰图宽（独立可调） */
     --sh: 40px; /* 舰图高（独立可调，默认跟随国旗高） */
     /* 列间距（各自独立可调） */
@@ -492,14 +494,21 @@ body {
     flex-shrink: 0;
 }
 
-/* 等级列：固定最小宽度，保证各行数字对齐 */
+/* 等级列：固定列宽 + 水平居中，保证各行舰图列绝对对齐。
+   ⚠ 原来用的是 min-width: 34px，实际列宽 = max(34px, 等级文案宽度)：
+   "VIII" 在 20px 粗体下约 34.4px，已经超出 34px，整列于是被撑宽、
+   把后面的舰图一起顶右 —— 这就是"等级太宽导致和舰图对不齐"的原因。
+   改为 flex: 0 0 var(--lw) 后列宽恒定，等级再宽也只会自身居中溢出，不再影响舰图列。 */
 .sb-level {
+    flex: 0 0 var(--lw, 40px);
+    width: var(--lw, 40px);
     font-size: 20px;
     font-weight: bold;
+    line-height: 1;
     white-space: nowrap;
-    min-width: 34px;
     text-align: center;
-    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
 }
 
 /* 舰图列：宽高独立可调（--sw/--sh），默认高度跟随国旗 */
