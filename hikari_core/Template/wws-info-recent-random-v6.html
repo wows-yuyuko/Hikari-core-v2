@@ -144,8 +144,7 @@
         <div class="random-header one-background-color">随机战</div>
         <div class="information-body one-background-color data-battle-type">
             <div class="ship-data-col two-background-color">
-                <div class="ship-col-item flex-4">等级</div>
-                <div class="ship-col-item flex-8">战舰</div>
+                <div class="ship-col-item flex-10">战舰</div>
                 <div class="ship-col-item flex-3">场次</div>
                 {% if data['userInfo']['prStatus'] != 1 %}<div class="ship-col-item flex-3">PR</div>{% endif %}
                 <div class="ship-col-item flex-3">胜率</div>
@@ -155,29 +154,30 @@
             </div>
             {% for ship in data['shipInfoBattleList'] %}
                 {% if ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle']>0 %}
-                    <div class="ship-data-col">
-                        <div class="ship-col-item flex-4" style="text-align: left;">
-                            <span style="background: url('{{ ship['shipInfo']['countryImage'] }}') no-repeat;background-size: contain;background-position: center;margin-left: 10px;padding: 20px;margin-right: 10px;"></span>
-                            <span style="background: url('{{ ship['shipInfo']['shipTypeImage'] }}') no-repeat;background-size: contain;background-position: center;padding: 20px;margin-right: 10px;"></span>
-                            <span>{{ ship['shipInfo']['levelStr'] }}</span></div>
-                        <div class="ship-col-item ship-col-item-ship flex-8">
-                            <div class="ship-box"
-                                 style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;width: 80px;height: 100%;"></div>
-                            <div class="ship-box ship-name" style="font-size: 25px;letter-spacing: 3px;">{{ ship['shipInfo']['nameCn'] }}</div>
-                        </div>
-                        <div class="ship-col-item flex-3">{{ ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] }}</div>
-                        {% if data['userInfo']['prStatus'] != 1 %}
-                        <div class="ship-col-item flex-3"
-                             style="color: {{ ship['typeInfo']['PVP']['prInfo']['color'] }};">{{ ship['typeInfo']['PVP']['prInfo']['value'] }}</div>
-                        {% endif %}
-                        <div class="ship-col-item flex-3"
-                             style="color: {{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['win'] }}%
-                        </div>
-                        <div class="ship-col-item flex-4"
-                             style="color: {{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['damage'] }}</div>
-                        <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['avgInfo']['frags']) }}</div>
-                        <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
+            <div class="ship-data-col">
+                <div class="ship-col-item ship-cell flex-10">
+                    <div class="sb-flagbox">
+                        <span class="sb-flag" style="background: url('{{ ship['shipInfo']['countryImage'] }}') center/contain no-repeat;"></span>
                     </div>
+                    <span class="sb-type" style="background-image: url('{{ ship['shipInfo']['shipTypeImage'] }}');"></span>
+                    <span class="sb-level">{{ ship['shipInfo']['levelStr'] }}</span>
+                    <div class="ship-box sb-ship-img" style="background: url('{{ ship['shipInfo']['imgSmall'] }}') no-repeat;background-size: contain;background-position: 50% 30%;"></div>
+                    <div class="ship-box ship-name" style="font-size: 25px;letter-spacing: 3px;">{{ ship['shipInfo']['nameCn'] }}</div>
+                </div>
+                <div class="ship-col-item flex-3">{{ ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] }}</div>
+                {% if data['userInfo']['prStatus'] != 1 %}
+                <div class="ship-col-item flex-3"
+                     style="color: {{ ship['typeInfo']['PVP']['prInfo']['color'] }};">{{ ship['typeInfo']['PVP']['prInfo']['value'] }}</div>
+                {% endif %}
+                <div class="ship-col-item flex-3"
+                     style="color: {{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['win'] }}%
+                </div>
+                <div class="ship-col-item flex-4"
+                     style="color: {{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ ship['typeInfo']['PVP']['battleInfo']['avgInfo']['damage'] }}</div>
+                <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['avgInfo']['frags']) }}</div>
+                <div class="ship-col-item flex-3">{{ '%.1f' | format(ship['typeInfo']['PVP']['battleInfo']['battleInfo']['survived'] / ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] * 100 if ship['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
+                <div class="ship-col-item flex-3">{{ '%.2f' | format(ship['typeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
+            </div>
                 {% endif %}
             {% endfor %}
         </div>
