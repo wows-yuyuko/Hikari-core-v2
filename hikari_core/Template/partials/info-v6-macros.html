@@ -75,6 +75,8 @@
 {%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
 {%- set color_name = avatar_box['colorName'] if avatar_box['colorName'] is defined else none -%}
 {%- set sign = avatar_box['sign'] if avatar_box['sign'] is defined else none -%}
+{# 有无个性签名（公会接口没有 sign 槽位，恒为"无"） #}
+{%- set has_sign = sign and sign['status'] > 0 -%}
 {%- set clan_info = u['clanInfo'] if u['clanInfo'] is defined and u['clanInfo'] else none -%}
 {# 「这是公会对象」的判据：用户对象也带 clanInfo（他自己的军团），所以不能用 clanInfo 判断，
    只能看顶层字段 —— 用户有 userName/accountId/accountCreateTime，公会有 name/clanId/createdAt/server #}
@@ -106,12 +108,19 @@
                     <span style="color: {% if banner_dark %}#ffffff{% else %}{{ tag_color }}{% endif %};">[{{ tag }}]</span>
                 {% endif %}
                 <span class="mirage-text">{{ name }}</span></div>
-            <div class="user-server">服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %} / AccountId: {{ uid }}</div>
+            {% if has_sign %}
+                {# 有签名：这列本来就四行，保持「服务器 / AccountId」一行显示 #}
+                <div class="user-server">服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %} / Account Id: {{ uid }}</div>
+            {% else %}
+                {# 无签名：这行拆成两行（先账号 ID，再服务器）；公会那行显示的是军团 ID #}
+                <div class="user-account">{% if is_clan %}Clan Id{% else %}AccountId{% endif %}: {{ uid }}</div>
+                <div class="user-server">所属服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %}</div>
+            {% endif %}
             {% if register %}
                 <div class="user-sign-time">注册时间: {{ time.strftime('%Y-%m-%d %H:%M', time.localtime(int(abs(created)))) }}
                 </div>
             {% endif %}
-            {% if sign and sign['status'] > 0 %}
+            {% if has_sign %}
                 <div class="user-signature">
                     {{ sign['data'] }}
                 </div>

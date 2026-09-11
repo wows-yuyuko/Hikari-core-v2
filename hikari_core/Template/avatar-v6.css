@@ -71,24 +71,18 @@
     flex-direction: column;
     font-weight: bold;
     flex-grow: 1;
-    /* 首行「公会标签 + 用户名」贴住头像顶部。
+    /* 行距分配统一交给 space-between：首行贴头像顶、末行贴头像底，
+       中间各行平分剩余空间（上下间距平均）。
+       为什么不用 auto 外边距：auto 会先把剩余空间吃光再交给 justify-content，
+       分配就不再是平均的（注册时间会被顶到某一个位置）。
+       有头像 / 无头像都是这一套：头像高度固定（250px），
+       隐藏头像时信息列照旧占着同样的上下范围，所以两种情况的排版一致。
        不要改回 center：居中时无签名（内容更矮）会整体下沉，与有签名的观感不一致。 */
-    justify-content: flex-start;
-    /* 末行「服务器」贴到列底时还比头像底缘低 8px，内缩掉：
+    justify-content: space-between;
+    /* 末行贴到列底时还比头像底缘低 8px，内缩掉，末行就与头像底缘齐平：
        masking-header 内容高 278，avatar 底缘在 265（margin-top 15 + 250），
        本列 border-box 底在 273（margin 5）→ 273 - 265 = 8 */
     padding-bottom: 8px;
-}
-
-/* 「注册时间」行吃下本列全部剩余空间 → 落在首行与末行的正中间，
-   首行贴顶、末行贴底（即无签名时的三行铺满效果）。
-   写 flex-start + auto 外边距而不是 space-between，是为了不波及
-   wws-ships-v6 那种只有两行（register=False，没有注册时间）的头部：
-   该行缺席时本规则不会命中，布局维持原样。
-   有签名时本列内容本就溢出，自动外边距归零，与贴顶写法逐像素一致。 */
-.clan-user-server .user-sign-time {
-    margin-top: auto;
-    margin-bottom: auto;
 }
 
 .user-info {
@@ -104,7 +98,8 @@
 }
 
 .user-sign-time,
-.user-server {
+.user-server,
+.user-account {
     color: #000000;
     font-size: 25px;
     font-weight: 600;
@@ -121,13 +116,16 @@
     width: auto;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 36px;
-    margin-top: 10px;
+    /* 与上方文字行的间距交给 .clan-user-server 的 space-between 统一分配：
+       这里再留 10px 会让有签名那列比头像底缘多探出 9px，末行对不齐头像底 */
+    margin-top: 0;
     font-size: 25px;
 }
 
 /* 深色 banner：白字（模板通过 .dark-banner 类启用，浅色 banner 保持黑字） */
 .page-header.dark-banner .user-sign-time,
 .page-header.dark-banner .user-server,
+.page-header.dark-banner .user-account,
 .page-header.dark-banner .user-signature {
     color: #ffffff;
 }
