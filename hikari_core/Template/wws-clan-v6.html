@@ -78,11 +78,6 @@
         {# ==================== 头部（info 系公共组件） ==================== #}
         {{ info_header(register=True) }}
 
-        {# ==================== 公会简介 ==================== #}
-        {% if data['description'] %}
-            <div class="clan-desc one-background-color">{{ data['description'] }}</div>
-        {% endif %}
-
         {# ==================== PR 条（info 系公共组件） ==================== #}
         {% set stats = data['userStatisticsInfo'] %}
         {% if stats['pr'] and stats['pr']['value'] > 0 %}
@@ -188,6 +183,11 @@
             {% endif %}
         </div>
 
+        {# ==================== 公会简介 ==================== #}
+        {% if data['description'] %}
+        <div class="random-header one-background-color">军团简介</div>
+        <div class="clan-desc one-background-color">{{ data['description'] }}</div>
+        {% endif %}
         {# ==================== 军团设施 ==================== #}
         {# 按 originName 取设施，不再用数组下标（下标顺序会随接口变化） #}
         {% macro facility(origin) %}
