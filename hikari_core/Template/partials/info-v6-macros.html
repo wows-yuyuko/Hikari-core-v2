@@ -1,5 +1,5 @@
 {# ==========================================================
-   v6 家族模板公共部件（wws-info 系）
+   v6 家族模板公共部件（wws-info 系 + 公会页共用）
    - info_header_style(): 头部数据绑定样式（海报/彩色名/banner/头像背景）
    - info_header(): 头部标记（banner_dark 白字通过 .dark-banner 类控制）
    - info_pr(): PR 横幅
@@ -7,20 +7,40 @@
    调用方式: {% from 'partials/info-v6-macros.html' import ... with context %}
    ========================================================== #}
 
-{% macro info_header_style(poster=True) %}
+{# ----------------------------------------------------------
+   头部组件的数据取值层（用户页 / 公会页 / 以后新增的公会页面共用这一份实现）
+   组件吃的是「账号对象」本身，页面不需要先把接口数据拼成另一种形状：
+     - 不传 account 时：有 data['userInfo'] 就用它（用户接口），
+       没有就用 data 本身（公会接口的 data 顶层就是公会字段）。
+     - 需要时也可以显式指定：info_header(account=data['clan'])
+   两边接口的字段名 / 单位差异全部收口在这里，Python 侧不做任何字段映射：
+     用户名 userName / name           服务器 serverCn(亚服) / server(asia，交给 server_cn())
+     ID accountId / clanId            建号时间 accountCreateTime(秒) / createdAt(毫秒)
+     军团标签 clanInfo.tag / tag       标签色 clanInfo.color / colorRgb
+     头像兜底 dogTag 只有用户接口有     avatar 槽位 用户 5 个(含 sign) / 公会 4 个
+   差异只此一处：新增公会页面直接调 info_header() 即可复用同一套头部。
+   ---------------------------------------------------------- #}
+{% macro info_header_style(account=None, poster=True) %}
+{%- set u = account if account is not none else (data['userInfo'] if data['userInfo'] is defined and data['userInfo'] else data) -%}
+{%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
+{%- set poster_img = avatar_box['poster'] if avatar_box['poster'] is defined else none -%}
+{%- set color_name = avatar_box['colorName'] if avatar_box['colorName'] is defined else none -%}
+{%- set banner = avatar_box['banner'] if avatar_box['banner'] is defined else none -%}
+{%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
+{%- set dog_tag = u['dogTag'] if u['dogTag'] is defined and u['dogTag'] else '' -%}
 <style>
-    {% if poster and data['userInfo']['avatar']['poster']['status'] > 0 %}
+    {% if poster and poster_img and poster_img['status'] > 0 %}
     .main-content {
-        background: url("{{ data['userInfo']['avatar']['poster']['data'] }}") no-repeat;
+        background: url("{{ poster_img['data'] }}") no-repeat;
         background-position: center;
         background-size: cover;
         min-height: 100vh;
     }
     {% endif %}
 
-    {% if data['userInfo']['avatar']['colorName']['status'] > 0 %}
+    {% if color_name and color_name['status'] > 0 %}
     .mirage-text {
-        background: {{ data['userInfo']['avatar']['colorName']['data'] }};
+        background: {{ color_name['data'] }};
         background-size: 200% 200%;
         color: transparent;
         -webkit-background-clip: text;
@@ -29,18 +49,18 @@
     {% endif %}
 
     .page-header {
-        {% if data['userInfo']['avatar']['banner']['status'] > 0 %}
-        background: url("{{ data['userInfo']['avatar']['banner']['data'] }}") no-repeat;
+        {% if banner and banner['status'] > 0 %}
+        background: url("{{ banner['data'] }}") no-repeat;
         {% endif %}
         background-position: center;
         background-size: 100%;
     }
 
     .avatar-header {
-        {% if data['userInfo']['avatar']['avatar']['status'] > 0 %}
-        background: url("{{ data['userInfo']['avatar']['avatar']['data'] }}") no-repeat;
-        {% else %}
-        background: url("{{ data['userInfo']['dogTag'] }}") no-repeat;
+        {% if avatar_img and avatar_img['status'] > 0 %}
+        background: url("{{ avatar_img['data'] }}") no-repeat;
+        {% elif dog_tag %}
+        background: url("{{ dog_tag }}") no-repeat;
         {% endif %}
         background-position: center;
         background-size: 100%;
@@ -48,27 +68,52 @@
 </style>
 {% endmacro %}
 
-{% macro info_header(register=True, server_style=False) %}
-{% set banner_dark = data['userInfo'] and data['userInfo']['avatar']['banner']['status'] == 2 and data['userInfo']['avatar']['banner'].get('dark') == 1 %}
-{# 头像 status == 2：不显示头像，整块让位给右边的信息列（见 avatar-v6.css 的 .no-avatar） #}
-{% set hide_avatar = data['userInfo'] and data['userInfo']['avatar']['avatar']['status'] == 2 %}
+{% macro info_header(account=None, register=True, server_style=False) %}
+{%- set u = account if account is not none else (data['userInfo'] if data['userInfo'] is defined and data['userInfo'] else data) -%}
+{%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
+{%- set banner = avatar_box['banner'] if avatar_box['banner'] is defined else none -%}
+{%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
+{%- set color_name = avatar_box['colorName'] if avatar_box['colorName'] is defined else none -%}
+{%- set sign = avatar_box['sign'] if avatar_box['sign'] is defined else none -%}
+{%- set clan_info = u['clanInfo'] if u['clanInfo'] is defined and u['clanInfo'] else none -%}
+{# 「这是公会对象」的判据：用户对象也带 clanInfo（他自己的军团），所以不能用 clanInfo 判断，
+   只能看顶层字段 —— 用户有 userName/accountId/accountCreateTime，公会有 name/clanId/createdAt/server #}
+{%- set is_clan = u['clanId'] is defined and u['userName'] is not defined -%}
+{%- set name = u['userName'] if u['userName'] is defined else u['name'] -%}
+{%- set tag = (clan_info['tag'] if clan_info else u['tag']) or '' -%}
+{%- set tag_color = clan_info['color'] if clan_info else (u['colorRgb'] or '#b3b3b3') -%}
+{%- set uid = u['accountId'] if u['accountId'] is defined else u['clanId'] -%}
+{%- set created = (u['accountCreateTime'] | int) if u['accountCreateTime'] is defined else ((u['createdAt'] | int) / 1000) -%}
+{%- set server = server_cn(u['serverCn'] if u['serverCn'] is defined else u['server']) -%}
+{%- set banner_dark = banner and banner['status'] == 2 and banner.get('dark') == 1 -%}
+{# 隐藏头像：整块让位给右边的信息列（见 avatar-v6.css 的 .no-avatar）。
+   status 的通用语义：0 = 不显示，1 及以上 = 显示（1 以上可能另有特殊处理）。
+   用户侧 / 公会侧是两条**独立**规则，不要合并成一个条件：
+     - 用户接口：0 / 1 / 1 以上都显示（0 的头像位走 dogTag 兜底图，所以不能按 0 隐藏），
+       只有 status == 2 这条特殊处理才隐藏。
+     - 公会接口：avatar.avatar.status == 0 直接隐藏，> 0 一律显示；槽位缺席按 0 处理。 #}
+{%- if is_clan -%}
+    {%- set hide_avatar = (avatar_img['status'] if avatar_img and avatar_img['status'] is defined else 0) == 0 -%}
+{%- else -%}
+    {%- set hide_avatar = avatar_img and avatar_img['status'] == 2 -%}
+{%- endif -%}
 <div class="page-header{% if banner_dark %} dark-banner{% endif %}">
     <div class="masking-header{% if hide_avatar %} no-avatar{% endif %}">
         <div class="avatar-header"></div>
         <div class="clan-user-server">
-            <div class="user-info {% if data['userInfo']['avatar']['colorName']['status'] != 2 %}no-color-name{% endif %}">
-                {% if data['userInfo']['clanInfo']['tag'] %}
-                    <span style="color: {% if banner_dark %}#ffffff{% else %}{{ data['userInfo']['clanInfo']['color'] }}{% endif %};">[{{ data['userInfo']['clanInfo']['tag'] }}]</span>
+            <div class="user-info {% if not color_name or color_name['status'] != 2 %}no-color-name{% endif %}">
+                {% if tag %}
+                    <span style="color: {% if banner_dark %}#ffffff{% else %}{{ tag_color }}{% endif %};">[{{ tag }}]</span>
                 {% endif %}
-                <span class="mirage-text">{{ data['userInfo']['userName'] }}</span></div>
+                <span class="mirage-text">{{ name }}</span></div>
+            <div class="user-server">服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %} / AccountId: {{ uid }}</div>
             {% if register %}
-                <div class="user-sign-time">注册时间: {{ time.strftime('%Y-%m-%d %H:%M', time.localtime(int(abs(data['userInfo']['accountCreateTime'])))) }}
+                <div class="user-sign-time">注册时间: {{ time.strftime('%Y-%m-%d %H:%M', time.localtime(int(abs(created)))) }}
                 </div>
             {% endif %}
-            <div class="user-server">服务器: {% if server_style %}<span class="server server-style">{{ data['userInfo']['serverCn'] }}</span>{% else %}{{ data['userInfo']['serverCn'] }}{% endif %} / {{ data['userInfo']['accountId'] }}</div>
-            {% if data['userInfo']['avatar']['sign']['status'] == 2 %}
+            {% if sign and sign['status'] > 0 %}
                 <div class="user-signature">
-                    {{ data['userInfo']['avatar']['sign']['data'] }}
+                    {{ sign['data'] }}
                 </div>
             {% endif %}
         </div>

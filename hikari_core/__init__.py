@@ -15,7 +15,7 @@ from .core.cache_utils import get_cache_file
 from .core.config import hikari_config, set_hikari_config  # noqa:F401 set_hikari_config为外部程序引用
 from .core.constants import template_path
 from .core.model import Hikari_Model, Input_Model, UserInfo_Model
-from .core.render_helpers import set_render_params
+from .core.render_helpers import server_cn, set_render_params
 from .Html_Render import html_to_pic
 from .commands.parser import analyze_command
 # 供外部 bot 使用的公共指令 API（显式导出，替代通配导入）
@@ -59,6 +59,7 @@ env.globals.update(
     abs=abs,
     enumerate=enumerate,
     int=int,
+    server_cn=server_cn,
 )
 
 logger.info(f'模板目录 as_uri: {template_path.as_uri()}')

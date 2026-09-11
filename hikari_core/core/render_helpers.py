@@ -13,7 +13,26 @@ import traceback
 
 from PIL import Image
 
-from .constants import template_path
+from .constants import servers, template_path
+
+# 服务器别名 → 中文名。用户接口给的是 '亚服' 这类中文（原样返回），
+# 公会接口给的是 'asia' 这类键名，头部公共组件要显示成和用户页一样的中文。
+# 真值仍来自 constants.servers，不另立一份表。
+_SERVER_CN = {
+    alias.lower(): chinese
+    for server in servers
+    for chinese in [next((k for k in server.keywords if not k.isascii()), server.match_keywords)]
+    for alias in server.keywords
+}
+
+
+def server_cn(value) -> str:
+    """服务器键名 / 别名统一成中文名（asia → 亚服），未知值原样返回。"""
+    if value is None:
+        return ''
+    text = str(value)
+    return _SERVER_CN.get(text.lower(), text)
+
 
 # banner 深色判定阈值：左 60% 区域平均感知亮度（Y=0.299R+0.587G+0.114B，0-255）
 # 低于该值判定为深色（dark=1），模板将文字改为白色形成反差。

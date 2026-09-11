@@ -51,6 +51,8 @@ async def get_ClanInfo(hikari: Hikari_Model) -> Hikari_Model:
     hikari.Output.Yuyuko_Code = result['code']
 
     if result['code'] == 200 and result['data']:
+        # 头部由公共组件（partials/info-v6-macros.html）直接渲染公会对象本身，
+        # 这里不做任何字段映射：用户/公会两边的字段名、单位差异在组件内部收口。
         latest_season = str(result['data']['clanLeagueInfo']['lastSeason'])
         result['data']['latest_season'] = latest_season
         Templates.WWS_CLAN.apply_to(hikari)

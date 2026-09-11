@@ -19,7 +19,7 @@ async def start():
     set_hikari_config(use_broswer='chromium', http2=False,
                       # proxy='http://localhost:7890',
                       proxy=None,
-                      # yuyuko_url='http://127.0.0.1:8088',
+                      yuyuko_url='http://127.0.0.1:8088',
                       local_test=True,
                       token='2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr', yuyuko_type='QQ_CHANNEL',
                       image_type='webp',
@@ -29,9 +29,10 @@ async def start():
     # await command("asia nahida_official ship 哥伦布")
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
-    # await command("me")
-    await command("近期 30")
-    # await command("单船 大和")
+    await command("me")
+    await command("clan asia YU_RI")
+    # await command("cn 西行寺雨季")
+    # await command("近期 30")
     # await command("测试")
     #
     # await command("近期随机 90")
@@ -41,7 +42,7 @@ async def start():
     # await command("me recent 30")
     # await command("me ship 大和 recent 90")
     # await command("me clan")
-    # await command("clan asia YU")
+
     # await command("战舰排行榜 国服 大和")
     # await command("公会战排行榜 20")
 

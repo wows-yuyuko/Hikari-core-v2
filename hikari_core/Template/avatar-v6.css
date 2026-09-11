@@ -47,11 +47,18 @@
     background-size: 100%;
 }
 
-/* 头像 status == 2：不显示头像，右侧信息列直接左移接管这块位置。
+/* 头像隐藏时（用户侧 status == 2、公会侧 status == 0，见 info-v6-macros 的 hide_avatar）：
+   右侧信息列直接左移接管这块位置。
    只能 display:none —— 用 visibility:hidden 会继续占着 250px 空位，
    用 width:0 还会留下 margin。 */
 .masking-header.no-avatar .avatar-header {
     display: none;
+}
+
+/* 没有头像时左内边距跟着收掉：.masking-header 的 40px padding-left 是给头像留的，
+   空着就是白边。两种隐藏场景（用户 / 公会）共用这一个类。 */
+.masking-header.no-avatar {
+    padding-left: 5px;
 }
 
 .clan-user-server {

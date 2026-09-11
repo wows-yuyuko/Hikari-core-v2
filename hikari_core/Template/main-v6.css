@@ -257,6 +257,35 @@ body {
     flex: 1.4;
 }
 
+/* 表格列宽工具：.information-col-item 自带 flex:1 且写在 .flex-N 之后，
+   单靠 .flex-N 会被它盖掉，这里用双类名把权重提上来。
+   用法：<div class="information-col-item flex-6"> */
+.information-col-item.flex-1 { flex: 1; }
+.information-col-item.flex-2 { flex: 2; }
+.information-col-item.flex-3 { flex: 3; }
+.information-col-item.flex-4 { flex: 4; }
+.information-col-item.flex-5 { flex: 5; }
+.information-col-item.flex-6 { flex: 6; }
+.information-col-item.flex-8 { flex: 8; }
+.information-col-item.flex-10 { flex: 10; }
+
+/* ---------- 段位徽标（公会信息 / 公会战 / 公会战排行榜共用） ----------
+   色条 + 段位名 + 分数，放在表格单元里用 */
+.league-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.league-tag > i {
+    flex-shrink: 0;
+    width: 10px;
+    height: 30px;
+    border-radius: 4px;
+    background: #b3b3b3;
+}
+
 /* 记录时间小标题（近期模板） */
 .recent-time-header {
     margin: var(--gap-block) 50px 0;
