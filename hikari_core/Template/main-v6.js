@@ -15,13 +15,9 @@ if (firstSpan) {
     }
 }
 
-// 无签名时加大信息列间距，避免下部悬空
-const clanUserServer = document.querySelector('.clan-user-server');
-const userSignature = document.querySelector('.user-signature');
-
-if (!userSignature && clanUserServer) {
-    clanUserServer.style.gap = '40px';
-}
+// 头部信息列（.clan-user-server）已改为顶部对齐，见 avatar-v6.css。
+// 原先「无签名时把 gap 撑到 40px」的补偿已移除：那会让无签名时的行距
+// 与有签名时不一致，反而破坏「和有签名效果一样」的观感。
 
 // ==========================================================
 // 无海报背景时切换浅色主题（毛玻璃改为实色，保证文字可读）

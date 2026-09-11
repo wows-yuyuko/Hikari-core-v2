@@ -47,6 +47,13 @@
     background-size: 100%;
 }
 
+/* 头像 status == 2：不显示头像，右侧信息列直接左移接管这块位置。
+   只能 display:none —— 用 visibility:hidden 会继续占着 250px 空位，
+   用 width:0 还会留下 margin。 */
+.masking-header.no-avatar .avatar-header {
+    display: none;
+}
+
 .clan-user-server {
     margin: 5px;
     text-align: left;
@@ -57,14 +64,34 @@
     flex-direction: column;
     font-weight: bold;
     flex-grow: 1;
-    justify-content: center;
+    /* 首行「公会标签 + 用户名」贴住头像顶部。
+       不要改回 center：居中时无签名（内容更矮）会整体下沉，与有签名的观感不一致。 */
+    justify-content: flex-start;
+    /* 末行「服务器」贴到列底时还比头像底缘低 8px，内缩掉：
+       masking-header 内容高 278，avatar 底缘在 265（margin-top 15 + 250），
+       本列 border-box 底在 273（margin 5）→ 273 - 265 = 8 */
+    padding-bottom: 8px;
+}
+
+/* 「注册时间」行吃下本列全部剩余空间 → 落在首行与末行的正中间，
+   首行贴顶、末行贴底（即无签名时的三行铺满效果）。
+   写 flex-start + auto 外边距而不是 space-between，是为了不波及
+   wws-ships-v6 那种只有两行（register=False，没有注册时间）的头部：
+   该行缺席时本规则不会命中，布局维持原样。
+   有签名时本列内容本就溢出，自动外边距归零，与贴顶写法逐像素一致。 */
+.clan-user-server .user-sign-time {
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 .user-info {
     font-weight: bolder;
     line-height: 30px;
     font-size: 45px;
-    padding: 18px 16px;
+    /* 左右不留内边距：留了的话「[公会标签] 用户名」会比下面的
+       注册时间 / 服务器右移 16px，左边缘对不齐。
+       上下 18px 保留，用户名文字与头像顶部的对齐靠它。 */
+    padding: 18px 0;
     border-radius: 10px;
     display: inline-block;
 }

@@ -9,7 +9,7 @@
 
 {% macro info_header_style(poster=True) %}
 <style>
-    {% if poster and data['userInfo']['avatar']['poster']['status'] == 2 %}
+    {% if poster and data['userInfo']['avatar']['poster']['status'] > 0 %}
     .main-content {
         background: url("{{ data['userInfo']['avatar']['poster']['data'] }}") no-repeat;
         background-position: center;
@@ -18,7 +18,7 @@
     }
     {% endif %}
 
-    {% if data['userInfo']['avatar']['colorName']['status'] == 2 %}
+    {% if data['userInfo']['avatar']['colorName']['status'] > 0 %}
     .mirage-text {
         background: {{ data['userInfo']['avatar']['colorName']['data'] }};
         background-size: 200% 200%;
@@ -29,7 +29,7 @@
     {% endif %}
 
     .page-header {
-        {% if data['userInfo']['avatar']['banner']['status'] == 2 %}
+        {% if data['userInfo']['avatar']['banner']['status'] > 0 %}
         background: url("{{ data['userInfo']['avatar']['banner']['data'] }}") no-repeat;
         {% endif %}
         background-position: center;
@@ -37,7 +37,7 @@
     }
 
     .avatar-header {
-        {% if data['userInfo']['avatar']['avatar']['status'] == 2 %}
+        {% if data['userInfo']['avatar']['avatar']['status'] > 0 %}
         background: url("{{ data['userInfo']['avatar']['avatar']['data'] }}") no-repeat;
         {% else %}
         background: url("{{ data['userInfo']['dogTag'] }}") no-repeat;
@@ -50,8 +50,10 @@
 
 {% macro info_header(register=True, server_style=False) %}
 {% set banner_dark = data['userInfo'] and data['userInfo']['avatar']['banner']['status'] == 2 and data['userInfo']['avatar']['banner'].get('dark') == 1 %}
+{# 头像 status == 2：不显示头像，整块让位给右边的信息列（见 avatar-v6.css 的 .no-avatar） #}
+{% set hide_avatar = data['userInfo'] and data['userInfo']['avatar']['avatar']['status'] == 2 %}
 <div class="page-header{% if banner_dark %} dark-banner{% endif %}">
-    <div class="masking-header">
+    <div class="masking-header{% if hide_avatar %} no-avatar{% endif %}">
         <div class="avatar-header"></div>
         <div class="clan-user-server">
             <div class="user-info {% if data['userInfo']['avatar']['colorName']['status'] != 2 %}no-color-name{% endif %}">
