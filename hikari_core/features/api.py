@@ -104,7 +104,7 @@ async def get_user_ship_byName(hikari: Hikari_Model) -> List:
         client_yuyuko = await get_client_yuyuko(hikari.UserInfo)
         resp = await client_yuyuko.get(url, params=params, timeout=20)
         result = json.loads(resp.content)
-        if result.get('code') == 200 and result.get('data'):
+        if result.get('code') == 200:
             code_data = result['data']
             # 转换为 ShipInfo 对象列表
             ship_list = []
@@ -113,7 +113,6 @@ async def get_user_ship_byName(hikari: Hikari_Model) -> List:
             # 如果指定了序号选择
             if ship_name_select_index and ship_name_select_index <= len(ship_list):
                 return [ship_list[ship_name_select_index - 1]]
-
             return ship_list
         else:
             hikari.failed(result['message'])
