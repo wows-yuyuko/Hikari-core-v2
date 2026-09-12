@@ -121,7 +121,14 @@ async def get_user_ship_byName(hikari: Hikari_Model) -> List:
         await recreate_client_yuyuko()
 
 
-async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> int:
+async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> int | None:
+    """按昵称查 AID：成功返回 int，查不到返回 None（同时把 hikari 置为 failed）。
+
+    失败时不要把 hikari.failed(...) 的返回值交出去：它就是 hikari 自己，
+    调用方写成 hikari.Input.AccountId = await get_AccountIdByName(...) 时，
+    模型会通过 Input.AccountId 持有自身引用，之后任何 str()/repr()/f-string
+    都会无限展开抛 RecursionError。
+    """
     try:
         url = f'{hikari_config.yuyuko_url}/public/wows/account/search/{server}/user'
         params = {'userName': name, 'one': True}
@@ -130,10 +137,12 @@ async def get_AccountIdByName(hikari: Hikari_Model, server: str, name: str) -> i
         result = json.loads(resp.content)
         if result['code'] == 200 and result['data']:
             return int(result['data'][0]['accountId'])
-        else:
-            return hikari.failed(result['message'])
+        # 只把状态落到 hikari 上，返回值必须是 None —— 交回模型会引发自引用
+        hikari.failed(result['message'])
+        return None
     except PoolTimeout:
         await recreate_client_yuyuko()
+        return None
 
 
 async def get_ClanIdByName(hikari: Hikari_Model, server: str, tag: str):

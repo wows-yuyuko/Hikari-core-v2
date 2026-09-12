@@ -33,9 +33,12 @@ async def set_BindInfo(hikari: Hikari_Model) -> Hikari_Model:
     """通过昵称绑定账号"""
     if hikari.Status == 'init':
         if hikari.Input.Search_Type == 3 and not hikari.Input.AccountId:
-            hikari.Input.AccountId = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
-            if not isinstance(hikari.Input.AccountId, int):
-                return hikari.error(f'{hikari.Input.AccountId}')
+            account_id = await get_AccountIdByName(hikari, hikari.Input.Server, hikari.Input.AccountName)
+            # 查不到时 get_AccountIdByName 已把状态置为 failed（消息在 Output.Data），直接返回它；
+            # 不要再把返回值塞进 f-string —— 失败时它就是 hikari 自己，会造成模型自引用
+            if account_id is None:
+                return hikari if hikari.Status == 'failed' else hikari.error('查询账号失败，请稍后重试或确认昵称是否正确')
+            hikari.Input.AccountId = account_id
     else:
         return hikari.error('当前请求状态错误')
     url = f'{hikari_config.yuyuko_url}/api/user/platform/switch/bind'
@@ -179,6 +182,9 @@ async def update_user_cache(hikari: Hikari_Model) -> Hikari_Model:
 
     # 解析平台目标
     platform_info = await _resolve_platform_target(hikari)
+    if isinstance(platform_info, str):
+        # 解析失败时 _resolve_platform_target 返回的是错误信息字符串，不能直接解包
+        return hikari.error(platform_info)
     platform_type, platform_id = platform_info
     # 发送更新请求
     url = f'{hikari_config.yuyuko_url}/api/user/platform/cache/update'
@@ -219,7 +225,9 @@ async def _resolve_platform_target(hikari: Hikari_Model):
         hikari.Input.AccountName
     )
 
-    if not isinstance(account_id, int):
-        return f'{account_id}'
+    if account_id is None:
+        # 失败时状态已落在 hikari 上（failed 的消息在 Output.Data）；不要把这个返回值塞进
+        # f-string —— 查不到账号时它过去返回的是 hikari 自己，模型自引用会直接 RecursionError
+        return str(hikari.Output.Data) if hikari.Status == 'failed' else '查询账号失败，请稍后重试'
 
     return hikari.Input.Server, account_id
