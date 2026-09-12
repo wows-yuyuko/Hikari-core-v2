@@ -88,6 +88,12 @@
 {%- set created = (u['accountCreateTime'] | int) if u['accountCreateTime'] is defined else ((u['createdAt'] | int) / 1000) -%}
 {%- set server = server_cn(u['serverCn'] if u['serverCn'] is defined else u['server']) -%}
 {%- set banner_dark = banner and banner['status'] > 0 and banner.get('dark') == 1 -%}
+{# 有无个性颜色：判据必须与 info_header_style 里 .mirage-text 的取色条件（status > 0）一致 ——
+   它们描述的是同一件事「这个名字有没有颜色」。
+   这里曾经写成 status != 2，与样式那边（> 0）不一致：status == 1 的用户名字照旧被上色，
+   却又被挂上 no-color-name，深色 banner 的白字（.dark-banner .no-color-name .mirage-text）
+   就把个性颜色整个盖掉了。改判据前先确认两边仍然同步。 #}
+{%- set has_color_name = color_name and color_name['status'] > 0 -%}
 {# 隐藏头像：整块让位给右边的信息列（见 avatar-v6.css 的 .no-avatar）。
    status 的通用语义：0 = 不显示，1 及以上 = 显示（1 以上可能另有特殊处理）。
    用户侧 / 公会侧是两条**独立**规则，不要合并成一个条件：
@@ -103,7 +109,7 @@
     <div class="masking-header{% if hide_avatar %} no-avatar{% endif %}">
         <div class="avatar-header"></div>
         <div class="clan-user-server">
-            <div class="user-info {% if not color_name or color_name['status'] != 2 %}no-color-name{% endif %}">
+            <div class="user-info{% if not has_color_name %} no-color-name{% endif %}">
                 {% if tag %}
                     <span style="color: {% if banner_dark %}#ffffff{% else %}{{ tag_color }}{% endif %};">[{{ tag }}]</span>
                 {% endif %}
