@@ -1,7 +1,11 @@
+import threading
 import time
 from typing import List, Optional, Protocol, Union, runtime_checkable, Any
 
 from pydantic import BaseModel, Field
+
+# repr 递归保护用的线程局部标志（见 Hikari_Model.__repr__）
+_REPR_STATE = threading.local()
 
 
 @runtime_checkable
@@ -72,6 +76,35 @@ class Hikari_Model(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+    def __repr__(self) -> str:
+        """递归安全的 repr。
+
+        pydantic 默认的 __repr__ 会把字段一层层展开，而本模型是允许「自己装自己」的：
+        例如 get_AccountIdByName 查不到账号时返回的是 hikari 本身（failed() 返回 self），
+        调用方写成 hikari.Input.AccountId = <该返回值> 之后，模型就通过 Input.AccountId
+        持有自身引用 —— 此时任何 str()/repr()/f-string 都会顺着
+        Hikari_Model -> Input -> AccountId -> Hikari_Model ... 无限展开，
+        最终抛 RecursionError（线上 09-12 01:30 那次就是这么炸的）。
+        这里在回环处截断；没有环时仍然是完整的 pydantic repr。
+        """
+        if getattr(_REPR_STATE, 'busy', False):
+            return f'{type(self).__name__}(...)'
+        _REPR_STATE.busy = True
+        try:
+            return f'{self.__repr_name__()}({self.__repr_str__(", ")})'
+        finally:
+            _REPR_STATE.busy = False
+
+    def __str__(self) -> str:
+        # str() 走的是同一套字段展开，同样要防环
+        if getattr(_REPR_STATE, 'busy', False):
+            return f'{type(self).__name__}(...)'
+        _REPR_STATE.busy = True
+        try:
+            return self.__repr_str__(' ')
+        finally:
+            _REPR_STATE.busy = False
 
     @property
     def is_me(self) -> bool:
