@@ -87,7 +87,7 @@
 {%- set uid = u['accountId'] if u['accountId'] is defined else u['clanId'] -%}
 {%- set created = (u['accountCreateTime'] | int) if u['accountCreateTime'] is defined else ((u['createdAt'] | int) / 1000) -%}
 {%- set server = server_cn(u['serverCn'] if u['serverCn'] is defined else u['server']) -%}
-{%- set banner_dark = banner and banner['status'] == 2 and banner.get('dark') == 1 -%}
+{%- set banner_dark = banner and banner['status'] > 0 and banner.get('dark') == 1 -%}
 {# 隐藏头像：整块让位给右边的信息列（见 avatar-v6.css 的 .no-avatar）。
    status 的通用语义：0 = 不显示，1 及以上 = 显示（1 以上可能另有特殊处理）。
    用户侧 / 公会侧是两条**独立**规则，不要合并成一个条件：
@@ -113,7 +113,7 @@
                 <div class="user-server">服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %} / Account Id: {{ uid }}</div>
             {% else %}
                 {# 无签名：这行拆成两行（先账号 ID，再服务器）；公会那行显示的是军团 ID #}
-                <div class="user-account">{% if is_clan %}Clan Id{% else %}AccountId{% endif %}: {{ uid }}</div>
+                <div class="user-account">{% if is_clan %}Clan Id{% else %}Account Id{% endif %}: {{ uid }}</div>
                 <div class="user-server">所属服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %}</div>
             {% endif %}
             {% if register %}
