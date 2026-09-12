@@ -33,6 +33,10 @@
     box-shadow: none;
 }
 
+/* 头像底图（background-image）由头部宏内联输出，因为链接是数据里的：
+   用户侧 partials/user-v6-macros.html，公会侧 partials/clan-v6-macros.html。
+   普通头像一张；军团战头像（status == 2）是「徽章本体 + 底座」两张叠放，
+   底座 = 同一地址把文件名里的 '-' 换成 '_'。这里只管盒子尺寸，不管图。 */
 .avatar-header {
     filter: drop-shadow(9px 9px 12px rgba(0, 0, 0, 0.3));
     margin-left: -25px;
@@ -47,7 +51,7 @@
     background-size: 100%;
 }
 
-/* 头像隐藏时（用户侧 status == 2、公会侧 status == 0，见 info-v6-macros 的 hide_avatar）：
+/* 头像隐藏时（宏里的 hide_avatar：用户侧 = 头像位与 dogTag 都没图，公侧 = status == 0）：
    右侧信息列直接左移接管这块位置。
    只能 display:none —— 用 visibility:hidden 会继续占着 250px 空位，
    用 width:0 还会留下 margin。 */
@@ -56,9 +60,66 @@
 }
 
 /* 没有头像时左内边距跟着收掉：.masking-header 的 40px padding-left 是给头像留的，
-   空着就是白边。两种隐藏场景（用户 / 公会）共用这一个类。 */
+   空着就是白边。用户 / 公会两侧共用这一个类。 */
 .masking-header.no-avatar {
     padding-left: 5px;
+}
+
+/* ---------- 头像中间的文字（公会战头像） ----------
+   公会接口 avatar.avatar.status == 2 时，头像是一张军团战徽章（cvc-N.png）：
+   背景由宏叠了两层 —— 底座（cvc_N.png）压在前面、徽章本体在后面（见 clan-v6-macros 的
+   avatar_base），中间再盖上接口给的 avatarText（见 clan-v6-macros 的 show_avatar_text）。
+   接口恒带 '-'，拆成上下两行后**各自定位**（不再是一个居中的文字块）：
+     下标 0 → 落在徽章圆盘正中，下标 1 → 落在底部底座牌面正中。
+   两个落点是从原图量出来的绝对像素，头像盒固定 250×250 所以直接写死：
+     圆盘内沿在原图 210 里约 y 66..164 → 中心 115 ×250/210 ≈ 137
+     底座牌面在原图 126 里 bbox y 85..122 → 中心 103.5 ×250/126 ≈ 205
+   cvc-1~4 只是配色不同、几何一致，换段位不用重算。
+   字号由模板按最长一行算（默认 72px）。
+
+   ▍微调上下位置：只改下面 .avatar-header 里这两个变量，别的都不用动
+       --avatar-text-top-1  圆盘那一行（下标 0）的垂直中心，默认 137px
+       --avatar-text-top-2  底座那一行（下标 1）的垂直中心，默认 205px
+     单位 px，从头像盒**顶边**算起；span 上有 translateY(-50%)，所以给的是这一行的中心、
+     不是顶边。数字调小 = 往上，调大 = 往下，改几像素就是动几像素。
+     两行互不影响，改一个不会带动另一个；两行整体上下移就把两个变量同加同减。 */
+.avatar-header {
+    --avatar-text-top-1: 133px;
+    --avatar-text-top-2: 215px;
+}
+
+.avatar-header.has-avatar-text {
+    /* 给两行文字做定位上下文（背景图不受影响） */
+    position: relative;
+}
+
+.avatar-text {
+    position: absolute;
+    inset: 0;
+    /* 白字 + 一层柔和暗影：徽章底色偏灰，纯白字在浅色区域会糊在一起。
+       只加深影（不加描边），保证「还是白色文字」的观感。 */
+    color: #ffffff;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    user-select: none;
+}
+
+.avatar-text span {
+    position: absolute;
+    /* 左右铺满 + text-align:center = 水平居中；纵向靠 top + translateY(-50%) 定中心 */
+    left: 0;
+    right: 0;
+    text-align: center;
+    line-height: 1;
+    transform: translateY(-50%);
+}
+
+.avatar-text span:nth-child(1) {
+    top: var(--avatar-text-top-1); /* 缺省 = 徽章圆盘正中 137px */
+}
+
+.avatar-text span:nth-child(2) {
+    top: var(--avatar-text-top-2); /* 缺省 = 底座牌面正中 205px */
 }
 
 .clan-user-server {

@@ -10,16 +10,18 @@
    公会信息页（wws-clan-v6）
 
    与 info 系共用同一套公共部件，本模板不再自带任何重复样式：
-   - 头部 / PR 条 / 页脚 → partials/info-v6-macros.html
-     （info_header_style / info_header / info_pr / footer_box）
+   - 头部（公会侧专版） → partials/clan-v6-macros.html（info_header_style / info_header）
+     用户侧那版在 partials/user-v6-macros.html，两边已拆开各自维护
+   - PR 条 / 页脚 → partials/common-v6-macros.html（info_pr / footer_box）
    - 页面宽度、板块间距、小节标题条、数据表格、统计卡、图表、时间行、页脚
      → main-v6.css（.page-box / .random-header / .information-body /
         .overview-change / .chart-box / .recnet-time / .footer）
    - 无海报时的浅色主题、军团标签色修正 → main-v6.js
    下面 <style> 只保留 info 系没有的公会专属部分（简介卡 / 设施卡）。
-   数据侧不做任何映射：组件直接吃公会对象本身，字段差异在组件内部收口。
+   数据侧不做任何映射：组件直接吃公会对象本身。
    ============================================================ #}
-{% from 'partials/info-v6-macros.html' import info_header_style, info_header, info_pr, footer_box with context %}
+{% from 'partials/clan-v6-macros.html' import info_header_style, info_header with context %}
+{% from 'partials/common-v6-macros.html' import info_pr, footer_box with context %}
 {{ info_header_style() }}
 <style>
     /* 公会简介：沿用公共玻璃底 one-background-color */

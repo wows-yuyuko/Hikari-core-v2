@@ -30,8 +30,8 @@ async def start():
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
     # await command("me")
-    await command("clan asia YU_RI")
-    # await command("cn 西行寺雨季")
+    await command("clan asia tif-k")
+    # await command("cn 蓝色的蘑菇头奇诺比奥")
     # await command("近期 30")
     # await command("测试")
     #

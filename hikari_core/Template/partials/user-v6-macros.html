@@ -1,0 +1,133 @@
+{# ==========================================================
+   v6 用户侧头部（wws-info 系 / 单船 / 开箱 / 赏金 等页面共用）
+   - info_header_style(): 头部数据绑定样式（海报 / 彩色名 / banner / 头像背景）
+   - info_header():       头部标记（banner_dark 白字通过 .dark-banner 类控制）
+   调用方式: {% from 'partials/user-v6-macros.html' import info_header_style, info_header with context %}
+   PR 条 / 页脚 / 船名条见 partials/common-v6-macros.html。
+
+   数据来源：/public/wows/account/user/info2 的 data（组件吃 data['userInfo']，
+   取不到就退回 data 本身）。公会的头部在 partials/clan-v6-macros.html，两份各自维护，
+   这边只认用户接口的字段，不做任何 is_clan 分支：
+     用户名 userName     服务器 serverCn(亚服)      ID accountId
+     建号时间 accountCreateTime（秒）
+     军团标签 clanInfo.tag / 标签色 clanInfo.color（用户对象也带 clanInfo = 他自己的军团）
+     头像槽位 5 个：poster / colorName / banner / avatar / sign
+     头像兜底 dogTag（用户接口独有，见下面的「头像槽位语义」）
+   ========================================================== #}
+
+{% macro info_header_style(poster=True) %}
+{%- set u = data['userInfo'] if data['userInfo'] is defined and data['userInfo'] else data -%}
+{%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
+{%- set poster_img = avatar_box['poster'] if avatar_box['poster'] is defined else none -%}
+{%- set color_name = avatar_box['colorName'] if avatar_box['colorName'] is defined else none -%}
+{%- set banner = avatar_box['banner'] if avatar_box['banner'] is defined else none -%}
+{%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
+{%- set avatar_status = (avatar_img['status'] | int) if avatar_img and avatar_img['status'] is defined else 0 -%}
+{%- set dog_tag = u['dogTag'] if u['dogTag'] is defined and u['dogTag'] else '' -%}
+{# 头像槽位语义（用户 / 公会一致）：status == 0 不显示，> 0 显示（1 以上可能有特殊处理）。
+   槽位缺席 / status 缺失按 0 处理。
+   用户侧多一条兜底：取不到要显示的图（status == 0，或 status > 0 但 data 是空的）时，
+   头像位回落到 dogTag（用户接口独有的图，形如 nahida-static/root/<accountId>.png）；
+   连 dogTag 都没有才是「真的没图」→ 整块隐藏（见 info_header 的 hide_avatar）。 #}
+{%- set avatar_src = (avatar_img['data'] if avatar_status > 0 else '') or dog_tag -%}
+<style>
+    {% if poster and poster_img and poster_img['status'] > 0 %}
+    .main-content {
+        background: url("{{ poster_img['data'] }}") no-repeat;
+        background-position: center;
+        background-size: cover;
+        min-height: 100vh;
+    }
+    {% endif %}
+
+    {% if color_name and color_name['status'] > 0 %}
+    .mirage-text {
+        background: {{ color_name['data'] }};
+        background-size: 200% 200%;
+        color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+    {% endif %}
+
+    .page-header {
+        {% if banner and banner['status'] > 0 %}
+        background: url("{{ banner['data'] }}") no-repeat;
+        {% endif %}
+        background-position: center;
+        background-size: 100%;
+    }
+
+    .avatar-header {
+        {% if avatar_src %}
+        background-image: url("{{ avatar_src }}");
+        {% endif %}
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+    }
+</style>
+{% endmacro %}
+
+{% macro info_header(register=True, server_style=False) %}
+{%- set u = data['userInfo'] if data['userInfo'] is defined and data['userInfo'] else data -%}
+{%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
+{%- set banner = avatar_box['banner'] if avatar_box['banner'] is defined else none -%}
+{%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
+{%- set color_name = avatar_box['colorName'] if avatar_box['colorName'] is defined else none -%}
+{%- set sign = avatar_box['sign'] if avatar_box['sign'] is defined else none -%}
+{# 头像槽位语义（与 info_header_style 里取图那段同源，改一边记得改另一边）：
+     - status == 0（含槽位缺席 / status 缺失）→ 自定义头像不显示；
+     - status > 0 → 显示 avatar.data；1 以上可能有特殊处理（目前用户侧没有）；
+     - 两种情况下 data 取不到图都再回落到 dogTag；
+     - dogTag 也没有 → 整块隐藏，信息列左移接管这块位置（见 avatar-v6.css 的 .no-avatar）。 #}
+{%- set avatar_status = (avatar_img['status'] | int) if avatar_img and avatar_img['status'] is defined else 0 -%}
+{%- set dog_tag = u['dogTag'] if u['dogTag'] is defined and u['dogTag'] else '' -%}
+{%- set avatar_src = (avatar_img['data'] if avatar_status > 0 else '') or dog_tag -%}
+{%- set hide_avatar = not avatar_src -%}
+{# 有无个性签名 #}
+{%- set has_sign = sign and sign['status'] > 0 -%}
+{%- set clan_info = u['clanInfo'] if u['clanInfo'] is defined and u['clanInfo'] else none -%}
+{%- set name = u['userName'] -%}
+{%- set tag = (clan_info['tag'] if clan_info else '') or '' -%}
+{%- set tag_color = clan_info['color'] if clan_info else '#b3b3b3' -%}
+{%- set uid = u['accountId'] -%}
+{%- set created = u['accountCreateTime'] | int -%}
+{%- set server = server_cn(u['serverCn'] if u['serverCn'] is defined else u['server']) -%}
+{%- set banner_dark = banner and banner['status'] > 0 and banner.get('dark') == 1 -%}
+{# 有无个性颜色：判据必须与 info_header_style 里 .mirage-text 的取色条件（status > 0）一致 ——
+   它们描述的是同一件事「这个名字有没有颜色」。
+   这里曾经写成 status != 2，与样式那边（> 0）不一致：status == 1 的用户名字照旧被上色，
+   却又被挂上 no-color-name，深色 banner 的白字（.dark-banner .no-color-name .mirage-text）
+   就把个性颜色整个盖掉了。改判据前先确认两边仍然同步。 #}
+{%- set has_color_name = color_name and color_name['status'] > 0 -%}
+<div class="page-header{% if banner_dark %} dark-banner{% endif %}">
+    <div class="masking-header{% if hide_avatar %} no-avatar{% endif %}">
+        <div class="avatar-header"></div>
+        <div class="clan-user-server">
+            <div class="user-info{% if not has_color_name %} no-color-name{% endif %}">
+                {% if tag %}
+                    <span style="color: {% if banner_dark %}#ffffff{% else %}{{ tag_color }}{% endif %};">[{{ tag }}]</span>
+                {% endif %}
+                <span class="mirage-text">{{ name }}</span></div>
+            {% if has_sign %}
+                {# 有签名：这列本来就四行，保持「服务器 / AccountId」一行显示 #}
+                <div class="user-server">服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %} / Account Id: {{ uid }}</div>
+            {% else %}
+                {# 无签名：这行拆成两行（先账号 ID，再服务器） #}
+                <div class="user-account">Account Id: {{ uid }}</div>
+                <div class="user-server">所属服务器: {% if server_style %}<span class="server server-style">{{ server }}</span>{% else %}{{ server }}{% endif %}</div>
+            {% endif %}
+            {% if register %}
+                <div class="user-sign-time">注册时间: {{ time.strftime('%Y-%m-%d %H:%M', time.localtime(int(abs(created)))) }}
+                </div>
+            {% endif %}
+            {% if has_sign %}
+                <div class="user-signature">
+                    {{ sign['data'] }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endmacro %}

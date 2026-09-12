@@ -1,0 +1,163 @@
+{# ==========================================================
+   v6 公会侧头部（公会信息页 wws-clan-v6 等公会系页面共用）
+   - info_header_style(): 头部数据绑定样式（海报 / 彩色名 / banner / 头像背景）
+   - info_header():       头部标记（banner_dark 白字通过 .dark-banner 类控制）
+   调用方式: {% from 'partials/clan-v6-macros.html' import info_header_style, info_header with context %}
+   PR 条 / 页脚见 partials/common-v6-macros.html。
+
+   数据来源：/public/wows/clan/info 的 data —— **顶层就是公会字段本身**，不用再往 userInfo 里钻。
+   用户的头部在 partials/user-v6-macros.html，两份各自维护，这边只认公会接口的字段：
+     公会名 name          服务器 server(asia，交给 server_cn())     ID clanId
+     建号时间 createdAt（**毫秒**，比用户接口的秒多一步 /1000）
+     标签 tag / 标签色 colorRgb
+     头像槽位 4 个：poster / colorName / banner / avatar（**没有 sign，也没有 dogTag 兜底**）
+   ========================================================== #}
+
+{% macro info_header_style(poster=True) %}
+{%- set u = data -%}
+{%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
+{%- set poster_img = avatar_box['poster'] if avatar_box['poster'] is defined else none -%}
+{%- set color_name = avatar_box['colorName'] if avatar_box['colorName'] is defined else none -%}
+{%- set banner = avatar_box['banner'] if avatar_box['banner'] is defined else none -%}
+{%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
+{# 头像槽位语义（用户 / 公会一致）：status == 0 不显示，> 0 显示（1 以上可能有特殊处理）。
+   槽位缺席 / status 缺失按 0 处理。公会接口没有 dogTag 兜底，status == 0 就是整块隐藏。 #}
+{%- set avatar_status = (avatar_img['status'] | int) if avatar_img and avatar_img['status'] is defined else 0 -%}
+{# 军团战头像（status == 2）的「底座」：同一地址、同一目录下，文件名里的 '-' 换成 '_' 就是底座图
+   （cvc-3.png → cvc_3.png）。两点都不能省：
+     1) 只换文件名那一段，不能整串替换 —— 域名 v3-api.wows.shinoaki.com 自带 '-'，
+        整体替换会把 host 改坏；
+     2) 只看真实 http(s) 链接 —— data:base64 的载荷里也可能带 '/'，照样 rsplit 会拆出垃圾地址。
+   取不到底座时保持 none，退回单图（见下面 .avatar-header 的分支）。 #}
+{%- set avatar_base = none -%}
+{%- if avatar_status == 2 and avatar_img['data'] is string and avatar_img['data'].startswith('http') -%}
+    {%- set avatar_path = avatar_img['data'].rsplit('/', 1) -%}
+    {%- if avatar_path | length == 2 -%}
+        {%- set avatar_base = avatar_path[0] ~ '/' ~ (avatar_path[1] | replace('-', '_')) -%}
+    {%- endif -%}
+{%- endif -%}
+<style>
+    {% if poster and poster_img and poster_img['status'] > 0 %}
+    .main-content {
+        background: url("{{ poster_img['data'] }}") no-repeat;
+        background-position: center;
+        background-size: cover;
+        min-height: 100vh;
+    }
+    {% endif %}
+
+    {% if color_name and color_name['status'] > 0 %}
+    .mirage-text {
+        background: {{ color_name['data'] }};
+        background-size: 200% 200%;
+        color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+    {% endif %}
+
+    .page-header {
+        {% if banner and banner['status'] > 0 %}
+        background: url("{{ banner['data'] }}") no-repeat;
+        {% endif %}
+        background-position: center;
+        background-size: 100%;
+    }
+
+    .avatar-header {
+        {% if avatar_base %}
+        /* 军团战头像：底座 + 徽章本体两张叠一起。
+           CSS 的 background-image 是「排在前面的图层画在上面」，
+           所以先写底座（压在前面）、再写徽章本体（在后面）——
+           底座的上沿要盖住徽章下缘的装饰，跟游戏里的观感一致。
+           单值的 background-position / background-size / background-repeat
+           会自动套用到所有图层，不用重复写两遍。 */
+        background-image: url("{{ avatar_base }}"), url("{{ avatar_img['data'] }}");
+        {% elif avatar_status > 0 %}
+        background-image: url("{{ avatar_img['data'] }}");
+        {% endif %}
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+    }
+</style>
+{% endmacro %}
+
+{% macro info_header(register=True) %}
+{%- set u = data -%}
+{%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
+{%- set banner = avatar_box['banner'] if avatar_box['banner'] is defined else none -%}
+{%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
+{%- set color_name = avatar_box['colorName'] if avatar_box['colorName'] is defined else none -%}
+{# 头像槽位语义（与 info_header_style 里取图那段同源，改一边记得改另一边）：
+     - status == 0（含槽位缺席 / status 缺失）→ 整块隐藏，信息列左移接管这块位置
+       （见 avatar-v6.css 的 .no-avatar）；公会接口没有 dogTag 可以兜底；
+     - status > 0 → 显示 avatar.data；
+     - status == 2 是本模板的「特殊处理」：军团战头像，背景再叠一层底座（见 avatar_base），
+       中间盖 avatarText（见下面的 avatar_text / show_avatar_text）。 #}
+{%- set avatar_status = (avatar_img['status'] | int) if avatar_img and avatar_img['status'] is defined else 0 -%}
+{%- set hide_avatar = avatar_status == 0 -%}
+{# 军团战头像（avatar.status == 2）中间要盖的那串字，接口给的是 avatarText，形如 "Ⅲ-0"：
+   接口现在恒带 '-'，直接按下标拆成上下两行 —— 下标 0 在上面、下标 1 在下面。
+   不再判断「有没有 '-'」（曾经按有没有来定一行 / 两行，现在没有这个分支了）。
+   多段（"A-B-C"）时把下标 1 之后的并回第二行，避免丢内容。
+   不是字符串（字段缺席 / null）一律按「没有文字」处理，槽位判空不写 is defined，
+   因为没打过军团战的公会压根没有这个字段，undefined 直接落到空串。 #}
+{%- set avatar_text = avatar_box['avatarText'] if avatar_box['avatarText'] is string else '' -%}
+{%- set avatar_text_lines = [] -%}
+{%- if avatar_text -%}
+    {%- set avatar_text_parts = avatar_text.split('-') -%}
+    {%- set _ = avatar_text_lines.append(avatar_text_parts[0]) -%}
+    {%- set _ = avatar_text_lines.append('-'.join(avatar_text_parts[1:])) -%}
+{%- endif -%}
+{%- set name = u['name'] -%}
+{%- set tag = u['tag'] or '' -%}
+{%- set tag_color = u['colorRgb'] or '#b3b3b3' -%}
+{%- set uid = u['clanId'] -%}
+{# 公会接口的建号时间是**毫秒**，统一成秒再交给 localtime #}
+{%- set created = (u['createdAt'] | int) / 1000 -%}
+{%- set server = server_cn(u['server']) -%}
+{%- set banner_dark = banner and banner['status'] > 0 and banner.get('dark') == 1 -%}
+{# 有无个性颜色：判据必须与 info_header_style 里 .mirage-text 的取色条件（status > 0）一致 ——
+   它们描述的是同一件事「这个名字有没有颜色」。改判据前先确认两边仍然同步。 #}
+{%- set has_color_name = color_name and color_name['status'] > 0 -%}
+{# 盖字：只有军团战头像（status == 2）且头像没被隐藏时才盖。
+   字号跟着最长那行走：头像 250×250，默认 72px；一行字数多时按 1em/字（CJK 最宽）等比缩到放得下，
+   免得长文案冲出圆角头像。行数 / 字号都只在有待显示文字时才算。
+   字号不走 map|max / |min 这类过滤器：模板环境是 async 的（enable_async），map 回来的是
+   async generator，直接喂给 max 会 TypeError。这里就老老实实循环取最长一行。 #}
+{%- set avatar_text_longest = namespace(value=0) -%}
+{%- for line in avatar_text_lines -%}
+    {%- if line | length > avatar_text_longest.value -%}
+        {%- set avatar_text_longest.value = line | length -%}
+    {%- endif -%}
+{%- endfor -%}
+{%- set show_avatar_text = not hide_avatar and avatar_status == 2 and avatar_text_lines -%}
+{%- set avatar_text_fit = (185 / avatar_text_longest.value) | int if avatar_text_longest.value else 72 -%}
+{%- set avatar_text_font = avatar_text_fit if avatar_text_fit < 36 else 36 -%}
+<div class="page-header{% if banner_dark %} dark-banner{% endif %}">
+    <div class="masking-header{% if hide_avatar %} no-avatar{% endif %}">
+        <div class="avatar-header{% if show_avatar_text %} has-avatar-text{% endif %}">{% if show_avatar_text %}
+            {# 一行一个 span，各自定位（落点在 avatar-v6.css 的 .avatar-text span:nth-child）：
+               下标 0 盖在徽章圆盘正中，下标 1 盖在底部底座牌面正中。 #}
+            <div class="avatar-text" style="font-size: {{ avatar_text_font }}px;">{% for line in avatar_text_lines %}
+                <span>{{ line }}</span>{% endfor %}
+            </div>{% endif %}
+        </div>
+        <div class="clan-user-server">
+            <div class="user-info{% if not has_color_name %} no-color-name{% endif %}">
+                {% if tag %}
+                    <span style="color: {% if banner_dark %}#ffffff{% else %}{{ tag_color }}{% endif %};">[{{ tag }}]</span>
+                {% endif %}
+                <span class="mirage-text">{{ name }}</span></div>
+            {# 公会接口没有 sign 槽位，这列恒为三行：军团 ID / 所属服务器 / 注册时间 #}
+            <div class="user-account">Clan Id: {{ uid }}</div>
+            <div class="user-server">所属服务器: {{ server }}</div>
+            {% if register %}
+                <div class="user-sign-time">注册时间: {{ time.strftime('%Y-%m-%d %H:%M', time.localtime(int(abs(created)))) }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endmacro %}

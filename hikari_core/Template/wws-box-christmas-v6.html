@@ -7,7 +7,8 @@
     <link href="{{ template_path.as_uri() }}/main-v6.css" rel="stylesheet" type="text/css">
     <link href="{{ template_path.as_uri() }}/avatar-v6.css" rel="stylesheet" type="text/css">
 </head>
-{% from 'partials/info-v6-macros.html' import info_header_style, info_header, footer_box with context %}
+{% from 'partials/user-v6-macros.html' import info_header_style, info_header with context %}
+{% from 'partials/common-v6-macros.html' import footer_box with context %}
 {{ info_header_style(poster=False) }}
 <style>
     body {
