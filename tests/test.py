@@ -29,7 +29,7 @@ async def start():
     # await command("asia nahida_official ship 哥伦布")
     # await command("ban cn 西行寺雨季")
     # await command("ships 10 日本")
-    await command("me")
+    # await command("me")
     await command("clan asia YU_RI")
     # await command("cn 西行寺雨季")
     # await command("近期 30")

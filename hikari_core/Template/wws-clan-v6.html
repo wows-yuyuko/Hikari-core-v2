@@ -91,10 +91,18 @@
 
         {# ==================== 军团概况（info 系统计卡） ==================== #}
         <div class="overview-change">
+            {# 最佳赛季：bestSeasonRating 可能是 null（没打过军团战），这时只留一行提示，
+               下面的数值留空 #}
+            {% set best_season = data['clanLeagueInfo']['bestSeasonRating'] %}
             <div class="overview-change-item">
                 <div class="item-top one-background-color">
-                    <div class="stat-label">军团排名</div>
-                    <div class="stat-value">{{ stats['rank'] }}</div>
+                    {% if best_season %}
+                        <div class="stat-label">最佳赛季S{{ best_season['season'] }}</div>
+                        <div class="stat-value">{{ best_season['leagueName']['buff'] }} {{ best_season['divisionName'] }} {{ best_season['divisionRating'] }}</div>
+                    {% else %}
+                        <div class="stat-label">无军团战记录</div>
+                        <div class="stat-value"></div>
+                    {% endif %}
                 </div>
                 <div class="item-bottom">
                     <div class="bottom-mini-item one-background-color">
