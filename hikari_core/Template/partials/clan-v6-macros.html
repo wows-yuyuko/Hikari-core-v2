@@ -121,6 +121,60 @@
 {# 有无个性颜色：判据必须与 info_header_style 里 .mirage-text 的取色条件（status > 0）一致 ——
    它们描述的是同一件事「这个名字有没有颜色」。改判据前先确认两边仍然同步。 #}
 {%- set has_color_name = color_name and color_name['status'] > 0 -%}
+{# ---------- 没有头像时，用 tag 生成 BA 风格 logo 顶掉头像位 ----------
+   公会接口 avatar.avatar.status == 0（含槽位缺席）时，以前是整块隐藏、信息列左移；
+   现在改成：把 tag（**不带 []**，[] 是下面军团名那行自己加的）喂给 BA 风格文字 logo
+   （组件样式 ba-logo-v6.css，模板 link 在 wws-clan-v6.html），放进原来的 250×250 头像盒里。
+   tag 取不到（空串）时才退回原来的整块隐藏。
+
+   分割：按字符数从中间切，前半 floor(n/2)、后半 ceil(n/2)，两段都不会是空的。
+   游戏的军团标签本身就限死 2~5 个字，所以实际只有这四种：
+     2 字 → 1/1、3 字 → 1/2、4 字 → 2/2、5 字 → 2/3（如 TIF-K → TI / F-K）。
+   长度按**字符数**算（一个汉字算 1 个），不按字节、也不按视觉宽度。
+   超过 5 字（理论上不会有）不截断，照旧自动缩小。
+   字号：头像盒 250×250、四周留 25px，按两条约束取小：
+     横向 —— 按「看得见的画面」宽度（见下面的 ba_ink_l / ba_ink_r）；
+     纵向 —— 画面高度约 2em（徽记比文字高得多，是它顶天立地）。
+   字多就自动缩小，保证不会冲出圆角头像盒。 #}
+{%- set show_avatar_logo = hide_avatar and tag -%}
+{%- if show_avatar_logo -%}
+    {%- set hide_avatar = false -%}
+{%- endif -%}
+{%- set avatar_logo_cut = (tag | length) // 2 -%}
+{%- set avatar_logo_left = tag[:avatar_logo_cut] -%}
+{%- set avatar_logo_right = tag[avatar_logo_cut:] -%}
+{# 两个词的宽度（em）交给 render_helpers.ba_text_em 按 Microsoft YaHei Bold 的实测字表算。
+   不要退回「拉丁字一律 0.62em」那种均匀估算：W / M 实测 1.08 / 1.03em，
+   估窄了 logo 就会冲出方框（WWWWWW 这种 tag 尤其明显）。 #}
+{%- set ba_l = ba_text_em(avatar_logo_left) -%}
+{%- set ba_r = ba_text_em(avatar_logo_right) -%}
+{# 「看得见的画面」范围（em，从两个词的起点算起），只用来定字号：
+     左缘 0.08  首字的左侧留白；
+     右缘 = max(右词宽 + 0.29, 交接点 + 1.86) - 0.07
+            右词那项里的 0.29 是倾斜（skewX -21.8°）把字面上沿往右推出来的量；
+            1.86 是徽记（halo / 十字）画到交接点右侧的墨迹；-0.07 是末字右侧留白。
+   徽记左右负 margin 正好抵消，所以它不占布局宽度，但画面会往右伸出去 ——
+   居中基准是「两个词的方框」（也就是文字），字号得按伸出去的那一截算，
+   不然徽记会顶出方框。这几个常数是拿 Chrome 截图逐像素量出来的，换字体要重测。 #}
+{%- set ba_ink_l = 0.08 -%}
+{%- set ba_ink_r = ba_l + (ba_r + 0.29 if ba_r + 0.29 > 1.86 else 1.86) - 0.07 -%}
+{# 横向：文字方框居中后，画面往右伸 (右缘 - 半宽)、往左伸 (半宽 - 左缘)，大的那头说了算，
+   左右各留 25px（所以是 100 而不是 125）。 #}
+{%- set ba_half_w = (ba_l + ba_r) / 2 -%}
+{%- set ba_reach_r = ba_ink_r - ba_half_w -%}
+{%- set ba_reach_l = ba_half_w - ba_ink_l -%}
+{%- set avatar_logo_fit_w = (100 / (ba_reach_r if ba_reach_r > ba_reach_l else ba_reach_l)) | int -%}
+{# 纵向：文字居中后，徽记往基线**上方**伸 1.43em（画面总高约 1.94em，但相对文字中心是上多下少），
+   同样留 25px → 100 / 1.43 ≈ 69px，这就是字号的实际上限。 #}
+{%- set avatar_logo_fit_h = (100 / 1.43) | int -%}
+{%- set avatar_logo_size = avatar_logo_fit_w if avatar_logo_fit_w < avatar_logo_fit_h else avatar_logo_fit_h -%}
+{# 两个上限取小的那个就是字号：横向那条管宽 tag，纵向那条管所有 tag（≈69px 封顶）。
+   不再另外封 84px 的顶：84 只是组件默认值，而这里横向是拿「文字居中」当基准算的，
+   再压一层 84 会让窄 tag 白白小一圈。 #}
+{# 布局宽度显式钉成两个词的 advance 之和（--ba-logo-w）：
+   短 tag 时浏览器会把词方框撑得比文字宽（负 margin 的徽记搅的），
+   不钉死这个宽度，flex 的居中基准就不是文字，文字也就不在方框正中了。 #}
+{%- set avatar_logo_w = ba_l + ba_r -%}
 {# 盖字：只有军团战头像（status == 2）且头像没被隐藏时才盖。
    字号跟着最长那行走：头像 250×250，默认 72px；一行字数多时按 1em/字（CJK 最宽）等比缩到放得下，
    免得长文案冲出圆角头像。行数 / 字号都只在有待显示文字时才算。
@@ -137,7 +191,7 @@
 {%- set avatar_text_font = avatar_text_fit if avatar_text_fit < 36 else 36 -%}
 <div class="page-header{% if banner_dark %} dark-banner{% endif %}">
     <div class="masking-header{% if hide_avatar %} no-avatar{% endif %}">
-        <div class="avatar-header{% if show_avatar_text %} has-avatar-text{% endif %}">{% if show_avatar_text %}
+        <div class="avatar-header{% if show_avatar_logo %} has-avatar-logo{% elif show_avatar_text %} has-avatar-text{% endif %}">{% if show_avatar_logo %}{# 三个 span 必须紧贴，中间不能有换行 / 空格（组件靠 font-size:0 兜底，但紧凑更保险） #}<span class="ba-logo" style="--ba-size: {{ avatar_logo_size }}px; --ba-logo-w: {{ '%.3f' | format(avatar_logo_w) }};"><span class="ba-logo__left">{{ avatar_logo_left }}</span>{{ ba_logo_mark() }}<span class="ba-logo__right">{{ avatar_logo_right }}</span></span>{% elif show_avatar_text %}
             {# 一行一个 span，各自定位（落点在 avatar-v6.css 的 .avatar-text span:nth-child）：
                下标 0 盖在徽章圆盘正中，下标 1 盖在底部底座牌面正中。 #}
             <div class="avatar-text" style="font-size: {{ avatar_text_font }}px;">{% for line in avatar_text_lines %}
@@ -161,3 +215,10 @@
     </div>
 </div>
 {% endmacro %}
+
+{# BA 风格 logo 的徽记（光晕弧 + 十字）静态 SVG，矢量复刻自 Temp/ba-logo/index.html 的 MARK_SVG。
+   只在「公会无头像 → 用 tag 生成 logo」这一处用（见 info_header 的 show_avatar_logo）。
+   ⚠ 两个 <svg> 和外面的 span 必须写在同一行、中间不留空白：.ba-logo 用 font-size:0 吃掉空白，
+     但换行会多出一个文本节点，位置就不准了。 #}
+{% macro ba_logo_mark() %}<span class="ba-logo__mark" aria-hidden="true"><svg class="ba-logo__halo" viewBox="0 0 500 500"><path fill="currentColor" transform="translate(458,193)" d="M0 0 C4.6 12.7 5.5 18.6 0 31 C-8.7 31.6 -8.7 31.6 -17 31 C-15 27 -15 27 -11 21 C-2.6 -4.1 -30.5 -27.1 -47.2 -40.7 C-105.5 -82.7 -223.9 -139.5 -296 -103 C-306.3 -95 -310.3 -87.7 -308.1 -74.2 C-294.1 -31.8 -242.9 -9.5 -206 9 C-207 10.3 -208 11.6 -209 13 C-251.4 -2.9 -308.7 -36.5 -322 -83 C-319.6 -104.9 -304.6 -112.1 -285 -117 C-196.8 -130.5 -45.6 -81.7 0 0 Z"/></svg><svg class="ba-logo__cross" viewBox="0 0 500 500"><path fill="currentColor" transform="translate(361,40)" d="M0,0 L1,2 L-10,25 L-24,54 L-36,79 L-47,102 L-41,104 L-3,122 L31,138 L61,152 L97,169 L108,174 L105,175 L25,143 L-6,131 L-46,115 L-55,112 L-57,117 L-76,149 L-93,177 L-112,209 L-129,237 L-148,269 L-165,297 L-182,325 L-183,323 L-170,298 L-158,276 L-141,244 L-127,218 L-112,190 L-97,162 L-82,134 L-68,108 L-67,105 L-73,103 L-112,85 L-145,70 L-177,55 L-210,40 L-251,21 L-253,19 L-248,20 L-212,34 L-172,50 L-109,75 L-61,94 L-58,94 L-42,68 L-28,45 L-15,24 L-1,1 Z"/></svg></span>{% endmacro %}
+

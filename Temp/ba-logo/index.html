@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="utf-8">
+<title>蔚蓝档案风格文字 Logo · 调试台</title>
+<link rel="stylesheet" href="ba-logo.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    font-size: 14px; color: #2b2b3a;
+    background: #eef0f6;
+  }
+  .app { display: flex; min-height: 100vh; }
+
+  /* ---------- 左侧控制台 ---------- */
+  .panel {
+    width: 340px; flex: none; padding: 16px 18px 40px;
+    background: #fff; border-right: 1px solid #e2e4ee;
+    overflow-y: auto; height: 100vh; position: sticky; top: 0;
+  }
+  .panel h1 { font-size: 15px; margin: 0 0 4px; }
+  .panel .sub { font-size: 12px; color: #8b8fa0; margin-bottom: 14px; line-height: 1.6; }
+  fieldset { border: 1px solid #e6e8f0; border-radius: 10px; margin: 0 0 12px; padding: 10px 12px 12px; }
+  legend { font-size: 12px; color: #6a6f85; padding: 0 6px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .row:last-child { margin-bottom: 0; }
+  .row > label { flex: none; width: 84px; font-size: 12px; color: #5b6075; }
+  .row > input[type=range] { flex: 1; min-width: 0; }
+  .row > .val { flex: none; width: 56px; text-align: right; font-size: 12px; color: #8b8fa0;
+                font-variant-numeric: tabular-nums; }
+  .row > input[type=text] { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid #d8dbe8;
+                            border-radius: 7px; font: inherit; }
+  .row > input[type=color] { flex: none; width: 34px; height: 24px; padding: 0;
+                             border: 1px solid #d8dbe8; border-radius: 6px; background: #fff; }
+  .row > .swatch-name { flex: 1; font-size: 12px; color: #5b6075; }
+  .checks { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .checks label { font-size: 12px; color: #5b6075; display: flex; align-items: center; gap: 5px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets button {
+    font: inherit; font-size: 12px; padding: 5px 10px; cursor: pointer;
+    border: 1px solid #d8dbe8; background: #fff; border-radius: 999px; color: #40465c;
+  }
+  .presets button:hover { border-color: #7f6ce0; color: #5b45c9; }
+
+  /* ---------- 右侧预览 ---------- */
+  .stage { flex: 1; min-width: 0; padding: 20px 24px 60px; }
+  .stage h2 { font-size: 13px; color: #6a6f85; font-weight: normal; margin: 0 0 10px; }
+  .card {
+    border-radius: 14px; padding: 22px 26px; margin-bottom: 18px;
+    border: 1px solid #e2e4ee; background: #fff;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 26px; min-height: 150px;
+    overflow-x: auto;
+  }
+  .card.checker { background-image:
+    linear-gradient(45deg,#e9ebf2 25%,transparent 25%,transparent 75%,#e9ebf2 75%),
+    linear-gradient(45deg,#e9ebf2 25%,transparent 25%,transparent 75%,#e9ebf2 75%);
+    background-size: 18px 18px; background-position: 0 0, 9px 9px; }
+  #preview { padding: 40px 30px; }
+  .ladder { display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+  .ladder .item { display: flex; align-items: baseline; gap: 16px; }
+  .ladder .tag { font-size: 11px; color: #a0a4b8; width: 46px; flex: none; }
+
+  /* ---------- 代码输出 ---------- */
+  .out { position: relative; }
+  .out pre {
+    margin: 0; padding: 14px 16px; background: #1e2233; color: #d7dcea;
+    border-radius: 12px; font-size: 12px; line-height: 1.7;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    overflow-x: auto; white-space: pre;
+  }
+  .out .copy {
+    position: absolute; top: 10px; right: 10px; font: inherit; font-size: 12px;
+    padding: 4px 10px; border-radius: 7px; cursor: pointer;
+    border: 1px solid #454b66; background: #2b3046; color: #cfd5e8;
+  }
+  .out .copy:hover { background: #363c56; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+  .tabs button {
+    font: inherit; font-size: 12px; padding: 5px 12px; border-radius: 8px 8px 0 0;
+    border: 1px solid #e2e4ee; border-bottom: none; background: #f6f7fb;
+    color: #6a6f85; cursor: pointer;
+  }
+  .tabs button[aria-selected=true] { background: #fff; color: #2b2b3a; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="panel">
+    <h1>蔚蓝档案风格文字 Logo</h1>
+    <div class="sub">
+      纯 CSS + 内联 SVG，无依赖。<br>
+      <b>整体大小只有一个入口：--ba-size</b>，其余尺寸全部按 em 等比派生。
+    </div>
+
+    <fieldset>
+      <legend>文字</legend>
+      <div class="row"><label>前半词</label><input type="text" id="txtL" value="Blue"></div>
+      <div class="row"><label>后半词</label><input type="text" id="txtR" value="Archive"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>预设</legend>
+      <div class="presets" id="presets"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>尺寸与字形</legend>
+      <div class="row"><label>整体大小</label><input type="range" id="size" min="20" max="240" step="1" value="84"><span class="val" id="sizeV">84px</span></div>
+      <div class="row"><label>倾斜角</label><input type="range" id="skew" min="-40" max="40" step="0.2" value="-21.8"><span class="val" id="skewV">-21.8°</span></div>
+      <div class="row"><label>字重</label><input type="range" id="weight" min="100" max="900" step="100" value="800"><span class="val" id="weightV">800</span></div>
+      <div class="row"><label>字距</label><input type="range" id="tracking" min="-0.05" max="0.25" step="0.005" value="0"><span class="val" id="trackingV">0em</span></div>
+      <div class="row"><label>描边粗细</label><input type="range" id="stroke" min="0" max="0.35" step="0.005" value="0.143"><span class="val" id="strokeV">0.143em</span></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>徽记（光晕 + 十字）</legend>
+      <div class="row"><label>缩放</label><input type="range" id="mscale" min="0.3" max="2.2" step="0.01" value="1"><span class="val" id="mscaleV">1</span></div>
+      <div class="row"><label>水平微调</label><input type="range" id="mx" min="-1.2" max="1.2" step="0.01" value="0"><span class="val" id="mxV">0em</span></div>
+      <div class="row"><label>垂直微调</label><input type="range" id="my" min="-1.2" max="1.2" step="0.01" value="0"><span class="val" id="myV">0em</span></div>
+      <div class="checks">
+        <label><input type="checkbox" id="showHalo" checked>光晕</label>
+        <label><input type="checkbox" id="showCross" checked>十字</label>
+        <label><input type="checkbox" id="showMark" checked>整体徽记</label>
+        <label><input type="checkbox" id="gap">词间留缝</label>
+        <label><input type="checkbox" id="mono">单色</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>配色</legend>
+      <div class="row"><span class="swatch-name">前半词 / 十字</span><input type="color" id="cAccent" value="#128afa"></div>
+      <div class="row"><span class="swatch-name">后半词</span><input type="color" id="cInk" value="#2b2b2b"></div>
+      <div class="row"><span class="swatch-name">光晕</span><input type="color" id="cHalo" value="#2b2b2b"></div>
+      <div class="row"><span class="swatch-name">描边</span><input type="color" id="cOutline" value="#ffffff"></div>
+      <div class="row"><label>外发光</label><input type="range" id="glow" min="0" max="24" step="0.5" value="0"><span class="val" id="glowV">0px</span></div>
+      <div class="row"><span class="swatch-name">发光色</span><input type="color" id="cGlow" value="#7fd4ff"></div>
+      <div class="row"><span class="swatch-name">预览底色</span><input type="color" id="cBg" value="#ffffff"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>重置</legend>
+      <div class="presets"><button id="reset">恢复默认（官方蓝白）</button></div>
+    </fieldset>
+  </aside>
+
+  <main class="stage">
+    <h2>预览</h2>
+    <div class="card" id="preview"></div>
+
+    <h2>尺寸阶梯（看等比缩放有没有跑偏）</h2>
+    <div class="card"><div class="ladder" id="ladder"></div></div>
+
+    <h2>不同文字（看徽记落点和长短词）</h2>
+    <div class="card" id="samples"></div>
+
+    <h2>要粘到模板里的代码</h2>
+    <div class="tabs">
+      <button data-tab="html" aria-selected="true">HTML</button>
+      <button data-tab="css" aria-selected="false">CSS 变量</button>
+    </div>
+    <div class="out">
+      <button class="copy" id="copy">复制</button>
+      <pre id="code"></pre>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ============ 徽记的两段 svg（矢量复刻自参考实现的 halo/cross 素材） ============ */
+const HALO_PATH  = "M0 0 C4.6 12.7 5.5 18.6 0 31 C-8.7 31.6 -8.7 31.6 -17 31 C-15 27 -15 27 -11 21 C-2.6 -4.1 -30.5 -27.1 -47.2 -40.7 C-105.5 -82.7 -223.9 -139.5 -296 -103 C-306.3 -95 -310.3 -87.7 -308.1 -74.2 C-294.1 -31.8 -242.9 -9.5 -206 9 C-207 10.3 -208 11.6 -209 13 C-251.4 -2.9 -308.7 -36.5 -322 -83 C-319.6 -104.9 -304.6 -112.1 -285 -117 C-196.8 -130.5 -45.6 -81.7 0 0 Z";
+const CROSS_PATH = "M0,0 L1,2 L-10,25 L-24,54 L-36,79 L-47,102 L-41,104 L-3,122 L31,138 L61,152 L97,169 L108,174 L105,175 L25,143 L-6,131 L-46,115 L-55,112 L-57,117 L-76,149 L-93,177 L-112,209 L-129,237 L-148,269 L-165,297 L-182,325 L-183,323 L-170,298 L-158,276 L-141,244 L-127,218 L-112,190 L-97,162 L-82,134 L-68,108 L-67,105 L-73,103 L-112,85 L-145,70 L-177,55 L-210,40 L-251,21 L-253,19 L-248,20 L-212,34 L-172,50 L-109,75 L-61,94 L-58,94 L-42,68 L-28,45 L-15,24 L-1,1 Z";
+
+const HALO_SVG = '<svg class="ba-logo__halo" viewBox="0 0 500 500">' +
+  '<path fill="currentColor" transform="translate(458,193)" d="' + HALO_PATH + '"/></svg>';
+const CROSS_SVG = '<svg class="ba-logo__cross" viewBox="0 0 500 500">' +
+  '<path fill="currentColor" transform="translate(361,40)" d="' + CROSS_PATH + '"/></svg>';
+const MARK_SVG = HALO_SVG + CROSS_SVG;
+
+/* ============ 控件定义 ============
+   unit  = 写进 CSS 时的单位（em 系的参数一律无单位，见 ba-logo.css 顶部说明）
+   label = 界面上显示的单位，纯粹为了好读 */
+const VARS = [
+  { id: 'size',     css: '--ba-size',       unit: 'px',  label: 'px', dec: 0, def: 84 },
+  { id: 'skew',     css: '--ba-skew',       unit: 'deg', label: '°',  dec: 1, def: -21.8 },
+  { id: 'weight',   css: '--ba-weight',     unit: '',    label: '',   dec: 0, def: 800 },
+  { id: 'tracking', css: '--ba-tracking',   unit: '',    label: 'em', dec: 3, def: 0 },
+  { id: 'stroke',   css: '--ba-stroke',     unit: '',    label: 'em', dec: 3, def: 0.143 },
+  { id: 'mscale',   css: '--ba-mark-scale', unit: '',    label: '×',  dec: 2, def: 1 },
+  { id: 'mx',       css: '--ba-mark-x',     unit: '',    label: 'em', dec: 2, def: 0 },
+  { id: 'my',       css: '--ba-mark-y',     unit: '',    label: 'em', dec: 2, def: 0 },
+  { id: 'glow',     css: '--ba-glow',       unit: 'px',  label: 'px', dec: 1, def: 0 },
+];
+const COLORS = [
+  { id: 'cAccent',  css: '--ba-accent',     def: '#128afa' },
+  { id: 'cInk',     css: '--ba-ink',        def: '#2b2b2b' },
+  { id: 'cHalo',    css: '--ba-halo',       def: '#2b2b2b' },
+  { id: 'cOutline', css: '--ba-outline',    def: '#ffffff' },
+  { id: 'cGlow',    css: '--ba-glow-color', def: '#7fd4ff' },
+];
+const FLAGS = [
+  { id: 'showMark',  cls: 'ba-logo--no-mark',  on: false },
+  { id: 'showHalo',  cls: 'ba-logo--no-halo',  on: false },
+  { id: 'showCross', cls: 'ba-logo--no-cross', on: false },
+  { id: 'gap',       cls: 'ba-logo--gap',      on: true },
+  { id: 'mono',      cls: 'ba-logo--mono',     on: true },
+];
+const PRESETS = [
+  { name: '官方蓝白', v: {} },
+  { name: '大标题', v: { size: 180, stroke: 0.13 } },
+  { name: '小标签', v: { size: 40, stroke: 0.16, '--ba-mark-scale': 1.15 } },
+  { name: '纯白（深底）', v: { '--ba-accent': '#ffffff', '--ba-ink': '#ffffff',
+                              '--ba-halo': '#8FD6FF', '--ba-outline': '#0B2E5C',
+                              stroke: 0.1, cBg: '#0b2e5c' } },
+  { name: '青蓝发光', v: { '--ba-accent': '#4FC3F7', '--ba-ink': '#0B2E5C',
+                          '--ba-halo': '#39C1F0', glow: 10, cBg: '#eaf6ff' } },
+  { name: '单色墨黑', v: { '--ba-accent': '#2b2b2b', mono: true } },
+];
+
+const $ = (id) => document.getElementById(id);
+const stage = $('preview');
+
+function logoHTML(textL, textR, cls) {
+  const c = ['ba-logo'].concat(cls || []).join(' ');
+  return '<span class="' + c + '"><span class="ba-logo__left">' + textL +
+         '</span><span class="ba-logo__mark" aria-hidden="true">' + MARK_SVG +
+         '</span><span class="ba-logo__right">' + textR + '</span></span>';
+}
+
+/* 给人看的版本：只把标记内部的换行/缩进放开。
+   ⚠ 三个顶层 span 之间绝不能有空白，所以换行只能落在它们内部或前面。 */
+function logoHTMLPretty(textL, textR, cls, style) {
+  const c = ['ba-logo'].concat(cls || []).join(' ');
+  return '<span class="' + c + '"' + (style ? ' style="' + style + '"' : '') + '>\n' +
+    '  <span class="ba-logo__left">' + textL + '</span><span class="ba-logo__mark" aria-hidden="true">\n' +
+    '    ' + HALO_SVG + '\n' +
+    '    ' + CROSS_SVG + '\n' +
+    '  </span><span class="ba-logo__right">' + textR + '</span>\n' +
+    '</span>';
+}
+
+/* 当前状态 -> CSS 变量表 */
+function currentVars() {
+  const o = {};
+  VARS.forEach(v => { o[v.css] = $((v.id)).value + v.unit; });
+  COLORS.forEach(c => { o[c.css] = $((c.id)).value; });
+  return o;
+}
+function currentClasses() {
+  return FLAGS.filter(f => ($((f.id)).checked === f.on)).map(f => f.cls);
+}
+function styleAttr(vars) {
+  return Object.keys(vars).map(k => k + ':' + vars[k]).join(';');
+}
+
+let codeTab = 'html';
+
+function render() {
+  const vars = currentVars();
+  const cls = currentClasses();
+  const style = styleAttr(vars);
+  const L = $('txtL').value, R = $('txtR').value;
+
+  // 主预览
+  stage.style.background = $('cBg').value;
+  stage.innerHTML = logoHTML(L, R, cls).replace('class="ba-logo',
+      'style="' + style + '" class="ba-logo');
+
+  // 尺寸阶梯
+  $('ladder').innerHTML = [32, 48, 72, 110, 160].map(s =>
+    '<div class="item"><span class="tag">' + s + 'px</span>' +
+    logoHTML(L, R, cls).replace('class="ba-logo',
+      'style="' + styleAttr(Object.assign({}, vars, { '--ba-size': s + 'px' })) + '" class="ba-logo') +
+    '</div>').join('');
+
+  // 不同文字
+  $('samples').innerHTML = [['Blue', 'Archive'], ['蔚蓝', '档案'], ['Hikari', 'Core'],
+                            ['碧', '蓝']].map(p =>
+    logoHTML(p[0], p[1], cls).replace('class="ba-logo',
+      'style="' + styleAttr(Object.assign({}, vars, { '--ba-size': '64px' })) + '" class="ba-logo') +
+    '</span>').join('');
+
+  // 数值回显
+  VARS.forEach(v => {
+    const raw = parseFloat($((v.id)).value);
+    $((v.id) + 'V').textContent = raw.toFixed(v.dec) + (v.label || v.unit);
+  });
+
+  // 代码输出
+  const html = codeTab === 'html'
+    ? logoHTMLPretty(L, R, cls, style)
+    : logoHTML(L, R, cls).replace('class="ba-logo', 'style="' + style + '" class="ba-logo');
+  const cssBlock = ':root {\n' + Object.keys(vars).map(k => '  ' + k + ': ' + vars[k] + ';')
+    .join('\n') + '\n}';
+  $('code').textContent = codeTab === 'html' ? html : cssBlock;
+}
+
+/* 事件绑定 */
+VARS.concat(COLORS).forEach(v => {
+  const el = $((v.id));
+  el.addEventListener('input', render);
+});
+FLAGS.forEach(f => $((f.id)).addEventListener('change', render));
+['txtL', 'txtR', 'cBg'].forEach(id => $(id).addEventListener('input', render));
+
+$('presets').innerHTML = PRESETS.map((p, i) =>
+  '<button data-p="' + i + '">' + p.name + '</button>').join('');
+$('presets').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-p]');
+  if (!b) return;
+  applyPreset(PRESETS[+b.dataset.p].v);
+});
+
+$('reset').addEventListener('click', () => applyPreset({}));
+
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.addEventListener('click', () => {
+    codeTab = b.dataset.tab;
+    document.querySelectorAll('.tabs button').forEach(x =>
+      x.setAttribute('aria-selected', x === b));
+    render();
+  });
+});
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('code').textContent);
+    $('copy').textContent = '已复制';
+  } catch (e) { $('copy').textContent = '复制失败'; }
+  setTimeout(() => ($('copy').textContent = '复制'), 1200);
+});
+
+function applyPreset(v) {
+  VARS.forEach(x => {
+    $((x.id)).value = (x.css in v) ? v[x.css] : (x.id in v ? v[x.id] : x.def);
+  });
+  COLORS.forEach(x => {
+    $((x.id)).value = (x.css in v) ? v[x.css] : x.def;
+  });
+  FLAGS.forEach(f => { $((f.id)).checked = f.on; });
+  if ('mono' in v) $('mono').checked = v.mono;
+  if ('cBg' in v) $('cBg').value = v.cBg;
+  if (v['--ba-accent']) $('cAccent').value = v['--ba-accent'];
+  if (v['--ba-ink']) $('cInk').value = v['--ba-ink'];
+  if (v['--ba-halo']) $('cHalo').value = v['--ba-halo'];
+  if (v['--ba-outline']) $('cOutline').value = v['--ba-outline'];
+  if (v.glow !== undefined) $('glow').value = v.glow;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

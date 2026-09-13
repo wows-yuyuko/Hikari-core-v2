@@ -31,6 +31,10 @@
     -webkit-backdrop-filter: blur(3px);
     border: 1px solid rgba(220, 230, 255, 0.5);
     box-shadow: none;
+    /* 允许收缩到比内容更窄（flex 项目默认 min-width: auto = 最小内容宽度，不让缩）。
+       名字那行是 nowrap 的，最小内容宽度 = 整个名字，不放开这一层，
+       下面的 .user-info 就永远拿不到一个够窄的容器，省略号不会触发、文字会顶出页面。 */
+    min-width: 0;
 }
 
 /* 头像底图（background-image）由头部宏内联输出，因为链接是数据里的：
@@ -45,6 +49,14 @@
     border-radius: 20px;
     width: 250px;
     height: 250px;
+    /* 头像盒**不许被压扁**：它是 .masking-header（flex 行）里的项目，默认 flex-shrink: 1，
+       一旦这一行的内容（军团名 / 用户名过长）撑不下，flex 会连它一起缩 ——
+       实测长名字时头像盒被压成 203×250（不是 250×250）。
+       后果就是「上面变形」：图是按盒宽 100% 画的（background-size: 100%），
+       盒宽一缩图跟着变小，而 avatarText 那两行是相对盒子顶边的绝对像素，
+       于是文字和徽章圆盘 / 底座对不上，整块头像看着就是歪的、扁的。
+       钉死成不缩：让右边那列去缩（它有 min-width: 0 + 省略号，缩得起）。 */
+    flex: none;
     opacity: 0.95;
     box-shadow: 0 0 10px #484848;
     background-position: center;
@@ -63,6 +75,44 @@
    空着就是白边。用户 / 公会两侧共用这一个类。 */
 .masking-header.no-avatar {
     padding-left: 5px;
+}
+
+/* ---------- 没有头像的公会：用 tag 生成的 BA 风格 logo 顶掉头像位 ----------
+   avatar.avatar.status == 0 时以前是整块隐藏（.no-avatar），现在宏会塞一个
+   BA 文字 logo 进来（见 clan-v6-macros 的 show_avatar_logo / avatar_logo_size），
+   盒子要留着，只是内容从 background-image 换成了一段 HTML。
+   背景保持全透明（alpha = 0）：盒子里除了 logo 什么都不画，只剩 .avatar-header
+   自带的圆角 + 阴影，形状和真头像那块牌子一致。
+   想回到浅玻璃底就把 alpha 调成 0.45（早先为了不让空盒子看着像空框加过）。 */
+.avatar-header.has-avatar-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0);
+}
+
+/* ▍上下 / 左右微调：只改下面 .ba-logo 里这两个数，别的地方都不用动
+     --ba-logo-lift  整体往上抬多少，无单位倍数 × 字号：
+                       0    = flex 居中（**默认**）—— 实测这时文字正好落在方框正中
+                       0.1  = 再往上抬 0.1 个字号（5 字 tag 字号 ~64px 时约 6px）
+                       -0.1 = 往下压
+     --ba-logo-push  整体左右挪多少，同样是无单位倍数 × 字号。
+                       默认 -0.16 —— 这个数正好抵消倾斜造成的「视觉右移」：
+                       skewX(-21.8°) 的原点钉在基线上，而字面在基线上方，
+                       所以**画出来**的文字相对布局盒整体偏右约 0.16 个字号
+                       （量了 12 个 tag：0.08~0.24em）。这样文字才真正水平居中。
+                       想手动挪就在这个数上加减：正数往右、负数往左。
+   为什么不是 px / em：字号随 tag 长短自动变，倍数才跟着一起缩；
+   而 em 在 .ba-logo 上等于 0（组件容器 font-size: 0），写 em 根本不生效。
+   --ba-logo-w 是模板钉死的布局宽度（两个词的 advance 之和）：
+   短 tag 时浏览器会把词方框撑得比文字宽（负 margin 的徽记搅的），
+   不钉死居中基准就不确定，「文字居中」也就无从谈起。 */
+.avatar-header.has-avatar-logo .ba-logo {
+    --ba-logo-lift: 0;
+    --ba-logo-push: -0.28;
+    width: calc(var(--ba-size) * var(--ba-logo-w));
+    transform: translate(calc(var(--ba-size) * var(--ba-logo-push)),
+                         calc(var(--ba-size) * var(--ba-logo-lift) * -1));
 }
 
 /* ---------- 头像中间的文字（公会战头像） ----------
@@ -132,6 +182,8 @@
     flex-direction: column;
     font-weight: bold;
     flex-grow: 1;
+    /* 同上：这一列也要能缩，否则名字行（nowrap）会把整列顶宽，再往外顶出玻璃底板 */
+    min-width: 0;
     /* 行距分配统一交给 space-between：首行贴头像顶、末行贴头像底，
        中间各行平分剩余空间（上下间距平均）。
        为什么不用 auto 外边距：auto 会先把剩余空间吃光再交给 justify-content，
@@ -156,6 +208,22 @@
     padding: 18px 0;
     border-radius: 10px;
     display: inline-block;
+    /* 名字太长**不换行**，一行到底，超出部分用 … 省略（公会名 / 用户名共用这条，两边都是同一套
+       .user-info + .mirage-text）。换行会把整个头部撑高、把下面几行（Clan Id / 服务器 / 注册时间）
+       挤走，省略号更稳。
+       四个属性要一起写，少一个都不生效：
+         white-space: nowrap  才不换行；
+         overflow: hidden     才裁得掉；
+         text-overflow: …     才会画省略号；
+         max-width: 100%      兜住宽度 —— 本元素是 flex 列（.clan-user-server）里的项目，
+                              项目宽度默认按内容算（fit-content），不会自己收缩，
+                              不兜住的话它照样超出容器，省略号根本没机会触发。
+       注意 .mirage-text 的个性颜色是 background-clip: text，照样作用于省略号，不用另做处理。 */
+    max-width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .user-sign-time,
