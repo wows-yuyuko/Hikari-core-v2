@@ -1,0 +1,626 @@
+@charset "utf-8";
+/* =========================================================
+   Hikari 用户信息「预览 + 裁剪」组件样式  avatar-editor.css
+   ---------------------------------------------------------
+   配套 avatar-editor.js，导出两个可被任意设置页引入的组件：
+       HikariUserPreview    用户信息预览
+       HikariImageCropper   固定缩放、不可越界的图片取景裁剪器
+
+   ▍为什么预览里**没有**任何 v6 的样式规则
+   预览跑在 <iframe srcdoc> 里，里面直接引真实的 main-v6.css /
+   avatar-v6.css（路径见 HikariUserPreview 的 assetBase）。
+   所以这个文件只管两件事：
+       1. iframe 容器 / 缩放外框的尺寸
+       2. 设置面板与裁剪器的控件样式
+   >>> v6 头部样式改了就改了，这里**不需要**跟着改。 <<<
+
+   ▍裁剪的语义（与模板一一对应）
+   模板里三张图都是**固定尺寸渲染**，用户能选的只是「显示哪一块」：
+       头像   .avatar-header  250x250   background-size: 100%
+       小背景 .page-header   1400x300   background-size: 100%
+       大背景 .main-content  1500x自动  background-size: cover
+   所以裁剪器不让缩放，只让平移，且平移必须被夹在图片内部
+   （图片始终完整覆盖取景框，不允许露出空白）。
+   ========================================================= */
+
+/* =========================================================
+   1. 变量 / 基础
+   ---------------------------------------------------------
+   变量挂在 :root 上而不是 .aep 上 —— 组件类（.aep-btn / .aep-input …）
+   经常被用在**容器外面**（比如页面顶栏的工具栏）。挂在 .aep 上的话，
+   容器外的 .aep-btn.primary 拿不到 --aep-accent，
+   背景会退化成 transparent，而它的文字色是硬编码的 #fff
+   —— 白底白字，按钮看起来直接消失了。
+   变量名都带 aep- 前缀，放 :root 不会跟页面其它样式打架。
+   ========================================================= */
+:root {
+    --aep-bg: #eef0f6;
+    --aep-card: #ffffff;
+    --aep-ink: #23233a;
+    --aep-ink-2: #6a6a86;
+    --aep-line: #dcdfec;
+    --aep-line-2: #eaecf5;
+    --aep-accent: #7c5cff;
+    --aep-accent-weak: #efeaff;
+    --aep-ok: #12a150;
+    --aep-warn: #d97706;
+    --aep-radius: 14px;
+    --aep-font: "Microsoft YaHei", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+}
+
+.aep {
+    font-family: var(--aep-font);
+    color: var(--aep-ink);
+}
+
+.aep *,
+.aep *::before,
+.aep *::after {
+    box-sizing: border-box;
+}
+
+/* =========================================================
+   2. 预览组件（iframe 承载真实 v6 页面）
+   ========================================================= */
+.aep-preview {
+    position: relative;
+    overflow: hidden;
+    background: #e6e9f1;
+}
+
+.aep-preview .aep-viewport {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+/* scaler 负责撑出「缩放后」的真实尺寸，让滚动条正确 */
+.aep-preview .aep-scaler {
+    position: relative;
+    width: 1500px;
+    height: 1000px;
+}
+
+/* iframe 按**原始像素**铺（宽 1500 = .page-box 的固定宽度），
+   再靠 transform: scale() 缩进预览区 —— 所以量到的几何都是模板里的真实数值。
+   height 由 JS 按内容高度写死（iframe 不能 auto 高度）。 */
+.aep-preview .aep-frame {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1500px;
+    height: 1000px;
+    border: 0;
+    display: block;
+    transform-origin: top left;
+    will-change: transform;
+    background: transparent;
+}
+
+/* =========================================================
+   3. 裁剪组件
+   ========================================================= */
+.aep-crop {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Cropper.js 的舞台：容器要有确定尺寸（高度由 JS 按槽位设），
+   图片由 Cropper 自己 contain 居中；棋盘底是我们画的
+   —— Cropper 那边关了自带背景（background: false）。
+
+   max-height 那个 calc 很关键：弹窗头 + 缩放条 + 操作栏 + 内外边距
+   加起来约 260px，扣掉之后舞台永远不会把弹窗顶出视口。
+   否则窗口一矮、弹窗就要内部滚动，拖裁剪框时根本看不到被顶出去的部分。 */
+.aep-crop-canvas {
+    position: relative;
+    width: 100%;
+    height: var(--aep-stage-h, 300px);   /* JS 按槽位给 */
+    max-height: calc(100vh - 280px);
+    min-height: 160px;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px var(--aep-line), 0 2px 8px rgba(60, 50, 110, 0.10);
+    background-color: #fff;
+    background-image:
+        linear-gradient(45deg, #ececf4 25%, transparent 25%, transparent 75%, #ececf4 75%),
+        linear-gradient(45deg, #ececf4 25%, transparent 25%, transparent 75%, #ececf4 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+}
+
+/* 全屏模式：弹窗吃掉整个视口，裁剪区也跟着吃满高度
+   （窗口模式下高度按槽位固定，全屏时就没必要留白了） */
+.aep-modal-box.full {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border-radius: 12px;
+}
+
+.aep-modal-box.full .aep-crop-canvas {
+    height: calc(100vh - 250px);
+    max-height: calc(100vh - 250px);
+}
+
+.aep-crop-canvas .aep-crop-img {
+    display: block;
+    max-width: 100%;
+}
+
+/* Cropper.js 自带样式的配色对齐：框线 / 手柄用面板的主题紫 */
+.aep-crop-canvas .cropper-view-box {
+    outline: 2px solid var(--aep-accent, #7c5cff);
+    outline-color: var(--aep-accent, #7c5cff);
+}
+
+.aep-crop-canvas .cropper-line,
+.aep-crop-canvas .cropper-point {
+    background-color: var(--aep-accent, #7c5cff);
+}
+
+.aep-crop-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 11.5px;
+    color: var(--aep-ink-2);
+    line-height: 1.6;
+}
+
+.aep-crop-meta b {
+    color: var(--aep-ink);
+    font-weight: 700;
+}
+
+.aep-crop-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* =========================================================
+   4. 设置面板通用控件
+   ========================================================= */
+.aep-group {
+    border: 1px solid var(--aep-line);
+    border-radius: var(--aep-radius);
+    background: var(--aep-card);
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.aep-group > summary {
+    cursor: pointer;
+    padding: 11px 14px;
+    font-size: 13.5px;
+    font-weight: 700;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fafbff;
+    user-select: none;
+}
+
+.aep-group > summary::-webkit-details-marker {
+    display: none;
+}
+
+.aep-group > summary::before {
+    content: "";
+    width: 0;
+    height: 0;
+    border-left: 5px solid var(--aep-ink-2);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transition: transform 0.16s;
+}
+
+.aep-group[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.aep-group[open] > summary {
+    border-bottom: 1px solid var(--aep-line-2);
+}
+
+.aep-group > summary .aep-sum-tag {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--aep-line-2);
+    color: var(--aep-ink-2);
+}
+
+.aep-group > summary .aep-sum-tag.on {
+    background: #e4f7ea;
+    color: var(--aep-ok);
+}
+
+.aep-group > summary .aep-sum-tag.off {
+    background: #f2f3f8;
+    color: #9a9ab0;
+}
+
+/* 自定义值（status ≥ 2）：不是简单的开/关，用主题色区分出来 */
+.aep-group > summary .aep-sum-tag.custom {
+    background: var(--aep-accent-weak, #efeaff);
+    color: var(--aep-accent, #7c5cff);
+}
+
+.aep-group-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.aep-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.aep-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--aep-ink-2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.aep-label > span:first-child {
+    flex: none;
+}
+
+.aep-hint {
+    font-size: 11.5px;
+    color: var(--aep-ink-2);
+    line-height: 1.6;
+}
+
+.aep-hint code {
+    background: #f0f1f7;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: Consolas, Menlo, monospace;
+}
+
+.aep-hint.warn {
+    color: var(--aep-warn);
+}
+
+.aep-input,
+.aep-textarea {
+    width: 100%;
+    border: 1px solid var(--aep-line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--aep-ink);
+    background: #fff;
+}
+
+.aep-textarea {
+    resize: vertical;
+    min-height: 62px;
+    line-height: 1.5;
+}
+
+.aep-input:focus,
+.aep-textarea:focus {
+    outline: none;
+    border-color: var(--aep-accent);
+    box-shadow: 0 0 0 3px var(--aep-accent-weak);
+}
+
+.aep-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.aep-row > .aep-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.aep-btn {
+    border: 1px solid var(--aep-line);
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--aep-ink);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.aep-btn:hover {
+    border-color: var(--aep-accent);
+    color: var(--aep-accent);
+}
+
+.aep-btn.primary {
+    background: var(--aep-accent, #7c5cff);
+    border-color: var(--aep-accent, #7c5cff);
+    color: #fff;
+}
+
+.aep-btn.primary:hover {
+    background: var(--aep-accent, #7c5cff);
+    filter: brightness(0.94);
+    color: #fff;
+}
+
+.aep-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.aep-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--aep-ink-2);
+    user-select: none;
+}
+
+.aep-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.aep-switch .aep-track {
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    background: #d5d8e6;
+    transition: background 0.18s;
+    position: relative;
+    flex: none;
+}
+
+.aep-switch .aep-track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.18s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.aep-switch input:checked ~ .aep-track {
+    background: var(--aep-accent);
+}
+
+.aep-switch input:checked ~ .aep-track::after {
+    transform: translateX(18px);
+}
+
+.aep-switch input:focus-visible ~ .aep-track {
+    box-shadow: 0 0 0 3px var(--aep-accent-weak);
+}
+
+.aep-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.aep-preset {
+    width: 34px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--aep-line);
+    cursor: pointer;
+    padding: 0;
+    flex: none;
+}
+
+.aep-preset:hover {
+    outline: 2px solid var(--aep-accent-weak);
+}
+
+.aep-status {
+    font-size: 12.5px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    line-height: 1.6;
+    background: #f5f6fb;
+    color: var(--aep-ink-2);
+}
+
+.aep-status.ok {
+    background: #e9f9ef;
+    color: #0f7a3d;
+}
+
+.aep-status.err {
+    background: #fdecec;
+    color: #b3261e;
+}
+
+/* =========================================================
+   5. 裁剪弹窗
+   图片槽位改成「点按钮开弹窗编辑」时套在外面：
+   body 里放各槽位的 .aep-crop-slot（同一时刻只有 .active 那个显示），
+   foot 是共用操作栏（选择文件 / 居中 / 下载裁剪图 + 完成）。
+   ========================================================= */
+.aep-modal {
+    /* ▍弹窗大小在这儿调：
+         --aep-modal-w  弹窗宽度（窄屏会被 max-width: 100% 兜住）
+         裁剪区（舞台）高度不在这里 —— 它按槽位不同，在 index.html 的
+         croppers 配置里，每个槽位一个 maxHeight；窗口不够高时那边的值
+         会被 .aep-crop-canvas 的 max-height 自动压低，不会把弹窗顶出屏幕。 */
+    --aep-modal-w: 760px;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.aep-modal[hidden] {
+    display: none;
+}
+
+.aep-modal-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(28, 24, 48, 0.48);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+.aep-modal-box {
+    position: relative;
+    width: var(--aep-modal-w, 760px);
+    max-width: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--aep-card, #fff);
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(30, 20, 70, 0.32);
+    overflow: hidden;
+    font-family: var(--aep-font);
+    color: var(--aep-ink);
+}
+
+.aep-modal-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px 16px;
+    font-size: 14px;
+    font-weight: 800;
+    border-bottom: 1px solid var(--aep-line);
+    background: #fafbff;
+}
+
+.aep-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.aep-head-btn {
+    border: 1px solid var(--aep-line);
+    background: #fff;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--aep-ink-2);
+    cursor: pointer;
+}
+
+.aep-head-btn:hover {
+    border-color: var(--aep-accent);
+    color: var(--aep-accent);
+}
+
+.aep-modal-close {
+    border: 0;
+    background: transparent;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--aep-ink-2);
+    cursor: pointer;
+    padding: 2px 7px;
+    border-radius: 8px;
+}
+
+.aep-modal-close:hover {
+    background: var(--aep-line-2, #eaecf5);
+    color: var(--aep-ink);
+}
+
+.aep-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.aep-modal-body > .aep-crop-slot {
+    display: none;
+}
+
+.aep-modal-body > .aep-crop-slot.active {
+    display: block;
+}
+
+/* 缩放条：在 body 与 foot 之间，操作栏上面一行 */
+.aep-modal-zoom {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 0;
+}
+
+.aep-zoom-label {
+    flex: none;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--aep-ink-2);
+}
+
+.aep-modal-zoom input[type=range] {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--aep-accent, #7c5cff);
+}
+
+.aep-zoom-val {
+    flex: none;
+    width: 46px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--aep-ink);
+}
+
+.aep-modal-foot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-top: 1px solid var(--aep-line);
+    background: #fafbff;
+}
+
+.aep-modal-foot .aep-spacer {
+    flex: 1;
+}

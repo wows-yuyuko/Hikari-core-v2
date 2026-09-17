@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="utf-8">
+<title>Hikari 用户信息预览 / 设置</title>
+<!-- 注意：这里**不要**给本地 css/js 加 ?v=20260917 这类查询串 ——
+     file:// 下查询串会被当成文件名的一部分，cropper.min.js 会加载不出来。
+     靠浏览器强制刷新（Ctrl+F5）来避免缓存，或者看顶栏那个版本号确认加载的是新版。 -->
+<link rel="stylesheet" href="cropper.min.css">
+<link rel="stylesheet" href="avatar-editor.css">
+<style>
+    :root {
+        --top-h: 62px;
+        --line: #dcdfec;
+        --ink: #23233a;
+        --ink-2: #6a6a86;
+        --accent: #7c5cff;
+        --panel-w: 470px;
+    }
+
+    html, body {
+        height: 100%;
+        margin: 0;
+    }
+
+    body {
+        font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+        color: var(--ink);
+        background: #f3f4f9;
+        font-size: 14px;
+    }
+
+    .app {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        min-height: 0;
+    }
+
+    /* ---------- 顶栏 ---------- */
+    .topbar {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 16px;
+        height: var(--top-h);
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        flex-wrap: wrap;
+    }
+
+    .topbar .brand {
+        font-weight: 800;
+        font-size: 15px;
+        letter-spacing: .3px;
+        margin-right: 6px;
+    }
+
+    .topbar .brand small {
+        font-weight: 600;
+        color: var(--ink-2);
+        font-size: 11.5px;
+        margin-left: 6px;
+    }
+
+    .topbar label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink-2);
+        white-space: nowrap;
+    }
+
+    .topbar input {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 7px 10px;
+        font-size: 12.5px;
+        font-family: inherit;
+        color: var(--ink);
+    }
+
+    .topbar input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px #efeaff;
+    }
+
+    #accountId { width: 180px; }
+
+    .spacer { flex: 1; }
+
+    /* 顶栏按钮比面板里的稍大一点，加载按钮是主操作，要有存在感 */
+    .topbar .aep-btn {
+        padding: 7px 16px;
+        font-size: 13px;
+    }
+
+    .topbar .aep-btn.primary {
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(124, 92, 255, .32);
+    }
+
+    /* ---------- 主体 ---------- */
+    .main {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+    }
+
+    .panel {
+        width: var(--panel-w);
+        flex: none;
+        overflow-y: auto;
+        padding: 14px 14px 40px;
+        background: #f7f8fc;
+        border-right: 1px solid var(--line);
+    }
+
+    .previewwrap {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    #preview {
+        flex: 1;
+        min-height: 0;
+        border-radius: 14px;
+        box-shadow: 0 6px 24px rgba(60, 50, 110, .16);
+    }
+
+    .panel-intro {
+        font-size: 12px;
+        color: var(--ink-2);
+        line-height: 1.7;
+        margin-bottom: 12px;
+    }
+
+    .panel-intro code {
+        background: #eceef7;
+        padding: 1px 4px;
+        border-radius: 4px;
+        font-size: 11px;
+    }
+
+    .slot-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    /* dogTag 是长 URL，别把面板撑宽 */
+    #basic-readonly {
+        overflow-wrap: anywhere;
+        line-height: 2;
+    }
+
+    .slot-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* 当前图片的缩略图 */
+    .slot-thumb {
+        width: 56px;
+        height: 56px;
+        flex: none;
+        border-radius: 10px;
+        border: 1px solid var(--aep-line);
+        background-color: #fff;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+    }
+
+    .slot-thumb.empty {
+        background-image:
+            linear-gradient(45deg, #ececf4 25%, transparent 25%, transparent 75%, #ececf4 75%),
+            linear-gradient(45deg, #ececf4 25%, transparent 25%, transparent 75%, #ececf4 75%);
+        background-size: 14px 14px;
+        background-position: 0 0, 7px 7px;
+    }
+
+    /* ---------- 彩色昵称：纯色 / 渐变 编辑器 ---------- */
+    .aep-tabs {
+        display: flex;
+        gap: 6px;
+    }
+
+    .aep-tab {
+        flex: 1;
+        border: 1px solid var(--aep-line);
+        background: #fff;
+        border-radius: 9px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: inherit;
+        color: var(--aep-ink-2);
+        cursor: pointer;
+    }
+
+    .aep-tab.active {
+        border-color: var(--aep-accent, #7c5cff);
+        background: var(--aep-accent-weak, #efeaff);
+        color: var(--aep-accent, #7c5cff);
+    }
+
+    .aep-pick {
+        width: 56px;
+        padding: 2px;
+        flex: none;
+    }
+
+    .aep-range {
+        width: 100%;
+        accent-color: var(--aep-accent, #7c5cff);
+    }
+
+    .aep-stops {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .aep-stop {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .aep-stop .aep-stop-pos {
+        width: 68px;
+        flex: none;
+    }
+
+    .aep-stop-unit {
+        font-size: 11.5px;
+        color: var(--aep-ink-2);
+    }
+
+    .aep-stop-del {
+        padding: 6px 9px;
+        line-height: 1;
+    }
+
+    .aep-color-preview {
+        height: 30px;
+        border-radius: 9px;
+        border: 1px solid var(--aep-line);
+    }
+
+    .aep-value-line {
+        margin-top: 6px;
+        font-family: Consolas, Menlo, monospace;
+        font-size: 11px;
+        line-height: 1.5;
+        color: var(--aep-ink-2);
+        background: #f5f6fb;
+        border-radius: 8px;
+        padding: 6px 8px;
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 1100px) {
+        .main { flex-direction: column; }
+        .panel { width: auto; border-right: none; border-bottom: 1px solid var(--line); max-height: 52vh; }
+        .previewwrap { min-height: 60vh; }
+    }
+</style>
+</head>
+<body>
+<div class="app">
+
+    <!-- ===================== 顶栏 ===================== -->
+    <div class="topbar">
+        <div class="brand">Hikari 用户信息预览<small>info-v6 / userInfo · <span id="build-tag">—</span></small></div>
+
+        <label for="accountId">Account&nbsp;Id</label>
+        <input id="accountId" type="text" placeholder="例如 2022515210" spellcheck="false">
+        <button class="aep-btn primary" id="btnLoad" type="button">加载配置</button>
+
+        <div class="spacer"></div>
+
+        <button class="aep-btn" id="btnShot" type="button">截图预览</button>
+        <button class="aep-btn" id="btnDownload" type="button">下载 JSON</button>
+    </div>
+
+    <!-- ===================== 主体 ===================== -->
+    <div class="main">
+
+        <!-- ---------- 左：设置 ---------- -->
+        <div class="panel">
+            <div class="panel-intro">
+
+            </div>
+
+            <div id="status-bar" class="aep-status">填入 Account Id 后点「加载配置」，把该玩家的当前设置读进来</div>
+
+            <!-- ============ 账号信息（只读，来自接口） ============ -->
+            <details class="aep-group" open>
+                <summary>账号信息<span class="aep-sum-tag" id="tag-basic">—</span></summary>
+                <div class="aep-group-body">
+                    <div class="aep-hint" id="basic-readonly"></div>
+                    <div class="aep-hint">用户名与军团标签由游戏/接口给出，只读；本页只负责头像、背景、签名、昵称配色这些可设置的项。</div>
+                </div>
+            </details>
+
+            <!-- ============ 头像 ============ -->
+            <details class="aep-group" open>
+                <summary>头像 avatar<span class="aep-sum-tag" id="tag-avatar">—</span></summary>
+                <div class="aep-group-body">
+                    <div class="slot-head">
+                        <label class="aep-switch">
+                            <input type="checkbox" id="s-avatar">
+                            <span class="aep-track"></span>
+                            <span id="s-avatar-text">隐藏</span>
+                        </label>
+                        <span class="aep-hint">取景框 250×250</span>
+                    </div>
+                    <div class="slot-row">
+                        <div class="slot-thumb empty" id="thumb-avatar" title="当前图片"></div>
+                        <button class="aep-btn" id="open-avatar" type="button">编辑图片</button>
+                    </div>
+                    <div class="aep-hint" id="hint-avatar"></div>
+                </div>
+            </details>
+
+            <!-- ============ 小背景图 ============ -->
+            <details class="aep-group" open>
+                <summary>小背景图 banner<span class="aep-sum-tag" id="tag-banner">—</span></summary>
+                <div class="aep-group-body">
+                    <div class="slot-head">
+                        <label class="aep-switch">
+                            <input type="checkbox" id="s-banner">
+                            <span class="aep-track"></span>
+                            <span id="s-banner-text">隐藏</span>
+                        </label>
+                        <label class="aep-switch">
+                            <input type="checkbox" id="d-banner">
+                            <span class="aep-track"></span>
+                            <span>dark（深色）</span>
+                        </label>
+                    </div>
+                    <div class="slot-row">
+                        <div class="slot-thumb empty" id="thumb-banner" title="当前图片"></div>
+                        <button class="aep-btn" id="open-banner" type="button">编辑图片</button>
+                    </div>
+                    <div class="aep-hint">取景框 1400×300。关闭 dark 用黑字，打开 dark 用白字（模板的 <code>.dark-banner</code>）。</div>
+                </div>
+            </details>
+
+            <!-- ============ 大背景图 ============ -->
+            <details class="aep-group" open>
+                <summary>大背景图 poster<span class="aep-sum-tag" id="tag-poster">—</span></summary>
+                <div class="aep-group-body">
+                    <div class="slot-head">
+                        <label class="aep-switch">
+                            <input type="checkbox" id="s-poster">
+                            <span class="aep-track"></span>
+                            <span id="s-poster-text">隐藏</span>
+                        </label>
+                        <span class="aep-hint" id="poster-frame-txt">取景框 —</span>
+                    </div>
+                    <div class="slot-row">
+                        <div class="slot-thumb empty" id="thumb-poster" title="当前图片"></div>
+                        <button class="aep-btn" id="open-poster" type="button">编辑图片</button>
+                    </div>
+                    <div class="aep-hint">铺满整页（<code>cover</code>），取景框 = 预览整页尺寸，所以页面越高可平移空间越大。</div>
+                </div>
+            </details>
+
+            <!-- ============ 彩色昵称 ============ -->
+            <details class="aep-group" open>
+                <summary>彩色昵称 colorName<span class="aep-sum-tag" id="tag-color">—</span></summary>
+                <div class="aep-group-body">
+                    <label class="aep-switch">
+                        <input type="checkbox" id="s-color">
+                        <span class="aep-track"></span>
+                        <span id="s-color-text">隐藏</span>
+                    </label>
+
+                    <div class="aep-tabs" id="color-tabs">
+                        <button type="button" class="aep-tab" data-type="solid">纯色</button>
+                        <button type="button" class="aep-tab" data-type="gradient">渐变</button>
+                    </div>
+
+                    <!-- 纯色 -->
+                    <div class="aep-field" id="color-solid">
+                        <div class="aep-label"><span>颜色</span></div>
+                        <div class="aep-row">
+                            <input class="aep-input aep-pick" id="color-solid-pick" type="color" value="#e53935">
+                            <input class="aep-input" id="color-solid-hex" type="text" spellcheck="false">
+                        </div>
+                    </div>
+
+                    <!-- 渐变 -->
+                    <div id="color-gradient">
+                        <div class="aep-field">
+                            <div class="aep-label"><span>角度</span><span id="grad-angle-val">45°</span></div>
+                            <input class="aep-range" id="grad-angle" type="range" min="0" max="360" step="1" value="45">
+                        </div>
+                        <div class="aep-field">
+                            <div class="aep-label"><span>色标</span><span id="grad-stop-count">2 个</span></div>
+                            <div class="aep-stops" id="grad-stops"></div>
+                            <button class="aep-btn" id="grad-add" type="button">+ 添加色标</button>
+                        </div>
+                    </div>
+
+                    <div class="aep-field">
+                        <div class="aep-label"><span>预览</span><span id="color-kind">—</span></div>
+                        <div class="aep-color-preview" id="color-preview"></div>
+                        <div class="aep-value-line" id="color-value"></div>
+                    </div>
+
+                    <div class="aep-presets" id="color-presets"></div>
+                    <div class="aep-hint">模板把这段值直接写进 <code>background</code> 并配 <code>background-clip: text</code>。预设里纯色和现成渐变都有，点一下即可；也可以自己加色标调渐变。</div>
+                </div>
+            </details>
+
+            <!-- ============ 个性签名 ============ -->
+            <details class="aep-group" open>
+                <summary>个性签名 sign<span class="aep-sum-tag" id="tag-sign">—</span></summary>
+                <div class="aep-group-body">
+                    <label class="aep-switch">
+                        <input type="checkbox" id="s-sign">
+                        <span class="aep-track"></span>
+                        <span id="s-sign-text">隐藏</span>
+                    </label>
+                    <div class="aep-field">
+                        <textarea class="aep-textarea" id="f-sign" placeholder="「白草净华，幽宫启蛰」"></textarea>
+                        <div class="aep-hint">有签名时，「服务器 / Account Id」并成一行，签名单独占一行；无签名时才拆成两行 —— 模板里的分支就是这样。</div>
+                    </div>
+                </div>
+            </details>
+
+        </div>
+
+        <!-- ---------- 右：预览 ---------- -->
+        <div class="previewwrap">
+            <div id="preview"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===================== 图片裁剪弹窗 ===================== -->
+<div class="aep-modal" id="crop-modal" hidden>
+    <div class="aep-modal-mask" id="crop-modal-mask"></div>
+    <div class="aep-modal-box">
+        <div class="aep-modal-head">
+            <span id="crop-modal-title">编辑图片</span>
+            <div class="aep-head-actions">
+                <button class="aep-head-btn" id="crop-modal-full" type="button" title="全屏 / 还原">全屏</button>
+                <button class="aep-modal-close" id="crop-modal-close" type="button" title="关闭">×</button>
+            </div>
+        </div>
+        <div class="aep-modal-body">
+            <div class="aep-crop-slot" id="crop-slot-avatar"><div id="crop-avatar"></div></div>
+            <div class="aep-crop-slot" id="crop-slot-banner"><div id="crop-banner"></div></div>
+            <div class="aep-crop-slot" id="crop-slot-poster"><div id="crop-poster"></div></div>
+        </div>
+        <div class="aep-modal-zoom">
+            <span class="aep-zoom-label">缩放</span>
+            <input type="range" id="slot-zoom" min="100" max="500" step="1" value="100">
+            <span class="aep-zoom-val" id="slot-zoom-val">100%</span>
+        </div>
+        <div class="aep-modal-foot">
+            <input type="file" id="slot-file" accept="image/*" hidden>
+            <button class="aep-btn" id="slot-pick" type="button">选择文件</button>
+            <button class="aep-btn" id="slot-center" type="button">居中</button>
+            <button class="aep-btn" id="slot-reset" type="button">重置</button>
+            <button class="aep-btn" id="slot-download" type="button">下载裁剪图</button>
+            <span class="aep-spacer"></span>
+            <button class="aep-btn primary" id="slot-done" type="button">完成</button>
+        </div>
+    </div>
+</div>
+
+<script src="cropper.min.js"></script>
+<script src="avatar-editor.js"></script>
+<script src="html2canvas.min.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var $ = function (id) { return document.getElementById(id); };
+
+    /* 配置接口地址 —— 服务器还没更新，先指本地。
+       上线后把这里改成正式域名即可（临时换也可以直接在 URL 上加 ?api=http://xxx）。 */
+    var API_BASE = 'https://v3-api.wows.shinoaki.com';
+
+    /* ============ 1. 状态 ============ */
+    function blankSlot() {
+        return { status: 0, data: '', dark: 0, crop: { x: 50, y: 50 } };
+    }
+
+    var state = {
+        server: '', serverCn: '', accountId: '', userName: '', accountCreateTime: 0, dogTag: '',
+        clanInfo: { tag: '', color: '#b3b3b3' },
+        avatar: {
+            avatar: blankSlot(), banner: blankSlot(), poster: blankSlot(),
+            colorName: blankSlot(), sign: blankSlot()
+        }
+    };
+
+    /* ============ 2. 组件实例 ============ */
+    // 预览跑在 iframe 里，引的是仓库里**真实的** v6 样式表（main-v6.css / avatar-v6.css
+    // / echarts.js），路径相对本页；换位置部署时改 assetBase 就行。
+    var preview = new HikariUserPreview($('preview'), {
+        assetBase: '../../hikari_core/Template/'
+    });
+
+    /* 预览就绪后补一次大背景图的 frame 同步（syncPosterFrame 在未就绪时会跳过）。
+       如果弹窗这时已经开着、Cropper 用的还是错 frame，就按新尺寸重建一次。 */
+    var previewSynced = false;
+    preview.onReady = function () {
+        syncPosterFrame();
+        if (!previewSynced) {
+            previewSynced = true;
+            if (openSlot && croppers[openSlot].cropper) croppers[openSlot].onResize();
+        }
+    };
+
+    /* 三个裁剪器都建在弹窗里（actions: false —— 操作栏由弹窗底部统一提供）。
+       ▍maxHeight = 裁剪区（Cropper 舞台）的高度上限，px —— 想调大调小改这三个数。
+         弹窗**宽度**不在这里，在 avatar-editor.css 的 .aep-modal 上（--aep-modal-w）。
+         窗口不够高时会被 CSS 的 max-height: calc(100vh - 280px) 自动压低
+         （见 .aep-crop-canvas），所以这里给大一点也不会把弹窗顶出屏幕。
+
+       ▍freeAspect：裁剪框是否自由比例。
+         头像锁 1:1（模板是 250×250 的固定方框，不锁会变形）。
+         小背景图 / 大背景图放开 —— 模板里一个是 background-size: 100%
+         （宽度撑满、高度多的部分裁掉），一个是 cover（等比放大盖住整个盒子），
+         本来就不在乎图片比例。frame 这时只用来算「刚好盖住盒子」的初始框。 */
+    var croppers = {
+        avatar: new HikariImageCropper($('crop-avatar'), {
+            frame: HikariUserPreview.SLOT_FRAME.avatar, label: 'avatar',
+            maxHeight: 380, actions: false
+        }),
+        banner: new HikariImageCropper($('crop-banner'), {
+            frame: HikariUserPreview.SLOT_FRAME.banner, label: 'banner',
+            maxHeight: 210, actions: false, freeAspect: true
+        }),
+        poster: new HikariImageCropper($('crop-poster'), {
+            frame: { w: 1500, h: 2600 }, label: 'poster',
+            maxHeight: 460, actions: false, freeAspect: true
+        })
+    };
+
+    /* 拖动裁剪器 -> 写回状态 -> 重绘预览 */
+    Object.keys(croppers).forEach(function (key) {
+        croppers[key].onChange = function (pos) {
+            state.avatar[key].crop = pos;     // { x, y, scale, size }
+            if (openSlot === key) syncZoomUI(pos.scale);
+            render();
+        };
+    });
+
+    /* 大背景图的取景框 = 预览整页尺寸。
+       预览没就绪时 getStageSize() 只会给一个占位高度（1000），
+       拿它去 setFrame 会把「刚好盖住盒子」的基准算错 —— 所以先跳过，
+       等 preview.onReady 里再同步一次。 */
+    function syncPosterFrame() {
+        if (!preview.ready) return;
+        var s = preview.getStageSize();
+        croppers.poster.setFrame({ w: s.w, h: s.h });
+        $('poster-frame-txt').textContent = '取景框 ' + s.w + '×' + s.h;
+    }
+
+    /* ============ 3. 渲染 ============ */
+    function render() {
+        preview.render(state);
+        syncPosterFrame();
+        updateTags();
+    }
+
+    /* 槽位 -> 元素短名。开关文字用「显示 / 隐藏」，
+       分组标题上的 tag 仍然显示 status 0/1（那是真正写进数据里的值）。 */
+    var SLOT_SHORT = [
+        ['avatar', 'avatar'], ['banner', 'banner'], ['poster', 'poster'],
+        ['colorName', 'color'], ['sign', 'sign']
+    ];
+
+    /* status 文案：0 = 隐藏，1 = 显示，≥2 = 自定义N。
+       接口里除 0/1 之外确实可能出现别的值（比如公会战的 2），
+       一律按「自定义 + 原值」显示，别把它抹成 1。 */
+    function statusText(s) {
+        s = Number(s) || 0;
+        if (s <= 0) return '隐藏';
+        if (s === 1) return '显示';
+        return '自定义' + s;
+    }
+
+    function updateTags() {
+        SLOT_SHORT.forEach(function (p) {
+            var k = p[0], short = p[1];
+            var s = Number(state.avatar[k].status) || 0;
+
+            var tag = $('tag-' + tagId(k));
+            if (tag) {
+                tag.textContent = statusText(s);
+                tag.className = 'aep-sum-tag ' + (s <= 0 ? 'off' : (s === 1 ? 'on' : 'custom'));
+            }
+            var txt = $('s-' + short + '-text');
+            if (txt) txt.textContent = s > 0 ? '显示' : '隐藏';
+        });
+        $('tag-basic').textContent = state.userName || '—';
+        updateThumbs();
+    }
+
+    /* 缩略图（只有三个图片槽位有） */
+    function updateThumbs() {
+        ['avatar', 'banner', 'poster'].forEach(function (k) {
+            var box = $('thumb-' + k);
+            if (!box) return;
+            var src = state.avatar[k].data;
+            if (src) {
+                box.style.backgroundImage = 'url("' + src + '")';
+                box.classList.remove('empty');
+            } else {
+                box.style.backgroundImage = '';
+                box.classList.add('empty');
+            }
+        });
+    }
+
+    function tagId(k) {
+        return { avatar: 'avatar', banner: 'banner', poster: 'poster', colorName: 'color', sign: 'sign' }[k];
+    }
+
+
+    /* ============ 4. 表单 -> 状态 ============ */
+    /* 开关：勾 = 显示，取消 = 隐藏。
+       槽位原本是自定义值（≥2）时，关掉再打开要还原回那个值，
+       不能粗暴地抹成 1 —— 上次的非零值记在 checkbox 元素上。 */
+    function bindSwitch(id, path, apply) {
+        $(id).addEventListener('change', function () {
+            if (this.checked) {
+                var last = Number(this._lastOn);
+                setPath(path, last > 0 ? last : 1);
+            } else {
+                var cur = Number(getPath(path)) || 0;
+                if (cur > 0) this._lastOn = cur;
+                setPath(path, 0);
+            }
+            if (apply) apply(this.checked);
+            render();
+        });
+    }
+
+    function setPath(path, value) {
+        var seg = path.split('.');
+        var obj = state;
+        for (var i = 0; i < seg.length - 1; i++) obj = obj[seg[i]];
+        obj[seg[seg.length - 1]] = value;
+    }
+
+    function getPath(path) {
+        var seg = path.split('.');
+        var obj = state;
+        for (var i = 0; i < seg.length; i++) {
+            if (obj == null) return undefined;
+            obj = obj[seg[i]];
+        }
+        return obj;
+    }
+
+    /* ---------- 图片槽位：显示/隐藏 + 弹窗里编辑图片 ---------- */
+
+    var SLOT_TITLE = {
+        avatar: '头像 avatar',
+        banner: '小背景图 banner',
+        poster: '大背景图 poster'
+    };
+    var openSlot = null;      // 弹窗里当前编辑的槽位
+
+    /* 缩放条：与裁剪器的滚轮缩放双向同步 */
+    function syncZoomUI(scale) {
+        var pct = Math.round(Math.min(ZOOM_MAX, Math.max(100, (Number(scale) || 1) * 100)));
+        $('slot-zoom').value = pct;
+        $('slot-zoom-val').textContent = pct + '%';
+    }
+
+    $('slot-zoom').addEventListener('input', function () {
+        $('slot-zoom-val').textContent = this.value + '%';
+        if (openSlot) croppers[openSlot].setScale(Number(this.value) / 100);
+    });
+
+    function openCropModal(key) {
+        openSlot = key;
+        $('crop-modal-title').textContent = SLOT_TITLE[key];
+        document.querySelectorAll('.aep-crop-slot').forEach(function (n) {
+            n.classList.toggle('active', n.id === 'crop-slot-' + key);
+        });
+        $('crop-modal').hidden = false;
+        // 弹窗这时预览肯定就绪了，先把大背景图的 frame（= 预览整页尺寸）同步准
+        // —— Cropper 一初始化就会按 frame 算「刚好盖住盒子」的基准框，
+        //   用早先那个预览未就绪时的占位尺寸算出来是错的。
+        syncPosterFrame();
+        syncZoomUI(croppers[key].getScale());
+        // 弹窗显示后裁剪器容器才有宽度（读 clientWidth 会强制重排，同步拿到）；
+        // 再补一次 setTimeout 兜底 —— 无头 / 虚拟时间下 requestAnimationFrame 可能不执行
+        croppers[key].relayout();
+        setTimeout(function () { croppers[key].relayout(); }, 0);
+    }
+
+    function closeCropModal() {
+        $('crop-modal').hidden = true;
+        openSlot = null;
+    }
+
+    function bindImageSlot(key, short) {
+        bindSwitch('s-' + short, 'avatar.' + key + '.status');
+        $('open-' + short).addEventListener('click', function () { openCropModal(key); });
+    }
+
+    bindImageSlot('avatar', 'avatar');
+    bindImageSlot('banner', 'banner');
+    bindImageSlot('poster', 'poster');
+
+    /* 弹窗底部操作栏，作用于当前打开的槽位：选择文件 → 居中 → 下载裁剪图。
+       图片**只能本地上传**（读成 dataURL 直接存进 slot.data），不提供填网络 URL 的入口；
+       接口加载回来的网络图片照旧显示在裁剪器里，用来调取景位置。 */
+    $('slot-pick').addEventListener('click', function () { $('slot-file').click(); });
+
+    $('slot-file').addEventListener('change', function () {
+        var key = openSlot;
+        var f = this.files && this.files[0];
+        this.value = '';                        // 允许连续选同一个文件
+        if (!key || !f) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+            state.avatar[key].data = reader.result;   // data:image/...;base64,...
+            state.avatar[key].status = 1;             // 选了图就是要用，顺手打开
+            $('s-' + key).checked = true;
+            croppers[key].setImage(state.avatar[key].data).then(function () {
+                croppers[key].setPosition(state.avatar[key].crop.x, state.avatar[key].crop.y);
+                render();
+            });
+        };
+        reader.readAsDataURL(f);
+    });
+
+    /* 「居中」只挪位置（缩放不动）；「重置」把位置和缩放一起复位 */
+    $('slot-center').addEventListener('click', function () {
+        if (openSlot) croppers[openSlot].center();
+    });
+
+    $('slot-reset').addEventListener('click', function () {
+        if (openSlot) croppers[openSlot].reset();
+    });
+
+    /* 全屏 / 还原：给弹窗加 .full 类，然后让 Cropper 按新容器尺寸重建
+       （它自己没有 resize()，容器变尺寸不会自动重算）。 */
+    $('crop-modal-full').addEventListener('click', function () {
+        var box = document.querySelector('#crop-modal .aep-modal-box');
+        var isFull = box.classList.toggle('full');
+        this.textContent = isFull ? '还原' : '全屏';
+        this.title = isFull ? '还原窗口大小' : '全屏';
+        if (openSlot) {
+            setTimeout(function () { croppers[openSlot].onResize(); }, 30);
+        }
+    });
+
+    $('slot-download').addEventListener('click', function () {
+        if (openSlot) croppers[openSlot].download(openSlot);
+    });
+
+    $('slot-done').addEventListener('click', closeCropModal);
+    $('crop-modal-close').addEventListener('click', closeCropModal);
+    $('crop-modal-mask').addEventListener('click', closeCropModal);
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && openSlot) closeCropModal();
+    });
+
+    bindSwitch('d-banner', 'avatar.banner.dark');
+
+    /* 头像槽位的判定说明 */
+    function refreshAvatarHint() {
+        var on = Number(state.avatar.avatar.status) > 0;
+        var el = $('hint-avatar');
+        if (on) {
+            el.textContent = 'status = ' + state.avatar.avatar.status + '，用上面的自定义图。';
+        } else if (state.dogTag) {
+            el.textContent = 'status = 0，模板不显示自定义图，头像位回落到 dogTag：' + state.dogTag;
+        } else {
+            el.textContent = 'status = 0 且没有 dogTag，模板会整块隐藏头像，右侧信息列左移。';
+        }
+    }
+
+    bindSwitch('s-sign', 'avatar.sign.status');
+    $('f-sign').addEventListener('input', function () {
+        state.avatar.sign.data = this.value;
+        render();
+    });
+
+    /* ---------- 彩色昵称：纯色 / 渐变 编辑器 ---------- */
+
+    var MAX_STOPS = 5;        // 渐变最多五色
+    var ZOOM_MAX = 500;       // 缩放滑块上限（%），与裁剪器的 maxScale 对应
+
+    /* 当前编辑配置：type = 'solid' | 'gradient'
+       gradient 用 { angle, stops: [{color, pos}] } 表示。
+       解析 / 拼回都交给组件的 HikariColorUtil（纯函数，可单独测）。 */
+    var colorCfg = HikariColorUtil.defaultCfg();
+
+    function buildColorValue() { return HikariColorUtil.build(colorCfg); }
+
+    /* 改完配置统一走这里：写回状态 + 重绘预览 */
+    function applyColorCfg() {
+        var v = buildColorValue();
+        state.avatar.colorName.data = v;
+        $('color-preview').style.background = v;
+        $('color-value').textContent = v;
+        render();
+    }
+
+    function renderStops() {
+        var box = $('grad-stops');
+        box.innerHTML = '';
+        colorCfg.stops.forEach(function (s, i) {
+            var row = document.createElement('div');
+            row.className = 'aep-stop';
+
+            var pick = document.createElement('input');
+            pick.type = 'color';
+            pick.className = 'aep-input aep-pick';
+            pick.value = /^#[0-9a-f]{6}$/i.test(s.color) ? s.color : '#ffffff';
+            pick.addEventListener('input', function () {
+                s.color = pick.value;
+                applyColorCfg();
+            });
+
+            var pos = document.createElement('input');
+            pos.type = 'number';
+            pos.className = 'aep-input aep-stop-pos';
+            pos.min = 0; pos.max = 100; pos.step = 1;
+            pos.title = '位置（%）';
+            pos.value = (s.pos === null || s.pos === undefined) ? '' : Math.round(s.pos);
+            pos.addEventListener('input', function () {
+                s.pos = pos.value === '' ? null : Number(pos.value);
+                applyColorCfg();
+            });
+
+            var unit = document.createElement('span');
+            unit.className = 'aep-stop-unit';
+            unit.textContent = '%';
+
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'aep-btn aep-stop-del';
+            del.textContent = '×';
+            del.title = colorCfg.stops.length <= 2 ? '至少保留两个色标' : '删除这个色标';
+            del.disabled = colorCfg.stops.length <= 2;
+            del.addEventListener('click', function () {
+                if (colorCfg.stops.length <= 2) return;
+                colorCfg.stops.splice(i, 1);
+                renderStops();
+                applyColorCfg();
+            });
+
+            row.appendChild(pick);
+            row.appendChild(pos);
+            row.appendChild(unit);
+            row.appendChild(del);
+            box.appendChild(row);
+        });
+        $('grad-stop-count').textContent = colorCfg.stops.length + ' / ' + MAX_STOPS + ' 个';
+        $('grad-add').disabled = colorCfg.stops.length >= MAX_STOPS;
+    }
+
+    function syncColorUI() {
+        var isSolid = colorCfg.type === 'solid';
+        document.querySelectorAll('#color-tabs .aep-tab').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.type === colorCfg.type);
+        });
+        $('color-solid').style.display = isSolid ? '' : 'none';
+        $('color-gradient').style.display = isSolid ? 'none' : '';
+
+        if (isSolid) {
+            $('color-solid-pick').value = /^#[0-9a-f]{6}$/i.test(colorCfg.color) ? colorCfg.color : '#e53935';
+            $('color-solid-hex').value = colorCfg.color;
+        } else {
+            $('grad-angle').value = colorCfg.angle;
+            $('grad-angle-val').textContent = Math.round(colorCfg.angle) + '°';
+            renderStops();
+        }
+        $('color-kind').textContent = isSolid ? '纯色' : '渐变';
+        $('color-preview').style.background = buildColorValue();
+        $('color-value').textContent = buildColorValue();
+    }
+
+    /* 从接口值装填 */
+    function setColorValue(v) {
+        v = String(v || '');
+        var parsed = HikariColorUtil.parse(v);
+        colorCfg = parsed || HikariColorUtil.defaultCfg();
+        syncColorUI();
+        if (!parsed && v) {     // 面板解析不了：控件退回默认，但把真实原值显示出来
+            $('color-kind').textContent = '自定义值（原样保留）';
+            $('color-preview').style.background = v;
+            $('color-value').textContent = v;
+        }
+    }
+
+    bindSwitch('s-color', 'avatar.colorName.status');
+
+    document.querySelectorAll('#color-tabs .aep-tab').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var t = b.dataset.type;
+            if (t === colorCfg.type) return;
+            if (t === 'gradient' && colorCfg.stops.length < 2) {
+                // 纯色 -> 渐变：拿当前色起头，补一个紫色收尾
+                colorCfg.stops = [
+                    { color: colorCfg.color, pos: 0 },
+                    { color: '#8d67ff', pos: 100 }
+                ];
+            }
+            colorCfg.type = t;
+            syncColorUI();
+            applyColorCfg();
+        });
+    });
+
+    $('color-solid-pick').addEventListener('input', function () {
+        colorCfg.type = 'solid';
+        colorCfg.color = this.value;
+        $('color-solid-hex').value = this.value;
+        applyColorCfg();
+    });
+
+    $('color-solid-hex').addEventListener('input', function () {
+        var v = this.value.trim();
+        colorCfg.type = 'solid';
+        colorCfg.color = v;
+        state.avatar.colorName.data = v;     // 允许手填任意 CSS 颜色
+        $('color-preview').style.background = v;
+        $('color-value').textContent = v;
+        render();
+    });
+
+    $('grad-angle').addEventListener('input', function () {
+        colorCfg.angle = Number(this.value);
+        $('grad-angle-val').textContent = Math.round(colorCfg.angle) + '°';
+        applyColorCfg();
+    });
+
+    $('grad-add').addEventListener('click', function () {
+        if (colorCfg.stops.length >= MAX_STOPS) return;
+        colorCfg.stops.push({ color: '#ffffff', pos: null });
+        renderStops();
+        applyColorCfg();
+    });
+
+    /* 预设：纯色与现成渐变混排，点了直接整份替换配置 */
+    var COLOR_PRESETS = [
+        '-webkit-linear-gradient(45deg, #00e9f5, #f78651, #f7d73c, #8d67ff, #549bff)',
+        'linear-gradient(90deg, #ff5f6d, #ffc371)',
+        'linear-gradient(90deg, #43cea2, #185a9d)',
+        'linear-gradient(90deg, #f7971e, #ffd200)',
+        'linear-gradient(90deg, #a18cd1, #fbc2eb)',
+        'linear-gradient(90deg, #00c6ff, #0072ff)',
+        '#e53935', '#43a047', '#1e88e5', '#8e24aa', '#000000'
+    ];
+    (function buildPresets() {
+        var box = $('color-presets');
+        COLOR_PRESETS.forEach(function (v) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'aep-preset';
+            b.title = v;
+            b.style.background = v;
+            b.addEventListener('click', function () {
+                var parsed = HikariColorUtil.parse(v);
+                if (parsed) colorCfg = parsed;
+                syncColorUI();
+                state.avatar.colorName.status = 1;
+                $('s-color').checked = true;
+                applyColorCfg();
+            });
+            box.appendChild(b);
+        });
+    }());
+
+    /* 用户名 / 军团标签不在这里改 —— 它们由游戏与接口给出，只读展示 */
+
+    /* ============ 5. 状态 -> 表单 ============ */
+    function syncForm() {
+        $('basic-readonly').innerHTML =
+            '用户名 <b>' + (state.userName || '—') + '</b>'
+            + ' · 军团 <b>' + ((state.clanInfo && state.clanInfo.tag) || '（无）') + '</b><br>'
+            + '服务器 <b>' + (state.serverCn || state.server || '—') + '</b>'
+            + ' · Account Id <b>' + (state.accountId || '—') + '</b>'
+            + ' · 注册时间 <b>' + fmtTime(state.accountCreateTime) + '</b><br>'
+            + 'dogTag：' + (state.dogTag || '（无）');
+
+        var map = {
+            avatar: 'avatar', banner: 'banner', poster: 'poster',
+            colorName: 'color', sign: 'sign'
+        };
+        Object.keys(map).forEach(function (k) {
+            var short = map[k];
+            var slot = state.avatar[k];
+            $('s-' + short).checked = Number(slot.status) > 0;
+
+            if (k === 'banner') $('d-banner').checked = Number(slot.dark) === 1;
+            if (k === 'sign') $('f-sign').value = slot.data || '';
+            if (k === 'colorName') setColorValue(slot.data || '');
+
+            if (croppers[k]) {
+                croppers[k].setImage(slot.data || '').then(function () {
+                    croppers[k].setPosition(
+                        slot.crop ? slot.crop.x : 50,
+                        slot.crop ? slot.crop.y : 50,
+                        (slot.crop && slot.crop.scale) ? slot.crop.scale : 1
+                    );
+                });
+            }
+        });
+
+        refreshAvatarHint();
+        render();
+    }
+
+    function fmtTime(sec) {
+        sec = Number(sec) || 0;
+        if (!sec) return '—';
+        var d = new Date(sec * 1000);
+        function p(v) { return v < 10 ? '0' + v : '' + v; }
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+            + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    }
+
+    /* ============ 6. 加载接口 ============ */
+    function setStatus(text, kind) {
+        var bar = $('status-bar');
+        bar.className = 'aep-status' + (kind ? ' ' + kind : '');
+        bar.innerHTML = text;
+    }
+
+    function normalizeSlot(slot) {
+        return {
+            status: slot && slot.status != null ? Number(slot.status) : 0,
+            data: (slot && slot.data) || '',
+            dark: slot && slot.dark != null ? Number(slot.dark) : 0,
+            crop: slot && slot.crop ? { x: slot.crop.x, y: slot.crop.y } : { x: 50, y: 50 }
+        };
+    }
+
+    function fromApi(data) {
+        var av = (data && data.avatar) || {};
+        return {
+            server: data.server || '',
+            serverCn: data.serverCn || '',
+            accountId: data.accountId,
+            userName: data.userName || '',
+            accountCreateTime: data.accountCreateTime || 0,
+            dogTag: data.dogTag || '',
+            clanInfo: data.clanInfo
+                ? { tag: data.clanInfo.tag || '', color: data.clanInfo.color || '#b3b3b3' }
+                : { tag: '', color: '#b3b3b3' },
+            avatar: {
+                avatar: normalizeSlot(av.avatar),
+                banner: normalizeSlot(av.banner),
+                poster: normalizeSlot(av.poster),
+                colorName: normalizeSlot(av.colorName),
+                sign: normalizeSlot(av.sign)
+            }
+        };
+    }
+
+    function load() {
+        var id = $('accountId').value.trim();
+        if (!/^\d+$/.test(id)) {
+            setStatus('Account Id 必须是纯数字（接口只按数字 ID 查库）。', 'err');
+            return;
+        }
+        var url = API_BASE.replace(/\/+$/, '') + '/public/wows/account/search/db/' + id;
+
+        $('btnLoad').disabled = true;
+        setStatus('正在请求 ' + url + ' …');
+
+        // 这个接口不需要 Authorization，直接 GET
+        return fetch(url).then(function (r) {
+            return r.json();
+        }).then(function (res) {
+            if (!res || Number(res.code) !== 200 || !res.data) {
+                setStatus('接口返回 code=' + (res && res.code) + '：'
+                    + ((res && res.message) || '无数据') + '（该 Account Id 可能不在库里，先绑定过才有）', 'err');
+                return;
+            }
+            state = fromApi(res.data);
+            syncForm();
+            setStatus('已加载 Account Id ' + state.accountId + '（' + (state.userName || '未命名') + '，'
+                + (state.serverCn || state.server) + '）', 'ok');
+        }).catch(function (e) {
+            setStatus('请求失败：' + e.message + '。检查本地服务是否在跑、接口地址是否正确。', 'err');
+        }).then(function () {
+            $('btnLoad').disabled = false;
+        });
+    }
+
+    $('btnLoad').addEventListener('click', load);
+    $('accountId').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') load();
+    });
+
+    /* ============ 7. 截图 / 导出 ============ */
+    function exportUserInfo() {
+        // 只导出 userInfo 节点本身，裁剪位置作为 crop 一并带上
+        return state;
+    }
+
+    /* 截图预览：把 iframe 里的真实页面画成 PNG 下载。
+       预览跑在同源 srcdoc 的 iframe 里，html2canvas 可以直接吃里面的 body ——
+       拿到的是 1500px 宽、整页高度的原尺寸图（不受预览区缩放影响）。
+       跨域图能不能画进去看它的 CORS：v3-api / wows.shinoaki.com 带 ACAO 没问题；
+       q.qlogo.cn 这类没开跨域的会让 canvas 被污染、导出失败，
+       把那张图换成本地上传的再截即可。 */
+    $('btnShot').addEventListener('click', function () {
+        var btn = this;
+        if (typeof html2canvas !== 'function') {
+            setStatus('截图库没加载成功：确认 html2canvas.min.js 和本页同目录。', 'err');
+            return;
+        }
+        if (!preview.ready) {
+            setStatus('预览还没准备好，稍等一下再点。', 'err');
+            return;
+        }
+
+        btn.disabled = true;
+        setStatus('正在生成截图…');
+
+        var h = preview.getStageSize().h;
+        html2canvas(preview.doc.body, {
+            backgroundColor: null,          // 模板渲染出来也是透明底，保持一致
+            useCORS: true,
+            scale: 1,
+            width: preview.stageWidth,
+            height: h,
+            windowWidth: preview.stageWidth,
+            windowHeight: h
+        }).then(function (canvas) {
+            var a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = 'userinfo-' + (state.accountId || 'preview') + '.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setStatus('截图已下载：' + canvas.width + '×' + canvas.height + '。', 'ok');
+        }).catch(function (e) {
+            setStatus('截图失败：' + e.message
+                + '。多半是预览里有图源没开跨域（例如 QQ 头像），把它换成本地上传的图再试。', 'err');
+        }).then(function () {
+            btn.disabled = false;
+        });
+    });
+
+    $('btnDownload').addEventListener('click', function () {
+        var text = JSON.stringify(exportUserInfo(), null, 2);
+        var blob = new Blob([text], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'userinfo-' + (state.accountId || 'demo') + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    });
+
+    /* ============ 8. 启动 ============ */
+    // 顶栏显示组件版本 —— 改完代码点了刷新、这里时间却没变，就说明浏览器
+    // 还在用缓存里的旧 JS（Ctrl+F5 强制刷新即可）
+    $('build-tag').textContent = (typeof HikariBuild === 'string') ? HikariBuild : '未知(旧版缓存?)';
+
+    // 支持 ?id=<accountId> 直接带参打开（便于截图 / 分享调试链接）
+    var qs = new URLSearchParams(location.search);
+    if (qs.get('api')) API_BASE = qs.get('api').replace(/\/+$/, '');
+    if (qs.get('id')) $('accountId').value = qs.get('id');
+    syncForm();
+
+    // 带 ?id= 进来就自动加载一次，否则等用户填 Account Id 后点「加载配置」
+    // ?slot=avatar|banner|poster 进来直接开对应弹窗（调试 / 分享链接用）
+    // —— 必须等数据回来再开，否则裁剪器拿到的是空图。
+    function openSlotFromQuery() {
+        if (qs.get('slot') && SLOT_TITLE[qs.get('slot')]) openCropModal(qs.get('slot'));
+    }
+
+    if (qs.get('id')) load().then(openSlotFromQuery);
+    else openSlotFromQuery();
+}());
+</script>
+</body>
+</html>
