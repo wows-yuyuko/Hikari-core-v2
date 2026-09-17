@@ -13,6 +13,8 @@
                                 返回的 data（顶层就是 userInfo 字段）；
                                 传 {userInfo:{...}} 包装形式也认
          .getStageSize()     -> {w, h} 当前整页尺寸（大背景图裁剪要用）
+         .setMode('fit'|'width')  缩放模式（默认 fit = 整页全览）
+         .onModeChange = fn(mode) 模式切换回调
          .destroy()
 
      HikariImageCropper(containerEl, opts)
@@ -27,6 +29,10 @@
 
    ▍模板里的槽位结构（三个图片槽位 + 两个文字槽位）
        slot = { status: 0|1, data: '<url 或文字>', dark: 0|1, crop?: {x, y} }
+   ▍dark 在两个槽位里语义不同，别混用：
+       banner.dark  = 0|1   深色标记（1 -> .dark-banner 白字）；只看 dark 值本身，
+                            与 banner.status（显示开关）**无关**
+       poster.dark  = 0-100 大背景图透明度（0 = 不透明 / 100 = 全透明，越大越淡）
    status 判断口径**完全照抄** partials/user-v6-macros.html，见 render() 注释。
    crop 是设置页附加的字段，模板侧不读它（宏写死 background-position: center）
    —— 想让模板也吃这个位置，见文件末尾说明。
@@ -39,7 +45,7 @@
        页面顶栏会显示它：改完代码刷新后时间没变，说明浏览器还在用缓存里的旧文件
        （Ctrl+F5 强制刷新即可）。
        （不走 ?v= 查询串是因为 file:// 下查询串会被当成文件名，直接加载失败。） */
-    var HIKARI_BUILD = '2026-09-17 12:05';
+    var HIKARI_BUILD = '2026-09-17 13:52';
 
     var STAGE_W = 1500;          // .page-box / .main-content 的固定宽度（main-v6.css）
     var PAGE_HEADER_W = 1400;    // 1500 - margin 50*2
@@ -94,6 +100,46 @@
     function cropSize(slot, fallback) {
         var c = slot && slot.crop;
         return (c && c.size) ? c.size : fallback;
+    }
+
+    /* 大背景图（poster）的 dark。▍服务端口径（已对齐，别改）：值就是「透明度」
+           0   = 完全不透明 → 背景图**完全显示**（最实，缺省）
+           100 = 完全透明   → 背景图**完全看不见**
+       中间线性。缺省 / 非数字按 0 兜底 —— 与 partials/*-v6-macros.html 里的
+       `poster_img['dark'] | int` 缺省（0）保持同一口径，预览才不会和成品跑偏。
+       注意 banner.dark 是另一回事（0/1 深色标记），别把它也丢进来。
+       ▍posterDark() 返回 dark 原值（透明度）；要写进 CSS 的是 posterOpacity()
+       —— CSS 的 opacity 是「不透明度」，与这里反着，换算只在 posterOpacity 里做。 */
+    var POSTER_DARK_FALLBACK = 0;
+
+    function posterDark(slot) {
+        var raw = slot && slot.dark;
+        if (raw === undefined || raw === null || raw === '') return POSTER_DARK_FALLBACK;
+        var n = Number(raw);
+        if (!isFinite(n)) return POSTER_DARK_FALLBACK;
+        return clamp(Math.round(n), 0, 100);
+    }
+
+    /* dark（透明度）-> CSS 不透明度。两套语义是反的，转换**只在这里**做一次，
+       别散落到各处 —— 模板侧的 `100 - poster_dark` 也是同一个意思。 */
+    function posterOpacity(slot) {
+        return 100 - posterDark(slot);
+    }
+
+    /* 遮罩 alpha = (100 - 不透明度) / 200，固定两位小数。
+       ▍这里**必须**用 floor（截断）而不是 toFixed 的银行家舍入：
+       模板侧走的是 Jinja 的整数除法，会截断（不透明度 = 93 时
+       (100-93)*100/200 = 3.5 落到 3，即 0.03）。如果 JS 这边四舍五入成 0.04，
+       预览就会比成品暗一档 —— 数值虽小，但两个渲染路径必须严格同构，
+       否则「预览即成品」这个前提就破了。
+       用 floor 前先消掉浮点误差（3.5 这类值虽然精确，但 0.05 之流二进制表示
+       会有尾巴，所以统一先放大成整数再截断）。 */
+    function posterMaskAlpha(opacity) {
+        var pct = Math.floor((100 - opacity) * 100 / 200 + 1e-9);  // 百分位的整数
+        var whole = Math.floor(pct / 100);
+        var frac = String(pct % 100);
+        if (frac.length < 2) frac = '0' + frac;
+        return whole + '.' + frac;
     }
 
     /* =====================================================
@@ -351,9 +397,51 @@
         this.viewportEl.appendChild(this.scalerEl);
         this.el.appendChild(this.viewportEl);
 
+        /* 缩放模式切换按钮（浮在预览区右上角）。
+           fit / width 两种模式见 fit() 的注释；默认 fit（整页全览）。 */
+        this.mode = this.opts.mode === 'width' ? 'width' : 'fit';
+        this.modeBtn = el('button', 'aep-fitmode', '整页全览');
+        this.modeBtn.type = 'button';
+        this.modeBtn.title = '切换缩放方式：整页全览 / 适应宽度';
+        this.modeBtn.addEventListener('click', function () { self.toggleMode(); });
+        this.el.appendChild(this.modeBtn);
+        this._syncModeBtn();
+
         // srcdoc 必须最后设：先挂监听，避免 load 抢跑
         var fixture = this.opts.fixture || buildFixture(this.assetBase, this.uid);
         frame.srcdoc = fixture;
+    };
+
+    HikariUserPreview.prototype._syncModeBtn = function () {
+        if (!this.modeBtn) return;
+        var fit = this.mode === 'fit';
+        this.modeBtn.textContent = fit ? '整页全览' : '适应宽度';
+        this.modeBtn.classList.toggle('is-width', !fit);
+        this.modeBtn.setAttribute('aria-pressed', String(fit));
+        // 提示文字说清「点下去会切到什么」，按钮上写的是当前状态。
+        this.modeBtn.title = fit
+            ? '当前：整页全览（整页缩进一屏）。点击切到「适应宽度」'
+            : '当前：适应宽度（宽度铺满，超高部分滑动）。点击切到「整页全览」';
+    };
+
+    /* 切换缩放模式。切换后把滚动位置归零 —— 两种模式的可滚动范围完全不同，
+       留着旧的 scrollTop 会停在一个莫名其妙的位置（尤其从 width 切回 fit 时
+       fit 根本没得滚，位置会被浏览器夹到 0，不如显式归零来得确定）。 */
+    HikariUserPreview.prototype.toggleMode = function () {
+        this.mode = this.mode === 'fit' ? 'width' : 'fit';
+        this._syncModeBtn();
+        if (this.viewportEl) {
+            this.viewportEl.scrollTop = 0;
+            this.viewportEl.scrollLeft = 0;
+        }
+        this.fit();
+        if (typeof this.onModeChange === 'function') this.onModeChange(this.mode);
+    };
+
+    HikariUserPreview.prototype.setMode = function (mode) {
+        var next = mode === 'width' ? 'width' : 'fit';
+        if (next === this.mode) return;
+        this.toggleMode();
     };
 
     /* 把 iframe 里的真实 v6 文档接过来。
@@ -397,16 +485,62 @@
         if (typeof this.onReady === 'function') this.onReady(this);
     };
 
-    /* ---------- 缩放：1500px 宽的页面 -> 容器宽度 ---------- */
+    /* ---------- 缩放：两种模式 ----------
+       ▍mode = 'fit'（默认，整页全览）
+         宽高**同时**塞得下 —— 取「宽度比」和「高度比」里小的那个，
+         整页一屏看全，不用滚动。看版式全貌用（背景图铺满没铺满、区块排布对不对）。
+         代价：页面很长时字会很小（1500×3700 的页 + 900px 可视高 → 约 24%）。
+         这是刻意的取舍 —— 看字请切到 width 模式。
+
+       ▍mode = 'width'（适应宽度）
+         老的算法：只按宽度比缩放（availW / 1500），高度溢出就滑动。
+         字够大，但看不到整页。
+
+       ▍opt.scale > 0 时是硬指定比例，两种模式都跳过自适应
+         （给「固定倍数」这类用法留的口子）。
+
+       ▍高度用 viewportEl.clientHeight 而不是 getBoundingClientRect()：
+         前者是内容盒（不含滚动条），跟 scalerEl 里排的东西是同一个参照系。
+         「刚好塞下」如果差一条滚动条的量，反而会逼出一条滚动条出来 ——
+         整页全览的页面上挂滚动条是自相矛盾的。这里不真去量滚动条厚度
+         （跨浏览器读数不稳），而是靠 fit 模式下的二次校验抹掉这点误差。 */
     HikariUserPreview.prototype.fit = function () {
         var availW = this.viewportEl.clientWidth;
+        var availH = this.viewportEl.clientHeight;
         if (!availW) return;
 
-        var k = this.opts.scale > 0 ? this.opts.scale : availW / this.stageWidth;
+        var h = this._measureHeight();          // 原始像素高度（内部会把 iframe 高度定死）
+
+        var k;
+        if (this.opts.scale > 0) {
+            k = this.opts.scale;
+        } else if (this.mode === 'width' || availH <= 0) {
+            // width 模式；或容器还没量到高度（首次布局 / 隐藏状态）时按宽度兜底，
+            // ResizeObserver 稍后会用真实高度再 fit 一次。
+            k = availW / this.stageWidth;
+        } else {
+            // fit 模式：宽高各算一个「塞得下」的比例，取小的 → 两边都不溢出
+            k = Math.min(availW / this.stageWidth, availH / h);
+        }
+
+        // 下限兜底：别缩成看不见的一条（1500px 页面 × 0.05 = 75px 宽）。
+        k = Math.max(k, 0.05);
+        if (!(k > 0) || !isFinite(k)) k = availW / this.stageWidth;
+
+        // fit 模式下缩放后比可视区还高就再压一丁点 —— 抹掉「滚动条厚度」这类
+        // 边角误差，保证「不用滚」这个承诺在最后一像素上也成立。
+        // （用乘除而不是再调一次 _measureHeight：那个会把 iframe 高度先压到 600px
+        //   再量，频繁调用容易闪；这里的 k 是线性的，直接按比例收敛即可。）
+        if (this.opts.scale <= 0 && this.mode === 'fit' && availH > 0 && h * k > availH) {
+            k = Math.max(k * (availH / (h * k)) - 0.001, 0.05);
+        }
+
         this.scale = k;
         this.frameEl.style.transform = 'scale(' + k + ')';
 
-        var h = this._measureHeight();
+        // scaler 撑成「缩放后」的真实尺寸 —— 滚动条由它决定。
+        // fit 模式下高度正好落在可视区内（不出滚动条）；width 模式下会高出来，
+        // 于是纵向滚动条如期出现，正是想要的效果。
         this.scalerEl.style.width = (this.stageWidth * k) + 'px';
         this.scalerEl.style.height = (h * k) + 'px';
     };
@@ -460,11 +594,28 @@
 
         var posterOn = !!(poster && num(poster.status, 0) > 0 && poster.data);
         if (posterOn) {
+            /* 与 partials/*-v6-macros.html 的 poster 规则同构，改一边记得改另一边：
+               背景图挂在 .main-content::before（不能挂 .main-content 本体，
+               opacity 会把整页内容一起变淡）。
+               两个图层：先列的同尺寸黑色遮罩（alpha = 1 - 不透明度），再列背景图 ——
+               遮罩是为了让「完全不透明」时观感与从前一致（从前 url 上套了
+               linear-gradient(rgba(0,0,0,.5), ...) 压暗一半），背景图越淡遮罩也越小。
+               单值的 background-position / size 会套用到所有图层，写一次即可。 */
+            var opacity = posterOpacity(poster);   // dark 是「透明度」，这里换算成 CSS 不透明度
+            var maskAlpha = posterMaskAlpha(opacity);
             css.push('.main-content {\n'
-                + '    background: url("' + poster.data + '") no-repeat;\n'
+                + '    position: relative;\n'
+                + '}\n\n'
+                + '.main-content::before {\n'
+                + '    content: "";\n'
+                + '    position: absolute;\n'
+                + '    inset: 0;\n'
+                + '    z-index: -1;\n'
+                + '    opacity: ' + opacity + '%;\n'
+                + '    background: linear-gradient(rgba(0, 0, 0, ' + maskAlpha + '), rgba(0, 0, 0, ' + maskAlpha + ')),\n'
+                + '                url("' + poster.data + '") no-repeat;\n'
                 + '    background-position: ' + cropPos(poster) + ';\n'
                 + '    background-size: ' + cropSize(poster, 'cover') + ';\n'
-                + '    min-height: 100vh;\n'
                 + '}');
         }
 
@@ -504,10 +655,15 @@
     /* -----------------------------------------------------
        render(userInfo)
        判定口径逐条对应 partials/user-v6-macros.html：
-         poster / banner / avatar / colorName / sign 都是 status > 0 才生效
+         poster / banner / avatar / colorName / sign 的**背景图**都是 status > 0 才生效
          （status 缺席按 0）；头像在「要不显示图」时回落 dogTag，
          连 dogTag 也没有 -> .no-avatar，信息列左移接管。
-         banner.dark == 1 -> .dark-banner，文字转白。
+         banner.dark == 1       -> .dark-banner，文字转白。
+                                  **不判 status** —— 关掉背景图显示不该把深色也取消，
+                                  这是两个独立设置（与宏侧同源，改一边记得改另一边）。
+         poster.dark 0-100      -> .main-content::before 的 opacity。
+                                  dark 是「透明度」（越大越淡），
+                                  写进 CSS 的是 100 - dark。
        ----------------------------------------------------- */
     HikariUserPreview.prototype.render = function (userInfo) {
         if (!this.ready) { this._pending = userInfo; return; }
@@ -525,9 +681,13 @@
         // ---- 三张图 + 彩色昵称：全都靠一份 <style> 输出（与宏同构） ----
         if (d.dynStyle) d.dynStyle.textContent = this._styleText(u);
 
-        // ---- dark-banner：banner 开着且 dark == 1 ----
+        // ---- dark-banner：只看 dark == 1，**不判 status** ----
+        // 与宏侧 banner_dark 同源：status 管背景图显不显示、dark 管文字黑/白，
+        // 是两个独立设置。判 status 会导致「关掉背景图预览」时深色设置一起消失。
+        // （banner.dark 是 0/1 深色标记；poster.dark 是 0-100 透明度，
+        //   已经在 _styleText 里处理掉了，别在这里再读它）
         var bannerOn = !!(banner && num(banner.status, 0) > 0 && banner.data);
-        var isDark = bannerOn && num(banner.dark, 0) === 1;
+        var isDark = !!(banner && num(banner.dark, 0) === 1);
         d.header.classList.toggle('dark-banner', isDark);
 
         // ---- 头像：status > 0 用自定义图，否则回落 dogTag ----
@@ -627,6 +787,10 @@
         this.ready = false;
         this.scale = 1;
         this._sizeDefault = null;             // 初始框对应的 size(%)，scale 的基准
+        // 最近一次「框」的宽高比。自由比例槽位用 setData 定位时得沿用当前框比例，
+        // 不能从 getData 现取 —— 用户改成 dragMode:'move'（拖图不拖框）之后，
+        // 拖图会触发 crop 事件而框本身没变，但 getData 的时序不完全可控。
+        this._boxRatio = this.aspect;
         this._pendingPos = null;
         this._resolveImage = null;
 
@@ -676,9 +840,16 @@
             // 锁比例时用模板盒子比例；freeAspect 时用 NaN（Cropper 的「自由」）
             aspectRatio: this.freeAspect ? NaN : this.aspect,
             viewMode: 1,                // 框不能跑出图片（就是「不能超过图片边界」）
-            dragMode: 'crop',           // 拖动 = 搬裁剪框
+            /* 拖动 = 搬图片（crop box 留在原地）。
+               之前是 'crop' + movable:false，也就是拖的是那个框 ——
+               数学上「动框」和「动图」等价，但手感完全不对：用户看着图片纹丝不动，
+               以为根本拖不了。参考站（wows.mgaia.top/cutting）也是拖图。
+               配合 viewMode:1（图片始终盖满容器，没有可拖的边界）；
+               要单独改框的位置直接拽框内部即可 —— viewMode:1 下 Cropper 对
+               cropBox 的 mousedown 有判断，这时不会误触发图片拖动。 */
+            dragMode: 'move',
             autoCropArea: 1,            // 初始框尽量大
-            movable: false,             // 图片不跟着拖（动框和动图等价，留一个够用）
+            movable: true,              // 图片可以拖（滚轮缩放之外的第二只手）
             zoomable: true,             // 滚轮缩放图片
             zoomOnWheel: true,
             scalable: false,
@@ -812,10 +983,40 @@
 
     HikariImageCropper.prototype._emit = function () {
         if (!this.ready) { this._renderMeta(); return; }
-        var p = this.getPosition();
+        // 记住框的比例（自由比例槽位 _writePos 要用）。
+        // 这个必须在 getPosition 之前记：getPosition 只读、不改 Cropper。
+        var d = this.cropper.getData(true);
+        if (d.width > 0 && d.height > 0) this._boxRatio = d.width / d.height;
+        this._applyEmit(this.getPosition());
+        // 拖到边界时拖不动了，但 mouseup 之后 Cropper 还会把图片位置收敛一次
+        // （拖过头的那一截被规整回合法范围，crop 事件在这之后不一定再发）。
+        // 不补这一下，预览会停在「手指离开时」的位置，跟画布差一截 —— 必须重读。
+        if (d.movable) this._pinEmit();
+    };
+
+    /* 松手那一帧再兜一次：位置校正完把预览拉回和画布一致 */
+    HikariImageCropper.prototype._pinEmit = function () {
+        if (!this.ready || !this.cropper) return;
+        var self = this;
+        [0, 120].forEach(function (ms) {
+            global.setTimeout(function () {
+                if (!self.ready || !self.cropper) return;
+                self._applyEmit(self.getPosition(), true);
+            }, ms);
+        });
+    };
+
+    /* 落一次 onChange + 元信息。
+       force 是给 _pinEmit 用的：位置校正那一下数值可能刚好没变，
+       但预览必须重绘（它在拖拽中间收到过旧值）。 */
+    HikariImageCropper.prototype._applyEmit = function (p, force) {
+        if (!force && this._lastEmit
+            && this._lastEmit.x === p.x && this._lastEmit.y === p.y
+            && this._lastEmit.size === p.size) return;
+        this._lastEmit = { x: p.x, y: p.y, size: p.size };
         this.scale = p.scale;
-        // 跟住当前实际位置：用户在弹窗里拖完框，这里要把目标同步过来，
-        // 免得下面那个"延迟校正"把他刚拖的结果又拽回去
+        // 跟住当前实际位置：用户在弹窗里拖完图，这里要把目标同步过来，
+        // 免得 _onReady 里那个"延迟校正"把他刚拖的结果又拽回去
         this._targetPos = { x: p.x, y: p.y, scale: p.scale };
         this._renderMeta(p);
         if (typeof this.onChange === 'function') this.onChange(p, this);
@@ -868,6 +1069,13 @@
        紧接着的 setData 有时会被它压回去（实测容器矮的时候，本来设成 50% 居中
        的初始位置会变成 100% 贴边）。所以 _onReady 里会隔两帧按同一个目标重写一次。 */
     HikariImageCropper.prototype._applyPos = function (x, y, scale) {
+        // 自由比例下 Cropper 会按当前框比例把 setData 的 height 一改，
+        // 框比例就悄悄变了 —— 把用户实际的框比例先记下来，
+        // 否则紧接着的 setData 会按旧比例写回去，看着像「点一下框就变形」。
+        if (this.ready && this.cropper) {
+            var cur = this.cropper.getData(true);
+            if (cur.width > 0 && cur.height > 0) this._boxRatio = cur.width / cur.height;
+        }
         this._targetPos = {
             x: typeof x === 'number' ? x : 50,
             y: typeof y === 'number' ? y : 50,
@@ -890,11 +1098,9 @@
         var w = nw * 100 / ((this._sizeDefault || 100) * s);
         var h;
         if (this.freeAspect) {
-            // 自由比例：宽度按 size 反算，高度沿用**当前框**的宽高比
+            // 自由比例：宽度按 size 反算，高度沿用**框**的宽高比
             //（初始框就是「刚好盖住盒子」的那个，所以一上来不会露白）
-            var cur = this.cropper.getData(true);
-            var r = (cur.width > 0 && cur.height > 0) ? cur.width / cur.height : (nw / nh);
-            h = w / r;
+            h = w / (this._boxRatio || nw / nh || 1);
         } else {
             h = w / this.aspect;
         }

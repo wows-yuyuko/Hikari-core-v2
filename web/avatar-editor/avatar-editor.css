@@ -21,6 +21,11 @@
        大背景 .main-content  1500x自动  background-size: cover
    所以裁剪器不让缩放，只让平移，且平移必须被夹在图片内部
    （图片始终完整覆盖取景框，不允许露出空白）。
+
+   ▍预览的两种缩放模式（见 avatar-editor.js 的 fit()）
+       fit（默认）  整页缩进一屏，不用滚动 —— 看版式全貌
+       width        宽度铺满，超高滑动     —— 看字
+   右上角有按钮可随时切。这里只管容器尺寸，缩放比例全是 JS 算的。
    ========================================================= */
 
 /* =========================================================
@@ -75,11 +80,50 @@
     overscroll-behavior: contain;
 }
 
-/* scaler 负责撑出「缩放后」的真实尺寸，让滚动条正确 */
+/* scaler 负责撑出「缩放后」的真实尺寸，让滚动条正确。
+   整页全览（宽高同时塞进可视区）时它比可视区窄，用 margin: auto 居中，
+   否则页面会贴在左边、右侧留一大块空 —— 看起来像没对齐。
+   width 模式（适应宽度）时宽度正好等于可视区，居中不产生任何偏移。 */
 .aep-preview .aep-scaler {
     position: relative;
     width: 1500px;
     height: 1000px;
+    margin: 0 auto;
+}
+
+/* 缩放模式切换按钮：浮在预览区右上角。
+   预览内容是死区（iframe 会吃掉鼠标事件），所以按钮必须在 iframe **外面**
+   且带 z-index —— 挂在 .aep-preview 上，和 viewport 平级。 */
+.aep-preview .aep-fitmode {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+    padding: 5px 11px;
+    border: 1px solid var(--aep-line);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(60, 50, 110, .16);
+    font-family: var(--aep-font);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--aep-ink-2);
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+}
+
+.aep-preview .aep-fitmode:hover {
+    color: var(--aep-accent);
+    border-color: var(--aep-accent);
+}
+
+/* 适应宽度（可上下滚）时给一点视觉区分，一眼能看出当前在哪个模式 */
+.aep-preview .aep-fitmode.is-width {
+    color: var(--aep-accent);
+    border-color: var(--aep-accent);
+    background: var(--aep-accent-weak);
 }
 
 /* iframe 按**原始像素**铺（宽 1500 = .page-box 的固定宽度），

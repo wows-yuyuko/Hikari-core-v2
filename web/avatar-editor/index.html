@@ -289,7 +289,6 @@
 
         <div class="spacer"></div>
 
-        <button class="aep-btn" id="btnShot" type="button">截图预览</button>
         <button class="aep-btn" id="btnDownload" type="button">下载 JSON</button>
     </div>
 
@@ -305,7 +304,7 @@
             <div id="status-bar" class="aep-status">填入 Account Id 后点「加载配置」，把该玩家的当前设置读进来</div>
 
             <!-- ============ 账号信息（只读，来自接口） ============ -->
-            <details class="aep-group" open>
+            <details class="aep-group">
                 <summary>账号信息<span class="aep-sum-tag" id="tag-basic">—</span></summary>
                 <div class="aep-group-body">
                     <div class="aep-hint" id="basic-readonly"></div>
@@ -353,7 +352,7 @@
                         <div class="slot-thumb empty" id="thumb-banner" title="当前图片"></div>
                         <button class="aep-btn" id="open-banner" type="button">编辑图片</button>
                     </div>
-                    <div class="aep-hint">取景框 1400×300。关闭 dark 用黑字，打开 dark 用白字（模板的 <code>.dark-banner</code>）。</div>
+                    <div class="aep-hint">取景框 1400×300。关闭 dark 用黑字，打开 dark 用白字（模板的 <code>.dark-banner</code>）。<br><b>dark 与左边的显示开关互不影响</b>：关掉小背景图显示只隐藏背景图，深色白字设置照旧保留、打开时立即生效。</div>
                 </div>
             </details>
 
@@ -373,12 +372,17 @@
                         <div class="slot-thumb empty" id="thumb-poster" title="当前图片"></div>
                         <button class="aep-btn" id="open-poster" type="button">编辑图片</button>
                     </div>
-                    <div class="aep-hint">铺满整页（<code>cover</code>），取景框 = 预览整页尺寸，所以页面越高可平移空间越大。</div>
+                    <div class="aep-field">
+                        <div class="aep-label"><span>透明度</span><span id="poster-dark-val">0</span></div>
+                        <input class="aep-range" id="poster-dark" type="range" min="0" max="100" step="1" value="0">
+                    </div>
+                    <div class="aep-hint">铺满整页（<code>cover</code>），取景框 = 预览整页尺寸，所以页面越高可平移空间越大。<br>透明度写进 <code>poster.dark</code>（0-100）：<code>0</code> = 背景图<b>完全显示</b>（默认，与老数据一致），<code>100</code> = <b>完全透明</b>（看不见）。往右拉越淡。</div>
+                    <div class="aep-hint">右侧预览默认「整页全览」（整页缩进一屏，看版式全貌）；想看清字就点预览右上角的按钮切到「适应宽度」。</div>
                 </div>
             </details>
 
             <!-- ============ 彩色昵称 ============ -->
-            <details class="aep-group" open>
+            <details class="aep-group">
                 <summary>彩色昵称 colorName<span class="aep-sum-tag" id="tag-color">—</span></summary>
                 <div class="aep-group-body">
                     <label class="aep-switch">
@@ -421,12 +425,19 @@
                     </div>
 
                     <div class="aep-presets" id="color-presets"></div>
+
+                    <div class="aep-field">
+                        <div class="aep-row">
+                            <button class="aep-btn" id="color-reset" type="button">重置为服务器值</button>
+                        </div>
+                        <div class="aep-hint" id="color-reset-tip">把颜色恢复成加载配置时服务器返回的那个值（不看显示开关）。还没加载过配置时，回内置默认纯色。</div>
+                    </div>
                     <div class="aep-hint">模板把这段值直接写进 <code>background</code> 并配 <code>background-clip: text</code>。预设里纯色和现成渐变都有，点一下即可；也可以自己加色标调渐变。</div>
                 </div>
             </details>
 
             <!-- ============ 个性签名 ============ -->
-            <details class="aep-group" open>
+            <details class="aep-group">
                 <summary>个性签名 sign<span class="aep-sum-tag" id="tag-sign">—</span></summary>
                 <div class="aep-group-body">
                     <label class="aep-switch">
@@ -486,7 +497,6 @@
 
 <script src="cropper.min.js"></script>
 <script src="avatar-editor.js"></script>
-<script src="html2canvas.min.js"></script>
 <script>
 (function () {
     'use strict';
@@ -498,6 +508,13 @@
     var API_BASE = 'https://v3-api.wows.shinoaki.com';
 
     /* ============ 1. 状态 ============ */
+    /* 槽位的 dark 在两个位置语义不同：
+         banner.dark  0|1   深色标记（1 -> 白字）；只看 dark 值，与显示开关无关
+         poster.dark  0-100 大背景图透明度：0 = 完全显示 / 100 = 完全透明（越大越淡）
+       dark 是**每个槽位各自的**字段（不必有槽位专属的缺省值）：
+         banner 用 0（浅色）、poster 也用 0（完全显示）—— 都是「语义上的中性起始值」。
+       注意 poster 的 0 现在是「完全显示」而不是「看不见」，所以统一给 0 不会
+       让新槽位看起来是空的（那是上一版 0 = 全透明 时才有的坑）。 */
     function blankSlot() {
         return { status: 0, data: '', dark: 0, crop: { x: 50, y: 50 } };
     }
@@ -701,6 +718,8 @@
             n.classList.toggle('active', n.id === 'crop-slot-' + key);
         });
         $('crop-modal').hidden = false;
+        // 按钮文案跟着 box 的 .full 状态走（onResize 内部只重建 Cropper，不碰按钮）
+        syncFullBtn();
         // 弹窗这时预览肯定就绪了，先把大背景图的 frame（= 预览整页尺寸）同步准
         // —— Cropper 一初始化就会按 frame 算「刚好盖住盒子」的基准框，
         //   用早先那个预览未就绪时的占位尺寸算出来是错的。
@@ -726,9 +745,10 @@
     bindImageSlot('banner', 'banner');
     bindImageSlot('poster', 'poster');
 
-    /* 弹窗底部操作栏，作用于当前打开的槽位：选择文件 → 居中 → 下载裁剪图。
+    /* 弹窗底部操作栏，作用于当前打开的槽位：选择文件 → 居中 → 重置 → 下载裁剪图。
        图片**只能本地上传**（读成 dataURL 直接存进 slot.data），不提供填网络 URL 的入口；
-       接口加载回来的网络图片照旧显示在裁剪器里，用来调取景位置。 */
+       接口加载回来的网络图片照旧显示在裁剪器里，用来调取景位置。
+       画布里：滚轮 = 缩放，按住图拖 = 换位置（dragMode: 'move'）。 */
     $('slot-pick').addEventListener('click', function () { $('slot-file').click(); });
 
     $('slot-file').addEventListener('change', function () {
@@ -749,7 +769,7 @@
         reader.readAsDataURL(f);
     });
 
-    /* 「居中」只挪位置（缩放不动）；「重置」把位置和缩放一起复位 */
+    /* 「居中」把图片拽回正中（缩放不动）；「重置」把位置和缩放一起复位 */
     $('slot-center').addEventListener('click', function () {
         if (openSlot) croppers[openSlot].center();
     });
@@ -763,12 +783,20 @@
     $('crop-modal-full').addEventListener('click', function () {
         var box = document.querySelector('#crop-modal .aep-modal-box');
         var isFull = box.classList.toggle('full');
-        this.textContent = isFull ? '还原' : '全屏';
-        this.title = isFull ? '还原窗口大小' : '全屏';
+        syncFullBtn();
         if (openSlot) {
             setTimeout(function () { croppers[openSlot].onResize(); }, 30);
         }
     });
+
+    /* 按钮文案跟着实际状态走 —— onResize() 内部不会碰它，
+       直接按类名同步，省得「关了弹窗再开」时状态和文案对不上 */
+    function syncFullBtn() {
+        var full = document.querySelector('#crop-modal .aep-modal-box').classList.contains('full');
+        var btn = $('crop-modal-full');
+        btn.textContent = full ? '还原' : '全屏';
+        btn.title = full ? '还原窗口大小' : '全屏';
+    }
 
     $('slot-download').addEventListener('click', function () {
         if (openSlot) croppers[openSlot].download(openSlot);
@@ -781,7 +809,27 @@
         if (e.key === 'Escape' && openSlot) closeCropModal();
     });
 
+    /* 大背景图透明度（poster.dark，0-100）：滑块 + 数值双向同步。
+       ▍服务端口径：0 = 背景图**完全显示**，100 = **完全透明**（越大越淡）。
+       缺省 / 非法值一律回 0（完全显示），与宏侧 `poster_img['dark'] | int` 的
+       缺省（0）同口径。
+       这里存的就是 dark 原值（透明度）；要写进 CSS 的换算（100 - dark）
+       在 avatar-editor.js 的 posterOpacity() 里，别在这层提前翻。 */
+    function setPosterDark(v) {
+        var n = Number(v);
+        if (!isFinite(n)) n = 0;
+        n = Math.round(Math.min(100, Math.max(0, n)));
+        $('poster-dark').value = n;
+        $('poster-dark-val').textContent = n;
+        return n;
+    }
+
     bindSwitch('d-banner', 'avatar.banner.dark');
+
+    $('poster-dark').addEventListener('input', function () {
+        state.avatar.poster.dark = setPosterDark(this.value);
+        render();
+    });
 
     /* 头像槽位的判定说明 */
     function refreshAvatarHint() {
@@ -812,6 +860,16 @@
        解析 / 拼回都交给组件的 HikariColorUtil（纯函数，可单独测）。 */
     var colorCfg = HikariColorUtil.defaultCfg();
 
+    /* 「重置」要回到的那个值 = 服务器原值（加载配置时抓一份快照）。
+       ▍存**原始字符串**而不是解析后的 cfg：
+         服务器给的是 '-webkit-linear-gradient(45deg, #00e9f5, #f78651, ...)'
+         —— 色标不带 % 位置，且带 -webkit- 前缀。走 HikariColorUtil.parse
+         再 build 会把它「美化」成 'linear-gradient(45deg, #00e9f5 0%, #f78651 25%, ...)'，
+         虽然视觉等价，但字符串变了。既然用户要的是「回到服务器那个值」，
+         就把原串留着，重置时原样写回，一个字符都不动。
+       没加载过配置（blankSlot / 手动改过）时为 ''，此时重置回内置默认值。 */
+    var serverColorValue = '';
+
     function buildColorValue() { return HikariColorUtil.build(colorCfg); }
 
     /* 改完配置统一走这里：写回状态 + 重绘预览 */
@@ -821,6 +879,29 @@
         $('color-preview').style.background = v;
         $('color-value').textContent = v;
         render();
+    }
+
+    /* 「重置」按钮：把彩色昵称恢复成**服务器返回的那个值**。
+       ▍两件事都做：
+         1) 数据层：state.avatar.colorName.data 写回服务器原串（有就写原串，
+            没有就回内置默认值）。
+         2) 控件层：把纯色/渐变 tab、角度滑块、色标列表**反解**回来
+            —— 也就是「根据服务器返回的颜色代码反向映射到控件状态」。
+            反解靠 HikariColorUtil.parse；服务器那种 '-webkit-linear-gradient(...)'
+            也能认（正则允许 -webkit- 前缀，色标缺 % 时 pos=null，渲染时按等分显示）。
+       ▍**不动显示开关**（s-color 的 status）：
+         重置的是「颜色」，不是「显示与否」—— 那是两个独立设置，
+         跟 banner 的 dark/status 解耦是同一个道理。
+       ▍原始串 parse 不了时（比如 radial-gradient / url(...)），
+         控件退回默认，但数据层仍是原串，预览照原样渲染，
+         并且 kind 标注为「自定义值」—— 与 setColorValue 的兜底一致。 */
+    function resetColorName() {
+        var v = String(serverColorValue || '').trim();
+        if (!v) v = HikariColorUtil.build(HikariColorUtil.defaultCfg());
+
+        state.avatar.colorName.data = v;
+        syncColorFromValue(v);      // 控件层：反解析回 tab / 角度 / 色标
+        render();                   // 预览重绘（显示开关保持原样，不碰）
     }
 
     function renderStops() {
@@ -898,14 +979,35 @@
         $('color-value').textContent = buildColorValue();
     }
 
-    /* 从接口值装填 */
+    /* 从接口值装填。
+       ▍顺带记下服务器原值（serverColorValue），供「重置」按钮回退。
+         注意只在加载配置时记，用户后续编辑不会覆盖它。 */
     function setColorValue(v) {
+        v = String(v || '');
+        serverColorValue = v;               // 快照：重置的基准就是这个
+        syncColorFromValue(v);
+    }
+
+    /* 把一段 CSS 值灌进控件（不含快照逻辑，重置 / 预设复用）。
+       ▍控件与「实际写进数据的值」是两套东西：
+         控件是可编辑的抽象形态（纯色色值 / 角度 + 色标列表），
+         数据层要的是最终 CSS 字符串。所以这里分两步：
+           1) syncColorUI()   —— 按解析结果摆好控件
+           2) 值那一行按**真实数据值**显示
+         服务器串是 '-webkit-linear-gradient(45deg, #00e9f5, #f78651, ...)'，
+         parse 再 build 会补上 % 位置、去掉 -webkit- 前缀。视觉等价但字符串不同，
+         所以「值」那一行在有原值时就显示原值（预览用的也是原值），
+         否则用户看到的和实际导出的对不上。
+       用户一旦动控件（tab / 角度 / 色标），就转为 build 出来的形态，见 applyColorCfg。 */
+    function syncColorFromValue(v) {
         v = String(v || '');
         var parsed = HikariColorUtil.parse(v);
         colorCfg = parsed || HikariColorUtil.defaultCfg();
         syncColorUI();
-        if (!parsed && v) {     // 面板解析不了：控件退回默认，但把真实原值显示出来
-            $('color-kind').textContent = '自定义值（原样保留）';
+        renderStops();
+        if (v) {
+            // 有原始值：控件按解析结果摆，但显示与实际渲染都用原串（一个字符不改）
+            if (!parsed) $('color-kind').textContent = '自定义值（原样保留）';
             $('color-preview').style.background = v;
             $('color-value').textContent = v;
         }
@@ -982,6 +1084,7 @@
                 var parsed = HikariColorUtil.parse(v);
                 if (parsed) colorCfg = parsed;
                 syncColorUI();
+                renderStops();
                 state.avatar.colorName.status = 1;
                 $('s-color').checked = true;
                 applyColorCfg();
@@ -989,6 +1092,23 @@
             box.appendChild(b);
         });
     }());
+
+    /* 重置：颜色回服务器原值（不看显示开关）。
+       ▍按钮上的提示文字会随「有没有加载过配置」变 —— 没快照时说明会回内置默认，
+         避免用户以为它坏了。 */
+    function syncColorResetTip() {
+        var tip = $('color-reset-tip');
+        if (!tip) return;
+        tip.textContent = serverColorValue
+            ? '把颜色恢复成加载配置时服务器返回的那个值（不看显示开关）：' + serverColorValue
+            : '还没有服务器值（未加载配置）—— 点了会回内置默认纯色。';
+    }
+    syncColorResetTip();
+
+    $('color-reset').addEventListener('click', function () {
+        resetColorName();
+        syncColorResetTip();
+    });
 
     /* 用户名 / 军团标签不在这里改 —— 它们由游戏与接口给出，只读展示 */
 
@@ -1012,8 +1132,9 @@
             $('s-' + short).checked = Number(slot.status) > 0;
 
             if (k === 'banner') $('d-banner').checked = Number(slot.dark) === 1;
+            if (k === 'poster') setPosterDark(slot.dark);
             if (k === 'sign') $('f-sign').value = slot.data || '';
-            if (k === 'colorName') setColorValue(slot.data || '');
+            if (k === 'colorName') { setColorValue(slot.data || ''); syncColorResetTip(); }
 
             if (croppers[k]) {
                 croppers[k].setImage(slot.data || '').then(function () {
@@ -1046,11 +1167,20 @@
         bar.innerHTML = text;
     }
 
-    function normalizeSlot(slot) {
+    /* 槽位字段归一化。
+       dark 的缺省：banner 与 poster 都落 0（语义上的中性起始值）——
+         banner 0 = 浅色黑字；poster 0 = 完全显示。
+       poster 多做一层夹取（0-100 整数），因为它是范围值而不是布尔。
+       其余槽位的 dark 目前没用，统一落 0 即可（历史行为不变）。 */
+    function normalizeSlot(slot, key) {
+        var fallback = 0;
+        var dark = slot && slot.dark != null ? Number(slot.dark) : fallback;
+        if (!isFinite(dark)) dark = fallback;
+        if (key === 'poster') dark = Math.min(100, Math.max(0, Math.round(dark)));
         return {
             status: slot && slot.status != null ? Number(slot.status) : 0,
             data: (slot && slot.data) || '',
-            dark: slot && slot.dark != null ? Number(slot.dark) : 0,
+            dark: dark,
             crop: slot && slot.crop ? { x: slot.crop.x, y: slot.crop.y } : { x: 50, y: 50 }
         };
     }
@@ -1068,11 +1198,11 @@
                 ? { tag: data.clanInfo.tag || '', color: data.clanInfo.color || '#b3b3b3' }
                 : { tag: '', color: '#b3b3b3' },
             avatar: {
-                avatar: normalizeSlot(av.avatar),
-                banner: normalizeSlot(av.banner),
-                poster: normalizeSlot(av.poster),
-                colorName: normalizeSlot(av.colorName),
-                sign: normalizeSlot(av.sign)
+                avatar: normalizeSlot(av.avatar, 'avatar'),
+                banner: normalizeSlot(av.banner, 'banner'),
+                poster: normalizeSlot(av.poster, 'poster'),
+                colorName: normalizeSlot(av.colorName, 'colorName'),
+                sign: normalizeSlot(av.sign, 'sign')
             }
         };
     }
@@ -1113,56 +1243,11 @@
         if (e.key === 'Enter') load();
     });
 
-    /* ============ 7. 截图 / 导出 ============ */
+    /* ============ 7. 导出 ============ */
     function exportUserInfo() {
         // 只导出 userInfo 节点本身，裁剪位置作为 crop 一并带上
         return state;
     }
-
-    /* 截图预览：把 iframe 里的真实页面画成 PNG 下载。
-       预览跑在同源 srcdoc 的 iframe 里，html2canvas 可以直接吃里面的 body ——
-       拿到的是 1500px 宽、整页高度的原尺寸图（不受预览区缩放影响）。
-       跨域图能不能画进去看它的 CORS：v3-api / wows.shinoaki.com 带 ACAO 没问题；
-       q.qlogo.cn 这类没开跨域的会让 canvas 被污染、导出失败，
-       把那张图换成本地上传的再截即可。 */
-    $('btnShot').addEventListener('click', function () {
-        var btn = this;
-        if (typeof html2canvas !== 'function') {
-            setStatus('截图库没加载成功：确认 html2canvas.min.js 和本页同目录。', 'err');
-            return;
-        }
-        if (!preview.ready) {
-            setStatus('预览还没准备好，稍等一下再点。', 'err');
-            return;
-        }
-
-        btn.disabled = true;
-        setStatus('正在生成截图…');
-
-        var h = preview.getStageSize().h;
-        html2canvas(preview.doc.body, {
-            backgroundColor: null,          // 模板渲染出来也是透明底，保持一致
-            useCORS: true,
-            scale: 1,
-            width: preview.stageWidth,
-            height: h,
-            windowWidth: preview.stageWidth,
-            windowHeight: h
-        }).then(function (canvas) {
-            var a = document.createElement('a');
-            a.href = canvas.toDataURL('image/png');
-            a.download = 'userinfo-' + (state.accountId || 'preview') + '.png';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setStatus('截图已下载：' + canvas.width + '×' + canvas.height + '。', 'ok');
-        }).catch(function (e) {
-            setStatus('截图失败：' + e.message
-                + '。多半是预览里有图源没开跨域（例如 QQ 头像），把它换成本地上传的图再试。', 'err');
-        }).then(function () {
-            btn.disabled = false;
-        });
-    });
 
     $('btnDownload').addEventListener('click', function () {
         var text = JSON.stringify(exportUserInfo(), null, 2);
@@ -1181,7 +1266,7 @@
     // 还在用缓存里的旧 JS（Ctrl+F5 强制刷新即可）
     $('build-tag').textContent = (typeof HikariBuild === 'string') ? HikariBuild : '未知(旧版缓存?)';
 
-    // 支持 ?id=<accountId> 直接带参打开（便于截图 / 分享调试链接）
+    // 支持 ?id=<accountId> 直接带参打开（便于分享调试链接）
     var qs = new URLSearchParams(location.search);
     if (qs.get('api')) API_BASE = qs.get('api').replace(/\/+$/, '');
     if (qs.get('id')) $('accountId').value = qs.get('id');

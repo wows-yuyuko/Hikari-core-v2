@@ -30,13 +30,61 @@
    头像位回落到 dogTag（用户接口独有的图，形如 nahida-static/root/<accountId>.png）；
    连 dogTag 都没有才是「真的没图」→ 整块隐藏（见 info_header 的 hide_avatar）。 #}
 {%- set avatar_src = (avatar_img['data'] if avatar_status > 0 else '') or dog_tag -%}
+{# 大背景图透明度。▍服务端口径（已对齐，别改）：poster.dark 就是「透明度」
+       0   = 完全不透明 → 背景图**完全显示**（最实，缺省）
+       100 = 完全透明   → 背景图**完全看不见**
+   中间线性（50 = 半透明）。缺省 / 非数字一律按 0（完全显示）兜底
+   —— 历史数据不带这个字段，当「完全显示」处理，观感与从前一致。
+   夹到 0-100，脏数据不会写出非法 CSS。
+
+   ▍注意方向：这里的 dark 是「透明度」，而 CSS 的 opacity 是「不透明度」，
+   两者是反的 —— 所以下面要 `100 - poster_dark` 换算一次，别直接拿 dark 去当 opacity。 #}
+{%- set poster_dark = (poster_img['dark'] | int) if poster_img and poster_img['dark'] is defined else 0 -%}
+{%- set poster_dark = [[poster_dark, 0] | max, 100] | min -%}
+{%- set poster_opacity = 100 - poster_dark -%}
+{# 遮罩 alpha = (100 - 不透明度) / 200，固定两位小数。
+   统一放大成「百分位的整数」再拆：
+       poster_mask_pct = (100 - opacity) * 100 / 200   ← 一千分位，例如 42 → 2900
+       整数部分 = poster_mask_pct / 100  (2900 / 100 = 29)
+       小数部分 = poster_mask_pct % 100  (2900 % 100 = 00)
+   —— 直接算 (100 - opacity) * 50 得到的是一千分位没错，但再 % 100 拿小数位就串了，
+   必须先把「一千分位」落到同一个变量上，整数 / 小数都从它身上取。
+   三个坑：
+     1) **不能**用 round() 收尾 —— Jinja 的 round(3) 对 50.0 这种整数浮点会输出
+        "50.0"，写进 rgba(0, 0, 0, 50.0) 就是 alpha = 50（全不透明黑），背景图变黑块；
+     2) **不能**写成 `a ~ '.' ~ '%02d' | format(b)` —— 过滤器只作用于最右边那个
+        表达式，会把整串拼接结果一起 format 掉；
+     3) **不能**用 `//` 直接当整数用 —— Jinja 的 `//` 是浮点除（Python 2 语义），
+        2900 // 100 得到的是 29.0 而不是 29。
+   所以整数部分走 int()，小数部分单独 format，再拼起来。 #}
+{%- set poster_mask_pct = (100 - poster_opacity) * 100 // 200 | int -%}
+{%- set poster_mask_frac = '%02d' | format((poster_mask_pct % 100) | int) -%}
+{%- set poster_mask = (poster_mask_pct // 100) | int ~ '.' ~ poster_mask_frac -%}
 <style>
     {% if poster and poster_img and poster_img['status'] > 0 %}
+    /* 大背景图拆到 ::before 这一层承载，**不能**把 opacity 加在 .main-content 上 ——
+       那会把整页内容（文字、毛玻璃卡片）一起变淡。
+       两个图层：先列的同尺寸遮罩（黑色，alpha = 1 - 不透明度），再列背景图。
+       遮罩的意义是保证「不透明白景图」时观感与从前完全一致（从前是 url 上直接套
+       linear-gradient(rgba(0,0,0,.5), ...) 压暗一半），背景图越淡遮罩也越小。
+       同一元素上单值的 background-repeat / position / size 会套用到所有图层，
+       所以这里写一次即可；伪元素盖不住内容（无 z-index 的 ::before 在内容之下）。 */
     .main-content {
-        background: url("{{ poster_img['data'] }}") no-repeat;
+        position: relative;
+    }
+
+    .main-content::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        opacity: {{ poster_opacity }}%;
+        background:
+            linear-gradient(rgba(0, 0, 0, {{ poster_mask }}),
+                            rgba(0, 0, 0, {{ poster_mask }})),
+            url("{{ poster_img['data'] }}") no-repeat;
         background-position: center;
         background-size: cover;
-        min-height: 100vh;
     }
     {% endif %}
 
@@ -94,7 +142,13 @@
 {%- set uid = u['accountId'] -%}
 {%- set created = u['accountCreateTime'] | int -%}
 {%- set server = server_cn(u['serverCn'] if u['serverCn'] is defined else u['server']) -%}
-{%- set banner_dark = banner and banner['status'] > 0 and banner.get('dark') == 1 -%}
+{%- set banner_dark = banner and banner.get('dark') == 1 -%}
+{# ▍banner_dark 只看 dark 值本身，**不带 status > 0 条件**。
+   曾经写成 `banner and banner['status'] > 0 and banner.get('dark') == 1`，
+   结果是「关掉小背景图显示开关」会连带把深色白字也取消掉 ——
+   可这是两个独立的设置：status 管背景图显不显示，dark 管文字用黑字还是白字。
+   用户先设好深色、再临时关掉背景图预览时，不该把深色设置也一并丢掉。
+   （banner 槽位缺席 / dark 字段没有时，.get('dark') 得 None，!= 1，照旧按浅色处理。） #}
 {# 有无个性颜色：判据必须与 info_header_style 里 .mirage-text 的取色条件（status > 0）一致 ——
    它们描述的是同一件事「这个名字有没有颜色」。
    这里曾经写成 status != 2，与样式那边（> 0）不一致：status == 1 的用户名字照旧被上色，

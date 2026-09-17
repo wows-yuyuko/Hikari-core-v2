@@ -109,6 +109,63 @@ def enrich_banner_dark(data) -> None:
     _recurse(data)
 
 
+# poster 的 dark 不是布尔而是一个 0-100 的**透明度**比例，语义是「越淡」。
+# ▍服务端口径（已与服务器对齐，别改）：值就是「透明度」
+#     0   = 完全不透明 → 背景图**完全显示**（最实）
+#     100 = 完全透明   → 背景图**完全看不见**
+#   0 / 100 是两端点，中间线性（50 = 半透明）。
+# 与 banner 的 0/1 深色标记语义完全无关，两者不要混用。
+# 缺省按 0（完全显示）——历史数据不带这个字段，等价于「保持原来的观感」。
+POSTER_DARK_DEFAULT = 0
+POSTER_DARK_MIN = 0
+POSTER_DARK_MAX = 100
+
+
+def _poster_dark_ratio(value) -> int:
+    """把服务端给的 poster.dark 归一化到 0-100 的整数（透明度，越大越淡）。
+
+    服务端语义：0 = 完全显示（不透明）/ 100 = 完全透明。这里原样保留该口径，
+    只做「夹到 0-100 + 转 int」的收口，不翻转数值 —— 翻转发生在模板 / 预览里
+    （它们要的是 CSS 不透明度，所以算 `100 - dark`）。
+
+    缺省 / 非数字 / 解析失败一律回落到 0（完全显示）——历史数据不带这个字段，
+    这么做等价于「保持原来的观感」。夹取保证脏数据不会写出非法 CSS。
+    """
+    if value is None or isinstance(value, bool):
+        return POSTER_DARK_DEFAULT
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return POSTER_DARK_DEFAULT
+    try:
+        ratio = int(round(float(value)))
+    except (TypeError, ValueError):
+        return POSTER_DARK_DEFAULT
+    return max(POSTER_DARK_MIN, min(POSTER_DARK_MAX, ratio))
+
+
+def enrich_poster_dark(data) -> None:
+    """递归遍历渲染数据：把 poster 的 ``dark`` 归一到 0-100 的透明度。
+
+    模板侧只做「缺省按 0」的兜底，脏值（负数 / 超 100 / 字符串）由这里统一收口，
+    归一化后仍是 int，可以直接参与数值比较。
+    只处理 status > 0 的 poster —— 不显示的槽位归一化没有意义。
+    """
+
+    def _recurse(obj):
+        if isinstance(obj, dict):
+            poster = obj.get('poster')
+            if isinstance(poster, dict) and poster.get('status') not in (None, 0):
+                poster['dark'] = _poster_dark_ratio(poster.get('dark'))
+            for value in obj.values():
+                _recurse(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                _recurse(item)
+
+    _recurse(data)
+
+
 # ----------------------------------------------------------
 # BA 风格文字 logo（公会没头像时用 tag 生成）用的字宽表
 # ----------------------------------------------------------
@@ -142,6 +199,7 @@ def ba_text_em(text: str) -> float:
 async def set_render_params(List):
     try:
         enrich_banner_dark(List)
+        enrich_poster_dark(List)
         result = {'template_path': template_path, 'data': List}
         return result
     except Exception:
