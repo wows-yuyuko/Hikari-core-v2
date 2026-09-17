@@ -88,8 +88,6 @@
 
     #accountId { width: 180px; }
 
-    .spacer { flex: 1; }
-
     /* 顶栏按钮比面板里的稍大一点，加载按钮是主操作，要有存在感 */
     .topbar .aep-btn {
         padding: 7px 16px;
@@ -286,10 +284,6 @@
         <label for="accountId">Account&nbsp;Id</label>
         <input id="accountId" type="text" placeholder="例如 2022515210" spellcheck="false">
         <button class="aep-btn primary" id="btnLoad" type="button">加载配置</button>
-
-        <div class="spacer"></div>
-
-        <button class="aep-btn" id="btnDownload" type="button">下载 JSON</button>
     </div>
 
     <!-- ===================== 主体 ===================== -->
@@ -1241,25 +1235,7 @@
         if (e.key === 'Enter') load();
     });
 
-    /* ============ 7. 导出 ============ */
-    function exportUserInfo() {
-        // 只导出 userInfo 节点本身，裁剪位置作为 crop 一并带上
-        return state;
-    }
-
-    $('btnDownload').addEventListener('click', function () {
-        var text = JSON.stringify(exportUserInfo(), null, 2);
-        var blob = new Blob([text], { type: 'application/json' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'userinfo-' + (state.accountId || 'demo') + '.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
-    });
-
-    /* ============ 8. 启动 ============ */
+    /* ============ 7. 启动 ============ */
     // 顶栏显示组件版本 —— 改完代码点了刷新、这里时间却没变，就说明浏览器
     // 还在用缓存里的旧 JS（Ctrl+F5 强制刷新即可）
     $('build-tag').textContent = (typeof HikariBuild === 'string') ? HikariBuild : '未知(旧版缓存?)';
