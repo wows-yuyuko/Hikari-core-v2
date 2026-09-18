@@ -258,14 +258,19 @@ class minimal_screens_hot_service:
                         // 仅扫描有 class 属性的元素，避免过度 getComputedStyle 调用
                         const elements = document.querySelectorAll('[class]');
                         for (const el of elements) {
-                            const bg = getComputedStyle(el).backgroundImage;
-                            if (!bg || bg === 'none') continue;
-                            const matches = bg.match(/url\(["']?([^"')]+)["']?\)/g);
-                            if (!matches) continue;
-                            for (const m of matches) {
-                                const urlMatch = m.match(/url\(["']?([^"')]+)["']?\)/);
-                                if (urlMatch && urlMatch[1] && !seen.has(urlMatch[1])) {
-                                    seen.add(urlMatch[1]);
+                            // 大背景图（poster）挂在 .main-content::before 上，元素自身
+                            // 是 background-image:none —— 只读元素会漏掉它，截图可能在
+                            // 海报解码完成前就落盘。所以元素 + 伪元素一起扫。
+                            for (const pseudo of [null, '::before', '::after']) {
+                                const bg = getComputedStyle(el, pseudo).backgroundImage;
+                                if (!bg || bg === 'none') continue;
+                                const matches = bg.match(/url\(["']?([^"')]+)["']?\)/g);
+                                if (!matches) continue;
+                                for (const m of matches) {
+                                    const urlMatch = m.match(/url\(["']?([^"')]+)["']?\)/);
+                                    if (urlMatch && urlMatch[1] && !seen.has(urlMatch[1])) {
+                                        seen.add(urlMatch[1]);
+                                    }
                                 }
                             }
                         }

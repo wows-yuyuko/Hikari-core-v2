@@ -52,24 +52,35 @@ body {
 
 /* ==========================================================
    毛玻璃底色
+
+   ▍两个全局旋钮（由 partials/*-v6-macros.html 的 info_header_style 在「有海报」时
+     下发到 .main-content 上；没下发时用 var() 的缺省值 1 = 当前观感）：
+        --card-alpha  卡片底色**透明度倍数**  1 = 现状，0 = 底色完全透明
+        --card-blur   毛玻璃**模糊强度倍数**  1 = 现状，0 = 完全不模糊
+     两个旋钮各自独立：alpha 管"有没有底色"，blur 管"背后糊不糊"。
+     同一个 base 值只写一次（下面就乘这两个变量），别在别处再写死一遍。
+   ▍这里的 var() **必须带缺省值 (1)**：宏不输出变量时（无海报的页面、拖钓调试页）
+     要退回现状，而不是让整条声明失效。
    ========================================================== */
 
 .one-background-color {
-    background: rgba(245, 240, 255, 0.42);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(245, 240, 255, calc(0.42 * var(--card-alpha, 1)));
+    backdrop-filter: blur(calc(6px * var(--card-blur, 1)));
+    -webkit-backdrop-filter: blur(calc(6px * var(--card-blur, 1)));
     border: 1.5px solid rgba(180, 160, 230, 0.45);
     box-shadow: 0 4px 14px rgba(120, 100, 180, 0.12);
 }
 
 /* 表格行玻璃条（保留类名兼容） */
 .two-background-color {
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(255, 255, 255, calc(0.2 * var(--card-alpha, 1)));
+    backdrop-filter: blur(calc(4px * var(--card-blur, 1)));
+    -webkit-backdrop-filter: blur(calc(4px * var(--card-blur, 1)));
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* 实色块：**不参与**上面两个旋钮 —— 它是"不透明底"的语义，
+   blur 也刻意关掉（见 partials 的注释），加了变量反而把用途弄混。 */
 .three-background-color {
     background: #D9D9D9;
     backdrop-filter: none;
@@ -117,7 +128,7 @@ body {
     width: 150px;
     height: 40px;
     line-height: 40px;
-    background: rgba(245, 240, 255, 0.6);
+    background: rgba(245, 240, 255, calc(0.6 * var(--card-alpha, 1)));
     border: 2px solid rgba(180, 160, 230, 0.6);
     border-radius: 20px;
     font-size: 30px;
@@ -211,9 +222,9 @@ body {
     margin: var(--gap-inner) 50px 0;
     border-radius: 16px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.30);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(255, 255, 255, calc(0.30 * var(--card-alpha, 1)));
+    backdrop-filter: blur(calc(6px * var(--card-blur, 1)));
+    -webkit-backdrop-filter: blur(calc(6px * var(--card-blur, 1)));
     border: 1.5px solid rgba(180, 160, 230, 0.35);
     box-shadow: 0 4px 14px rgba(120, 100, 180, 0.10);
 }
@@ -232,16 +243,18 @@ body {
     border-top: 1px solid rgba(180, 160, 230, 0.22);
 }
 
+/* 表头 / 斑马纹两层的底色是**半透明叠加**（表头是"压暗"，斑马纹是"提亮"），
+   同样乘 --card-alpha：拉到 0 时表头、斑马纹一起消失，只剩 .information-body 的底。 */
 .information-col:first-child,
 .information-col.header-col {
-    background: rgba(0, 0, 0, 0.07);
+    background: rgba(0, 0, 0, calc(0.07 * var(--card-alpha, 1)));
     font-weight: normal;
     font-size: 26px;
     color: #4a4a5a;
 }
 
 .information-col:not(:first-child):nth-child(even) {
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, calc(0.28 * var(--card-alpha, 1)));
 }
 
 .information-col-item {

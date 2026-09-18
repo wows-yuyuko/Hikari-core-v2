@@ -668,3 +668,11 @@
 .aep-modal-foot .aep-spacer {
     flex: 1;
 }
+
+/* 裁剪框切到「固定宽高」时给一点视觉区分 —— 与预览右上角那个模式按钮同套做法，
+   一眼能看出框现在是锁着的还是自由的。 */
+.aep-modal-foot .aep-btn.is-on {
+    color: var(--aep-accent);
+    border-color: var(--aep-accent);
+    background: var(--aep-accent-weak);
+}

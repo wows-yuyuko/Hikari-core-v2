@@ -27,8 +27,11 @@
     border-radius: 24px;
     padding-left: 40px;
     background: transparent;
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    /* 头部这块的"毛玻璃"只有模糊、没有底色（background 是全透明的），
+       所以它只吃 --card-blur 这一个旋钮；alpha 对它没有意义。
+       变量的来源与缺省见 main-v6.css 的「毛玻璃底色」注释。 */
+    backdrop-filter: blur(calc(3px * var(--card-blur, 1)));
+    -webkit-backdrop-filter: blur(calc(3px * var(--card-blur, 1)));
     border: 1px solid rgba(220, 230, 255, 0.5);
     box-shadow: none;
     /* 允许收缩到比内容更窄（flex 项目默认 min-width: auto = 最小内容宽度，不让缩）。
@@ -243,7 +246,9 @@
     padding: 30px;
     gap: 10px;
     width: auto;
-    background: rgba(0, 0, 0, 0.1);
+    /* 签名条的"压暗"底，同样吃 --card-alpha（见 main-v6.css 的「毛玻璃底色」注释）。
+       它没有 backdrop-filter —— 只有底色、不糊背景。 */
+    background: rgba(0, 0, 0, calc(0.1 * var(--card-alpha, 1)));
     border-radius: 36px;
     /* 与上方文字行的间距交给 .clan-user-server 的 space-between 统一分配：
        这里再留 10px 会让有签名那列比头像底缘多探出 9px，末行对不齐头像底 */

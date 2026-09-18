@@ -22,8 +22,17 @@ if (firstSpan) {
 // ==========================================================
 // 无海报背景时切换浅色主题（毛玻璃改为实色，保证文字可读）
 // ==========================================================
+// 注意：大背景图（poster）由宏挂在 `.main-content::before` 上，`.main-content`
+// 元素自身的 background-image 恒为 none。只读元素自身会把「有海报」误判成
+// 「没海报」，于是永久注入下面那套浅色主题 —— 其中 `.main-content{background:#FCFCFE}`
+// 是不透明的，正好盖住 z-index:-1 的伪元素，海报就再也显示不出来。
+// 所以必须连伪元素一起看，且用「有没有 url() 图层」来判定（::before 上的黑色
+// 遮罩层是 linear-gradient，没海报时它也可能存在，不能只判 !== 'none'）。
 const el = document.querySelector('.main-content');
-const hasAnyBackground = el && window.getComputedStyle(el).backgroundImage !== 'none';
+const hasAnyBackground = !!el && [
+    window.getComputedStyle(el).backgroundImage,
+    window.getComputedStyle(el, '::before').backgroundImage
+].some((bg) => !!bg && bg.indexOf('url(') !== -1);
 
 if (!hasAnyBackground) {
     const styleElement = document.createElement('style');

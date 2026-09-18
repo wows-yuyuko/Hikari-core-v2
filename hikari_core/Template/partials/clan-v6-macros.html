@@ -68,6 +68,36 @@
 {%- set poster_mask_pct = (100 - poster_opacity) * 100 // 200 | int -%}
 {%- set poster_mask_frac = '%02d' | format((poster_mask_pct % 100) | int) -%}
 {%- set poster_mask = (poster_mask_pct // 100) | int ~ '.' ~ poster_mask_frac -%}
+{# 毛玻璃「元素块」（卡片）的两个全局旋钮 —— 都下发到 .main-content 上的 CSS 变量，
+   由 main-v6.css / avatar-v6.css 里各条 background / backdrop-filter 去乘：
+       --card-alpha  卡片底色透明度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全透明
+       --card-blur   毛玻璃模糊强度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全不模糊
+   数据位置（用户 / 公会一致）：avatar_box['card'] = { dark: 0-100, blur: 0-200 }
+       card.dark = 卡片「透明度」，与 poster.dark **同向**：越大越淡，0 = 完全不透明（缺省）
+       card.blur = 模糊强度百分比：100 = 缺省，0 = 关掉模糊，200 = 两倍
+   ▍两个缺省值都取「当前观感」，所以历史数据（没有 card 字段）渲染出来一模一样。
+   ▍**只在「有海报」的分支里下发**：没海报时主 JS 会把卡片整套换成实色
+     （见 Template/main-v6.js 的浅色主题兜底），旋钮在那时没有任何意义。
+   ▍CSS 侧一律写 var(--card-alpha, 1) —— 这里不输出时也是 1（= 现状）。
+     反过来说，**这里绝不能输出空串或畸形值**：var() 拿到非法值会让整条
+     background / backdrop-filter 声明在「计算值阶段」失效（背景直接变透明、
+     模糊直接没了），而且不报错。所以必须先夹取、再用「整数 + 两位小数」拼成
+     合法数字 —— 沿用上面 poster_mask 的写法。
+   与用户侧 partials/user-v6-macros.html 同源，改一边记得改另一边。 #}
+{%- set card_box = avatar_box['card'] if avatar_box['card'] is defined and avatar_box['card'] else {} -%}
+{# ▍取值一律走 `| int(缺省)` 而不是裸 `| int`：两者对「字段在但值是 null」
+   （JSON 的 null / Python 的 None）和「值不是数字字符串」的处理天差地别 ——
+   裸 int 会把它们都变成 0，而 blur 的缺省是 100，0 就等于「把模糊全关掉」，
+   一个 null 就能让页面糊度跑偏。带缺省的写法会回落到各自的缺省值。 #}
+{%- set card_dark = (card_box['dark'] | int(0)) if card_box['dark'] is defined else 0 -%}
+{%- set card_dark = [[card_dark, 0] | max, 100] | min -%}
+{%- set card_blur_pct = (card_box['blur'] | int(100)) if card_box['blur'] is defined else 100 -%}
+{%- set card_blur_pct = [[card_blur_pct, 0] | max, 200] | min -%}
+{%- set card_alpha_pct = 100 - card_dark -%}
+{%- set card_alpha_frac = '%02d' | format((card_alpha_pct % 100) | int) -%}
+{%- set card_alpha = (card_alpha_pct // 100) | int ~ '.' ~ card_alpha_frac -%}
+{%- set card_blur_frac = '%02d' | format((card_blur_pct % 100) | int) -%}
+{%- set card_blur = (card_blur_pct // 100) | int ~ '.' ~ card_blur_frac -%}
 <style>
     {% if poster and poster_img and poster_img['status'] > 0 %}
     /* 大背景图拆到 ::before 这一层承载，**不能**把 opacity 加在 .main-content 上 ——
@@ -79,6 +109,11 @@
        所以这里写一次即可；伪元素盖不住内容（无 z-index 的 ::before 在内容之下）。 */
     .main-content {
         position: relative;
+        /* 毛玻璃元素块的全局旋钮（见上面的 card 注释）。
+           消费方在 main-v6.css / avatar-v6.css —— 每条 background 乘 --card-alpha、
+           每条 backdrop-filter 乘 --card-blur，这里只负责把值发下来。 */
+        --card-alpha: {{ card_alpha }};
+        --card-blur: {{ card_blur }};
     }
 
     .main-content::before {

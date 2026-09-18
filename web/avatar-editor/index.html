@@ -374,6 +374,27 @@
                 </div>
             </details>
 
+            <!-- ============ 毛玻璃元素块（卡片）============ -->
+            <!-- 不是槽位：没有 status / data / crop，也不对应任何图片，
+                 所以没有「编辑图片」按钮，也不参与裁剪弹窗。 -->
+            <details class="aep-group">
+                <summary>毛玻璃元素块 card<span class="aep-sum-tag" id="tag-card">默认</span></summary>
+                <div class="aep-group-body">
+                    <div class="aep-field">
+                        <div class="aep-label"><span>卡片透明度</span><span id="card-dark-val">0</span></div>
+                        <input class="aep-range" id="card-dark" type="range" min="0" max="100" step="1" value="0">
+                    </div>
+                    <div class="aep-field">
+                        <div class="aep-label"><span>模糊强度</span><span id="card-blur-val">100</span></div>
+                        <input class="aep-range" id="card-blur" type="range" min="0" max="200" step="1" value="100">
+                    </div>
+                    <div class="aep-hint">
+                        写进 <code>card.dark</code> / <code>card.blur</code>，对<b>全部玻璃块</b>统一生效（数据卡片、玻璃条、信息表、签名条、头部毛玻璃）。<br>
+                    </div>
+                    <div class="aep-hint"><b>只在该页有海报时生效</b>：没有大背景图时，成品会由 <code>main-v6.js</code> 把卡片整套换成实色（保证浅底黑字可读），那时候这两个值不参与渲染。</div>
+                </div>
+            </details>
+
             <!-- ============ 彩色昵称 ============ -->
             <details class="aep-group">
                 <summary>彩色昵称 colorName<span class="aep-sum-tag" id="tag-color">—</span></summary>
@@ -481,6 +502,7 @@
             <button class="aep-btn" id="slot-center" type="button">居中</button>
             <button class="aep-btn" id="slot-reset" type="button">重置</button>
             <button class="aep-btn" id="slot-download" type="button">下载裁剪图</button>
+            <button class="aep-btn" id="slot-aspect" type="button" hidden>自由比例</button>
             <span class="aep-spacer"></span>
             <button class="aep-btn primary" id="slot-done" type="button">完成</button>
         </div>
@@ -511,12 +533,30 @@
         return { status: 0, data: '', dark: 0, crop: { x: 50, y: 50 } };
     }
 
+    /* 毛玻璃元素块的两个旋钮（avatar.card）—— **不是槽位**：
+       没有 status / data / crop，也不对应任何图片，所以不给显示开关、不给裁剪器。
+       两个缺省值都取「当前观感」，所以老数据（没有 card 字段）拖到缺省就与线上一致：
+         卡片透明度 0   = 卡片完全不透明（缺省，最实）
+         模糊强度   100 = 当前模糊强度（缺省）
+       ▍数值口径（缺省 / 夹取）与宏的 `| int(缺省)` 对齐，实现在 cardNum()。
+       ▍只在该页**有海报**时参与渲染（没海报时成品走 main-v6.js 的实色兜底）。 */
+    function blankCard() { return { dark: 0, blur: 100 }; }
+
+    function cardNum(v, lo, hi, dflt) {
+        if (v === undefined || v === null || v === '' || typeof v === 'boolean') return dflt;
+        var n = Number(v);
+        if (!isFinite(n)) return dflt;
+        n = Math.round(n);
+        return Math.min(hi, Math.max(lo, n));
+    }
+
     var state = {
         server: '', serverCn: '', accountId: '', userName: '', accountCreateTime: 0, dogTag: '',
         clanInfo: { tag: '', color: '#b3b3b3' },
         avatar: {
             avatar: blankSlot(), banner: blankSlot(), poster: blankSlot(),
-            colorName: blankSlot(), sign: blankSlot()
+            colorName: blankSlot(), sign: blankSlot(),
+            card: blankCard()
         }
     };
 
@@ -556,10 +596,16 @@
         }),
         banner: new HikariImageCropper($('crop-banner'), {
             frame: HikariUserPreview.SLOT_FRAME.banner, label: 'banner',
+            // 「固定宽高」用的就是模板盒子本身 1400×300
+            lockFrame: HikariUserPreview.SLOT_FRAME.banner,
             maxHeight: 210, actions: false, freeAspect: true
         }),
         poster: new HikariImageCropper($('crop-poster'), {
             frame: { w: 1500, h: 2600 }, label: 'poster',
+            /* ▍lockFrame 必须显式写：上面的 frame 会被 syncPosterFrame() 改成
+               **实时页高**（自由比例下的位置换算要用真实盒子比例），
+               而「固定宽高」要是用户选的固定常量 1500×2600，不随页高浮动。 */
+            lockFrame: { w: 1500, h: 2600 },
             maxHeight: 460, actions: false, freeAspect: true
         })
     };
@@ -712,6 +758,7 @@
         $('crop-modal').hidden = false;
         // 按钮文案跟着 box 的 .full 状态走（onResize 内部只重建 Cropper，不碰按钮）
         syncFullBtn();
+        syncAspectBtn();
         // 弹窗这时预览肯定就绪了，先把大背景图的 frame（= 预览整页尺寸）同步准
         // —— Cropper 一初始化就会按 frame 算「刚好盖住盒子」的基准框，
         //   用早先那个预览未就绪时的占位尺寸算出来是错的。
@@ -794,6 +841,38 @@
         if (openSlot) croppers[openSlot].download(openSlot);
     });
 
+    /* 「自由比例 ↔ 固定宽高」切换。只有 banner / poster 用得上 ——
+       头像本来就是固定 250×250（freeAspect: false），所以它打开时把按钮藏起来。
+       固定时裁剪框锁成模板盒子的固定宽高：小背景 1400×300、大背景 1500×2600。
+       按钮上写**当前状态**，title 里说清「点下去会切到什么」（与预览右上角
+       那个「整页全览 / 适应宽度」按钮同一套做法）。 */
+    function syncAspectBtn() {
+        var btn = $('slot-aspect');
+        if (!openSlot) { btn.hidden = true; return; }
+        var c = croppers[openSlot];
+        /* 判据用 opts.freeAspect（**构造时**的配置），不是 c.freeAspect ——
+           后者会被这个按钮自己改掉。头像 opts.freeAspect 是 falsy
+           （它天生固定 250×250），所以不给按钮。 */
+        if (!c.opts.freeAspect) { btn.hidden = true; return; }
+        btn.hidden = false;
+        var fixed = c.isAspectLocked();
+        var wh = c.lockFrame.w + '×' + c.lockFrame.h;
+        btn.textContent = fixed ? '固定宽高' : '自由比例';
+        btn.classList.toggle('is-on', fixed);
+        btn.setAttribute('aria-pressed', String(fixed));
+        btn.title = fixed
+            ? '当前：裁剪框锁成 ' + wh + '（只能等比拉）。点击切回「自由比例」'
+            : '当前：裁剪框可拉成任意比例。点击锁成模板固定宽高 ' + wh;
+    }
+
+    $('slot-aspect').addEventListener('click', function () {
+        if (!openSlot) return;
+        var c = croppers[openSlot];
+        c.setAspectLock(!c.isAspectLocked());
+        syncZoomUI(c.getScale());     // 切模式会重算基准，滑块跟着回位
+        syncAspectBtn();
+    });
+
     $('slot-done').addEventListener('click', closeCropModal);
     $('crop-modal-close').addEventListener('click', closeCropModal);
     $('crop-modal-mask').addEventListener('click', closeCropModal);
@@ -820,6 +899,38 @@
 
     $('poster-dark').addEventListener('input', function () {
         state.avatar.poster.dark = setPosterDark(this.value);
+        render();
+    });
+
+    /* ---------- 毛玻璃元素块（card）：滑块 ↔ 数据 双向同步 ----------
+       两个滑块的缺省值就是「当前观感」（透明度 0 / 模糊 100），
+       所以拖到缺省 = 与线上完全一致，不需要额外的「重置」按钮。
+       值怎么变成 CSS 在 avatar-editor.js 的 cardVarsCss()（与宏同构）。 */
+    function setCardSlider(id, v, lo, hi, dflt) {
+        var n = cardNum(v, lo, hi, dflt);
+        $(id).value = n;
+        $(id + '-val').textContent = n;
+        return n;
+    }
+
+    function syncCard() {
+        var c = state.avatar.card;
+        setCardSlider('card-dark', c.dark, 0, 100, 0);
+        setCardSlider('card-blur', c.blur, 0, 200, 100);
+        var isDefault = (Number(c.dark) === 0 && Number(c.blur) === 100);
+        $('tag-card').textContent = isDefault
+            ? '默认' : ('透明 ' + c.dark + ' · 模糊 ' + c.blur);
+    }
+
+    $('card-dark').addEventListener('input', function () {
+        state.avatar.card.dark = setCardSlider('card-dark', this.value, 0, 100, 0);
+        syncCard();
+        render();
+    });
+
+    $('card-blur').addEventListener('input', function () {
+        state.avatar.card.blur = setCardSlider('card-blur', this.value, 0, 200, 100);
+        syncCard();
         render();
     });
 
@@ -1140,6 +1251,7 @@
         });
 
         refreshAvatarHint();
+        syncCard();
         render();
     }
 
@@ -1194,7 +1306,13 @@
                 banner: normalizeSlot(av.banner, 'banner'),
                 poster: normalizeSlot(av.poster, 'poster'),
                 colorName: normalizeSlot(av.colorName, 'colorName'),
-                sign: normalizeSlot(av.sign, 'sign')
+                sign: normalizeSlot(av.sign, 'sign'),
+                /* card 不是槽位：只有两个范围值，缺省 = 「当前观感」
+                   （透明度 0 / 模糊 100），老数据不带这个字段时渲染结果不变。 */
+                card: {
+                    dark: cardNum(av.card && av.card.dark, 0, 100, 0),
+                    blur: cardNum(av.card && av.card.blur, 0, 200, 100)
+                }
             }
         };
     }

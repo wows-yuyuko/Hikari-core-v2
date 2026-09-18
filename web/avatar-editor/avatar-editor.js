@@ -33,6 +33,11 @@
        banner.dark  = 0|1   深色标记（1 -> .dark-banner 白字）；只看 dark 值本身，
                             与 banner.status（显示开关）**无关**
        poster.dark  = 0-100 大背景图透明度（0 = 不透明 / 100 = 全透明，越大越淡）
+   ▍另有一个**不是槽位**的全局配置（没有 status / data / crop，也不是图片）：
+       avatar.card = { dark: 0-100, blur: 0-200 }
+                   毛玻璃「元素块」的两个旋钮 —— 卡片底色透明度 / 模糊强度，
+                   以 CSS 变量 --card-alpha / --card-blur 下发到 .main-content，
+                   与宏同构、**只在有海报时生效**。见 cardVarsCss()。
    status 判断口径**完全照抄** partials/user-v6-macros.html，见 render() 注释。
    crop 是设置页附加的字段，模板侧不读它（宏写死 background-position: center）
    —— 想让模板也吃这个位置，见文件末尾说明。
@@ -45,7 +50,7 @@
        页面顶栏会显示它：改完代码刷新后时间没变，说明浏览器还在用缓存里的旧文件
        （Ctrl+F5 强制刷新即可）。
        （不走 ?v= 查询串是因为 file:// 下查询串会被当成文件名，直接加载失败。） */
-    var HIKARI_BUILD = '2026-09-17 14:28';
+    var HIKARI_BUILD = '2026-09-18 16:05';
 
     var STAGE_W = 1500;          // .page-box / .main-content 的固定宽度（main-v6.css）
     var PAGE_HEADER_W = 1400;    // 1500 - margin 50*2
@@ -140,6 +145,51 @@
         var frac = String(pct % 100);
         if (frac.length < 2) frac = '0' + frac;
         return whole + '.' + frac;
+    }
+
+    /* 毛玻璃「元素块」（卡片）的两个全局旋钮 —— 与 partials/*-v6-macros.html 的
+       card 段**严格同构**（改一边记得改另一边）：
+         card.dark  0-100  卡片底色透明度，**与 poster.dark 同向**：越大越淡，
+                           0 = 完全不透明 = 缺省（即当前观感）
+         card.blur  0-200  毛玻璃模糊强度百分比：100 = 缺省（当前观感），
+                           0 = 完全不模糊，200 = 两倍
+       下发方式与模板一致：写成 .main-content 上的 --card-alpha / --card-blur，
+       由 main-v6.css / avatar-v6.css 里各条 background / backdrop-filter 去乘。
+       ▍**只在有海报时才下发**（调用点在 _styleText 的 posterOn 分支里）：
+         没海报时真实渲染会由 main-v6.js 把卡片整套换成实色，旋钮在那时没有意义；
+         预览要是照样下发，就成了「预览有效果、成品没效果」。
+       ▍缺省口径必须和宏的 `| int(缺省)` 对齐：字段缺席 / null / 空串 / 非整数串
+         都回缺省，float 按**截断**（Jinja 的 int(12.7) = 12，不是四舍五入）。
+         这就是下面不用现成的 num() 的原因 —— 那个走 parseInt，
+         对 '12.5' 会取到 12，而 Jinja 的 int('12.5') 认不了、会回缺省。 */
+    function cardIntOr(v, dflt) {
+        if (v === undefined || v === null || v === '') return dflt;
+        if (typeof v === 'string' && !/^\s*[+-]?\d+\s*$/.test(v)) return dflt;
+        var n = Number(v);
+        if (!isFinite(n)) return dflt;
+        return n < 0 ? Math.ceil(n) : Math.floor(n);
+    }
+
+    /* 「两位小数的倍数」字符串，与宏的
+       `(pct // 100) | int ~ '.' ~ '%02d' | format(pct % 100)` 逐字对齐。
+       ▍这里不能用 toFixed：宏的整数部分走的是整数除法（截断），
+         两边一旦不同，预览的底色浓淡就和成品差一档。 */
+    function ratioStr(pct) {
+        var whole = Math.floor(pct / 100);
+        var frac = String(Math.floor(pct) % 100);
+        if (frac.length < 2) frac = '0' + frac;
+        return whole + '.' + frac;
+    }
+
+    /* 输出 .main-content 里那两行变量声明（含缩进与换行，直接拼进规则块）。
+       ▍永远输出合法数字：var() 拿到空串 / 畸形值会让整条 background /
+         backdrop-filter 在「计算值阶段」失效（底色直接透明、模糊直接没了），
+         而且不报错 —— 与上面 poster 的坑同源。 */
+    function cardVarsCss(slot) {
+        var dark = clamp(cardIntOr(slot && slot.dark, 0), 0, 100);
+        var blur = clamp(cardIntOr(slot && slot.blur, 100), 0, 200);
+        return '    --card-alpha: ' + ratioStr(100 - dark) + ';\n'
+             + '    --card-blur: ' + ratioStr(blur) + ';\n';
     }
 
     /* =====================================================
@@ -605,6 +655,7 @@
             var maskAlpha = posterMaskAlpha(opacity);
             css.push('.main-content {\n'
                 + '    position: relative;\n'
+                + cardVarsCss(av.card)              // 毛玻璃元素块的两个旋钮（与宏同构）
                 + '}\n\n'
                 + '.main-content::before {\n'
                 + '    content: "";\n'
@@ -664,6 +715,8 @@
          poster.dark 0-100      -> .main-content::before 的 opacity。
                                   dark 是「透明度」（越大越淡），
                                   写进 CSS 的是 100 - dark。
+         avatar.card.dark/blur  -> .main-content 的 --card-alpha / --card-blur
+                                  （只在该页有海报时下发；见 cardVarsCss）。
        ----------------------------------------------------- */
     HikariUserPreview.prototype.render = function (userInfo) {
         if (!this.ready) { this._pending = userInfo; return; }
@@ -755,6 +808,13 @@
        裁剪框的宽高比 = 模板盒子的比例（头像 1:1、小背景 1400:300、
        大背景 1500:整页高），所以框里框到的内容天然就是要塞进那个盒子的东西。
 
+       ▍「自由比例 ↔ 固定宽高」（banner / poster 可在弹窗里切，见 setAspectLock）：
+         · 自由比例（默认）：框的宽高比随便拉 —— 模板那边 background-size
+           只给宽度（100%）或 cover，比例本来就无所谓。
+         · 固定宽高：框锁成 lockFrame 的比例（小背景 1400×300、
+           大背景 1500×2600），手柄只能等比拉 —— 想要「框到什么就是什么」时用。
+         切模式会重算 _sizeDefault 但保住 scale，所以缩放滑块不会乱跳。
+
        对外仍然吐同一套 crop：
          x / y   百分比，直接给模板的 background-position
          size    百分比字符串，直接给模板的 background-size
@@ -771,11 +831,24 @@
 
         this.frame = opts.frame || { w: 250, h: 250 };
         this.aspect = this.frame.w / this.frame.h;
+        /* lockFrame：「固定宽高」模式下裁剪框锁的那个比例。
+           默认跟 frame 一致（头像 250×250、小背景 1400×300 都够用）。
+           大背景图必须**单独给**：它的 frame 会被 setFrame() 改成**实时页高**
+           （自由比例下的位置换算必须用真实盒子比例），而用户要的「固定宽高」
+           是一个不随页高浮动的常量 1500×2600 —— 两者不是一回事，不能共用。
+           ▍锁定时 frame 其实完全不参与运算（位置/基准都只走 lockAspect），
+           所以这两个值分开存是安全的。 */
+        this.lockFrame = opts.lockFrame
+            ? { w: opts.lockFrame.w, h: opts.lockFrame.h }
+            : { w: this.frame.w, h: this.frame.h };
+        this.lockAspect = this.lockFrame.w / this.lockFrame.h;
         /* freeAspect: 裁剪框不锁宽高比，手柄随便拉。
            适合模板里本来就「不在乎图片比例」的槽位：
              · 小背景图 background-size: 100%  -> 宽度撑满，高度多余部分被裁
              · 大背景图 background-size: cover -> 等比放大到盖住整个盒子
-           头像那种固定方框（250×250）就必须锁 1:1，否则画面会变形。 */
+           头像那种固定方框（250×250）就必须锁 1:1，否则画面会变形。
+           ▍banner / poster 默认 true，但可以在弹窗里用「自由比例 ↔ 固定宽高」
+           按钮切到锁比例（见 setAspectLock）。 */
         this.freeAspect = !!opts.freeAspect;
         this.stageHeight = opts.maxHeight || 300;
         this.label = opts.label || '';
@@ -837,8 +910,8 @@
     HikariImageCropper.prototype._cropOpts = function () {
         var self = this;
         return {
-            // 锁比例时用模板盒子比例；freeAspect 时用 NaN（Cropper 的「自由」）
-            aspectRatio: this.freeAspect ? NaN : this.aspect,
+            // 锁比例时用 lockAspect（「固定宽高」）；freeAspect 时用 NaN（Cropper 的「自由」）
+            aspectRatio: this.freeAspect ? NaN : this.lockAspect,
             viewMode: 1,                // 框不能跑出图片（就是「不能超过图片边界」）
             /* 拖动 = 搬图片（crop box 留在原地）。
                之前是 'crop' + movable:false，也就是拖的是那个框 ——
@@ -1102,12 +1175,12 @@
             //（初始框就是「刚好盖住盒子」的那个，所以一上来不会露白）
             h = w / (this._boxRatio || nw / nh || 1);
         } else {
-            h = w / this.aspect;
+            h = w / this.lockAspect;
         }
         if (h > nh) {
             var k = w / h;       // 先留住当前宽高比，别被下面的赋值带跑
             h = nh;
-            w = h * (this.freeAspect ? k : this.aspect);
+            w = h * (this.freeAspect ? k : this.lockAspect);
         }
         this.cropper.setData({
             x: clamp(t.x, 0, 100) / 100 * Math.max(0, nw - w),
@@ -1173,19 +1246,80 @@
         var changed = Math.abs(ar - this.aspect) >= 1e-6;
         this.frame = { w: frame.w, h: frame.h };
         this.aspect = ar;
-        // 只有锁比例时才需要跟着改框、重算基准。自由比例下框是用户自己拉的；
-        // 而且 _sizeDefault 不能每次重算 —— 预览的页面高度一浮动（poster 的
-        // frame.h 就是这么来的），scale 会跟着抖，滑块看着就乱跳。
+        /* 只有锁比例时才需要跟着改框、重算基准 —— 而且改的是**锁定的那个比例**
+           （lockAspect），不是模板盒子比例 ar：poster 的 frame 会随页高浮动，
+           锁定的固定宽高不能被它带跑。
+           自由比例下框是用户自己拉的；而且 _sizeDefault 不能每次重算 ——
+           预览的页面高度一浮动（poster 的 frame.h 就是这么来的），scale 会跟着抖，
+           缩放滑块看着就乱跳。
+           （对 poster 来说这个分支基本是空转：lockAspect 是常量，
+             setAspectRatio 进去也是同一个值。） */
         if (!this.freeAspect && changed && this.cropper) {
-            this.cropper.setAspectRatio(ar);
+            this.cropper.setAspectRatio(this.lockAspect);
             this._sizeDefault = this._measureSize();
         }
+        /* 页高变了要顺手重画 meta —— 那一行里写着「取景框比例 1500×H」，
+           不重画它就永远停在第一次的值上（setFrame 由 syncPosterFrame() 在
+           每次 render() 时调用，但 _renderMeta 只在 crop / relayout 时才跑）。 */
+        if (changed) this._renderMeta();
         return this;
+    };
+
+    /* 切「自由比例 ↔ 固定宽高」。
+       locked = true  → 框锁成 lockFrame 的比例，手柄只能等比拉
+       locked = false → 自由比例，宽高比随便拉（banner / poster 的默认）
+       ▍切换时两件事一起做，否则用户会看到「跳一下」：
+         1) 换模式后重算 _sizeDefault —— 两种模式的基准算法不同
+            （自由 = 刚好盖住模板盒子的那个框；固定 = Cropper 给的最大等比框）
+         2) 用同一个 scale 把框写回去，保住用户已经调好的缩放；
+            x/y 也一并带过去，免得切一下图就跑到别处。
+       未就绪（弹窗没打开 / 还没选图）时只改模式标记，等 _onReady 自己按新算。 */
+    HikariImageCropper.prototype.setAspectLock = function (locked) {
+        locked = !!locked;
+        if (locked === !this.freeAspect) return this;      // 已经是这个状态
+        var p = this.getPosition();
+        this.freeAspect = !locked;
+        /* 自由比例下框的比例由 _boxRatio 决定 —— 切回来时先归位到「刚好盖住盒子」的比例。
+           ▍这句**必须放在下面的 ready 早退之前**：还没就绪（弹窗没开 / 没选图）时
+           我们就退出了，但 _boxRatio 得先归位，否则等 _onReady 跑起来会拿着
+           锁定模式残留的框比例去写自由模式的框，比例就是歪的。 */
+        if (this.freeAspect) this._boxRatio = this.aspect;
+        if (!this.ready || !this.cropper) return this;
+
+        this.cropper.setAspectRatio(this.freeAspect ? NaN : this.lockAspect);
+        /* ▍切回自由比例后，_boxRatio **必须在这里再归位一次**。
+           原因：setAspectRatio(NaN) 内部会走 initCropBox() 把裁剪框重置，
+           而 aspectRatio 是 NaN 时它退回按**原图**的宽高比算 ——
+           重置会触发 crop 事件 -> _emit() -> `_boxRatio = 当前框的比例`，
+           于是我们上面刚设好的「刚好盖住模板盒子」的比例被改成了图片比例。
+           后果（实测）：本地 1600×1200 的图配 1500×2600 的框，
+           自由模式的框本应是 692×1200，结果被写成 692×520（图片比例），
+           预览里的 background-position 也从 50% 跳到 100% ——
+           用户的裁剪构图直接被改掉，看着就是「切回去之后裁剪失效了」。
+           所以这次归位要放在 setAspectRatio 之后、_writePos 之前。 */
+        if (this.freeAspect) this._boxRatio = this.aspect;
+        this._sizeDefault = this._measureDefault();
+        this._targetPos = { x: p.x, y: p.y, scale: p.scale };
+        this._writePos();
+        /* ▍这里必须显式重画一次 meta：紧接的 _emit() 里，_applyEmit 会拿位置去重
+           （x/y/size 都没变就直接 return），于是「裁剪框 自由比例/固定xx」那一栏
+           会停在旧文案上 —— 按钮已经写「固定宽高」、meta 还写「自由比例」，自相矛盾。 */
+        this._renderMeta();
+        this._emit();
+        return this;
+    };
+
+    HikariImageCropper.prototype.isAspectLocked = function () {
+        return !this.freeAspect;
     };
 
     HikariImageCropper.prototype._renderMeta = function (p) {
         var parts = [];
         parts.push('取景框比例 <b>' + this.frame.w + '×' + this.frame.h + '</b>');
+        // 裁剪框模式：自由比例 / 固定宽高（固定时把锁的那个尺寸写出来）
+        parts.push('裁剪框 <b>' + (this.freeAspect
+            ? '自由比例'
+            : ('固定 ' + this.lockFrame.w + '×' + this.lockFrame.h)) + '</b>');
         if (!this.ready || !this.cropper) {
             parts.push(this.src ? '打开弹窗后初始化' : '未选择图片');
             this.meta.innerHTML = wrapSpans(parts);
