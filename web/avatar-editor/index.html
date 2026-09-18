@@ -369,7 +369,17 @@
                         <div class="aep-label"><span>透明度</span><span id="poster-dark-val">0</span></div>
                         <input class="aep-range" id="poster-dark" type="range" min="0" max="100" step="1" value="0">
                     </div>
+                    <div class="aep-field">
+                        <div class="aep-label"><span>纵向对齐</span><span id="poster-align-val">居中</span></div>
+                        <div class="aep-tabs" id="poster-align-tabs">
+                            <button type="button" class="aep-tab" data-align="0">顶部</button>
+                            <button type="button" class="aep-tab" data-align="50">居中</button>
+                            <button type="button" class="aep-tab" data-align="100">底部</button>
+                        </div>
+                    </div>
                     <div class="aep-hint">铺满整页（<code>cover</code>），取景框 = 预览整页尺寸，所以页面越高可平移空间越大。<br>透明度写进 <code>poster.dark</code>（0-100）：<code>0</code> = 背景图<b>完全显示</b>（默认，与老数据一致），<code>100</code> = <b>完全透明</b>（看不见）。往右拉越淡。</div>
+                    <div class="aep-hint"><b>纵向对齐</b>写进 <code>poster.align</code>（<code>0</code> / <code>50</code> / <code>100</code>，也认 <code>'top'|'center'|'bottom'</code>）：决定背景图纵向<b>裁在哪一段</b>。<code>居中</code> 是缺省，与老数据一致。<br><b>只在页高低于 2250px 的短页上看得出差别</b>——图片 2731×4096 按宽铺满 1500px 时正好 2250px 高；页高超过它，背景图会改成按高贴合、纵向整幅铺满，怎么对齐都是同一个画面。短页（单船页等）按宽贴合、纵向被裁，这时「顶部」才能保证各页看到的都是同一段。</div>
+                    <div class="aep-hint"><b>⚠️ 本页预览看不出对齐的变化</b>：预览的页面高约 2600px（已超过 2250px 的分界），纵向本来就没得裁。要验证顶部对齐，得看短页模板渲染出来的成品。</div>
                     <div class="aep-hint">右侧预览默认「整页全览」（整页缩进一屏，看版式全貌）；想看清字就点预览右上角的按钮切到「适应宽度」。</div>
                 </div>
             </details>
@@ -897,6 +907,42 @@
 
     bindSwitch('d-banner', 'avatar.banner.dark');
 
+    /* ---------- 大背景图纵向对齐（poster.align）：三个预设 ----------
+       写进数据的就是数字 0 / 50 / 100（宏也认 'top'|'center'|'bottom' 三个关键字）。
+       语义与宏同构，见 avatar-editor.js 的 posterAlignY()。
+       ▍为什么不复用裁剪器的纵向位置：预览的 poster 取景框 = **实时页高**（≈2600），
+         cover 之下纵向溢出≈0，裁剪器的 getPosition() 一律报 50 —— 纵向本来就拖不出来，
+         所以单独给一个显式字段。
+       ▍缺省 50（居中）= 宏里旧的写死 center，所以不设这个字段时观感不变。 */
+    var POSTER_ALIGN_LABEL = { 0: '顶部', 50: '居中', 100: '底部' };
+
+    function posterAlignNum(v) {
+        if (typeof v === 'string') {
+            var kw = { top: 0, center: 50, bottom: 100 }[v.trim().toLowerCase()];
+            return typeof kw === 'number' ? kw : 50;
+        }
+        if (v === undefined || v === null || v === '') return 50;
+        var n = Number(v);
+        if (!isFinite(n)) return 50;
+        return Math.min(100, Math.max(0, Math.round(n)));
+    }
+
+    function syncPosterAlign() {
+        var cur = posterAlignNum(state.avatar.poster && state.avatar.poster.align);
+        document.querySelectorAll('#poster-align-tabs .aep-tab').forEach(function (b) {
+            b.classList.toggle('active', Number(b.dataset.align) === cur);
+        });
+        $('poster-align-val').textContent = POSTER_ALIGN_LABEL[cur] || (cur + '%');
+    }
+
+    document.querySelectorAll('#poster-align-tabs .aep-tab').forEach(function (b) {
+        b.addEventListener('click', function () {
+            state.avatar.poster.align = Number(this.dataset.align);
+            syncPosterAlign();
+            render();
+        });
+    });
+
     $('poster-dark').addEventListener('input', function () {
         state.avatar.poster.dark = setPosterDark(this.value);
         render();
@@ -1252,6 +1298,7 @@
 
         refreshAvatarHint();
         syncCard();
+        syncPosterAlign();
         render();
     }
 
@@ -1281,12 +1328,17 @@
         var dark = slot && slot.dark != null ? Number(slot.dark) : fallback;
         if (!isFinite(dark)) dark = fallback;
         if (key === 'poster') dark = Math.min(100, Math.max(0, Math.round(dark)));
-        return {
+        var out = {
             status: slot && slot.status != null ? Number(slot.status) : 0,
             data: (slot && slot.data) || '',
             dark: dark,
             crop: slot && slot.crop ? { x: slot.crop.x, y: slot.crop.y } : { x: 50, y: 50 }
         };
+        /* 只有大背景图有纵向对齐（0-100，或 'top'|'center'|'bottom'）。
+           缺省 50 = 居中 = 宏里旧的写死 center，所以老数据渲染不变。
+           其它槽位不写这个字段（它们没有纵向裁切的场景）。 */
+        if (key === 'poster') out.align = posterAlignNum(slot && slot.align);
+        return out;
     }
 
     function fromApi(data) {

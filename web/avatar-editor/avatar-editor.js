@@ -33,14 +33,19 @@
        banner.dark  = 0|1   深色标记（1 -> .dark-banner 白字）；只看 dark 值本身，
                             与 banner.status（显示开关）**无关**
        poster.dark  = 0-100 大背景图透明度（0 = 不透明 / 100 = 全透明，越大越淡）
+   ▍poster.align = 0-100（或 'top' / 'center' / 'bottom'）大背景图的**纵向取景位置**，
+                   缺省 50 = 居中。**宏和预览都认它**，见 posterAlignY()。
+                   只在页高 < 2250px 的短页上看得出来（cover 的分界，见宏里的注释）。
    ▍另有一个**不是槽位**的全局配置（没有 status / data / crop，也不是图片）：
        avatar.card = { dark: 0-100, blur: 0-200 }
                    毛玻璃「元素块」的两个旋钮 —— 卡片底色透明度 / 模糊强度，
                    以 CSS 变量 --card-alpha / --card-blur 下发到 .main-content，
                    与宏同构、**只在有海报时生效**。见 cardVarsCss()。
    status 判断口径**完全照抄** partials/user-v6-macros.html，见 render() 注释。
-   crop 是设置页附加的字段，模板侧不读它（宏写死 background-position: center）
-   —— 想让模板也吃这个位置，见文件末尾说明。
+   crop 是设置页附加的字段，模板侧**不读它**（宏里 background-position 的横向恒为
+   center）—— 所以「拖动平移」目前只在预览里生效。想让模板也吃这个位置，
+   把宏里的 `center` 换成 crop.x 即可（默认 50 与 center 等价，改不改都不影响老数据）。
+   （纵向换成了显式的 poster.align，理由见 posterAlignY() 的注释。）
    ========================================================= */
 (function (global) {
     'use strict';
@@ -50,7 +55,7 @@
        页面顶栏会显示它：改完代码刷新后时间没变，说明浏览器还在用缓存里的旧文件
        （Ctrl+F5 强制刷新即可）。
        （不走 ?v= 查询串是因为 file:// 下查询串会被当成文件名，直接加载失败。） */
-    var HIKARI_BUILD = '2026-09-18 16:05';
+    var HIKARI_BUILD = '2026-09-18 17:35';
 
     var STAGE_W = 1500;          // .page-box / .main-content 的固定宽度（main-v6.css）
     var PAGE_HEADER_W = 1400;    // 1500 - margin 50*2
@@ -98,6 +103,35 @@
         var x = c && typeof c.x === 'number' ? c.x : 50;
         var y = c && typeof c.y === 'number' ? c.y : 50;
         return clamp(x, 0, 100) + '% ' + clamp(y, 0, 100) + '%';
+    }
+
+    /* 只要 crop 的横向那半（纵向对 poster 另有来源，见 posterAlignY）。 */
+    function cropPosX(slot) {
+        var c = slot && slot.crop;
+        var x = c && typeof c.x === 'number' ? c.x : 50;
+        return clamp(x, 0, 100);
+    }
+
+    /* 大背景图的**纵向取景位置**（对齐方式）—— 与 partials/*-v6-macros.html 的
+       poster.align 段严格同构（改一边记得改另一边）：
+           数字 0-100：直接当纵向百分比，0 = 贴顶 / 50 = 居中 / 100 = 贴底
+           关键字    ：'top' / 'center' / 'bottom'
+       缺省 50（居中）= 旧写死的 `center`，所以老数据渲染不变。
+       ▍为什么不走 crop.y：预览的 poster 取景框 = **实时页高**（当前 fixture ≈ 2600），
+         而 cover 之下纵向溢出 ≈ 0 —— getPosition() 里「溢出不足 1px 就当没有可移动
+         空间、一律报 50%」那条判断会把它钉死在 50。也就是说纵向**本来就无法用拖动
+         表达**，所以单独给一个 align，和 crop（横向拖动）各管一维、互不干扰。
+       ▍这个值只在页面比 2250px 矮时才看得出差别（cover 在该高度以上按高贴合、
+         纵向正好铺满）—— 编辑器预览的 fixture 页高 2600，所以在这里它看不出变化，
+         要到单船页那种短页上才生效。分界算法见宏里的注释。 */
+    function posterAlignY(slot) {
+        var raw = slot && slot.align;
+        if (typeof raw === 'string') {
+            var kw = { top: 0, center: 50, bottom: 100 }[raw.trim().toLowerCase()];
+            return typeof kw === 'number' ? kw : 50;
+        }
+        if (typeof raw === 'number' && isFinite(raw)) return clamp(Math.round(raw), 0, 100);
+        return 50;
     }
 
     /* 槽位取「背景尺寸」：用户缩放过（crop.size 有值）就跟着它走，
@@ -650,7 +684,11 @@
                两个图层：先列的同尺寸黑色遮罩（alpha = 1 - 不透明度），再列背景图 ——
                遮罩是为了让「完全不透明」时观感与从前一致（从前 url 上套了
                linear-gradient(rgba(0,0,0,.5), ...) 压暗一半），背景图越淡遮罩也越小。
-               单值的 background-position / size 会套用到所有图层，写一次即可。 */
+               背景位置 / 尺寸写成**独立长手属性**，单值会套用到所有图层，写一次即可。
+               ▍位置的两个维度来源不同（这是刻意的，别合并）：
+                  横向 = crop.x     —— 裁剪器拖出来的，**目前只有预览认**（宏里恒 center）
+                  纵向 = align      —— 宏和预览都认，见 posterAlignY() 的注释
+                 所以「拖动平移」仍然只在预览里看得见；纵向对齐是两边的共识。 */
             var opacity = posterOpacity(poster);   // dark 是「透明度」，这里换算成 CSS 不透明度
             var maskAlpha = posterMaskAlpha(opacity);
             css.push('.main-content {\n'
@@ -665,7 +703,7 @@
                 + '    opacity: ' + opacity + '%;\n'
                 + '    background: linear-gradient(rgba(0, 0, 0, ' + maskAlpha + '), rgba(0, 0, 0, ' + maskAlpha + ')),\n'
                 + '                url("' + poster.data + '") no-repeat;\n'
-                + '    background-position: ' + cropPos(poster) + ';\n'
+                + '    background-position: ' + cropPosX(poster) + '% ' + posterAlignY(poster) + '%;\n'
                 + '    background-size: ' + cropSize(poster, 'cover') + ';\n'
                 + '}');
         }
@@ -715,6 +753,9 @@
          poster.dark 0-100      -> .main-content::before 的 opacity。
                                   dark 是「透明度」（越大越淡），
                                   写进 CSS 的是 100 - dark。
+         poster.align 0-100     -> .main-content::before 的 background-position 纵向
+                                  （0 = 贴顶 / 50 = 居中缺省）。只在页高 < 2250px
+                                  的短页上看得出来，见 posterAlignY()。
          avatar.card.dark/blur  -> .main-content 的 --card-alpha / --card-blur
                                   （只在该页有海报时下发；见 cardVarsCss）。
        ----------------------------------------------------- */
