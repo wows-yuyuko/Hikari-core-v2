@@ -335,18 +335,7 @@
         <!-- ---------- 左：设置 ---------- -->
         <div class="panel">
             <div class="panel-intro">
-                左边改的是这个账号的<b>头像设置</b>，右边是<b>真实的 v6 页面</b>（引真实的 main-v6.css /
-                avatar-v6.css，图表也是真 ECharts）—— 预览长什么样，机器人渲染出来就长什么样。<br>
-                顶栏「模板」切换预览哪张页面：<b>用户信息</b>（info-v6，长页）与<b>单船</b>（ship-v6，短页，
-                要填 Ship Id）。两张页面的头部是<b>同一个宏</b>渲染的，所以这里改的头像 / 小背景 /
-                大背景 / 彩色昵称 / 签名 / 卡片旋钮，切到哪张都照样生效。<br>
-                点「加载配置」时，除了读配置，还会拿配置接口返回的 <code>server</code> +
-                <code>accountId</code> 去请求<b>当前模板</b>对应的接口，把真实数据填进预览：
-                用户信息取 <code>/public/wows/account/user/info2</code>（PR 条 / 场次 / 胜率 / 两张表 /
-                最高记录 / 等级图表），单船取 <code>/public/wows/account/ship/info</code>
-                （船名条 / 该船的核心数据 / 战斗类型 / 最高记录 / 服务器数据）；另外「账号信息」里的
-                用户名 / 军团 / 服务器 / 注册时间也以接口现拼的那份为准（配置表里那份可能已经旧了）。<br>
-                取不到数据（没绑过、接口挂了）只是退回内置演示快照，不影响改头像。
+                单船模板默认大和
             </div>
 
             <div id="status-bar" class="aep-status">填入 Account Id 后点「加载配置」：头像设置走配置接口，预览里的战绩按顶栏选的模板走 info2 / 单船接口</div>
@@ -424,7 +413,6 @@
                         <input class="aep-range" id="poster-dark" type="range" min="0" max="100" step="1" value="0">
                     </div>
                     <div class="aep-hint">铺满整页（<code>cover</code>），取景框 = 预览整页尺寸，所以页面越高可平移空间越大。<br>透明度写进 <code>poster.dark</code>（0-100）：<code>0</code> = 背景图<b>完全显示</b>（默认，与老数据一致），<code>100</code> = <b>完全透明</b>（看不见）。往右拉越淡。</div>
-                    <div class="aep-hint"><b>纵向固定贴顶</b>（不可调，<code>poster.align</code> 字段已废弃）：背景图纵向永远从图的最上面那一段取景 —— 长页短页取的是同一段，不会各页飘。<br>图片 2731×4096 按宽铺满 1500px 时正好 2250px 高：页高超过它时改成按高贴合、纵向整幅铺满（那时贴顶与居中本来就是同一个画面，看不出区别），所以这条只在单船页那类短页上才起作用。</div>
                     <div class="aep-hint">右侧预览默认「整页全览」（整页缩进一屏，看版式全貌）；想看清字就点预览右上角的按钮切到「适应宽度」。</div>
                 </div>
             </details>
@@ -499,9 +487,9 @@
                         <div class="aep-row">
                             <button class="aep-btn" id="color-reset" type="button">重置为服务器值</button>
                         </div>
-                        <div class="aep-hint" id="color-reset-tip">把颜色恢复成加载配置时服务器返回的那个值（不看显示开关）。还没加载过配置时，回内置默认纯色。</div>
+
                     </div>
-                    <div class="aep-hint">模板把这段值直接写进 <code>background</code> 并配 <code>background-clip: text</code>。预设里纯色和现成渐变都有，点一下即可；也可以自己加色标调渐变。</div>
+                    <div class="aep-hint">预设里纯色和现成渐变都有，点一下即可；也可以自己加色标调渐变。</div>
                 </div>
             </details>
 
