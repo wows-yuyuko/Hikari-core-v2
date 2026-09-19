@@ -9,10 +9,28 @@
          只在 contentDocument 里动态改 userInfo 那几个节点。
          用 iframe 是为了 CSS 完全隔离：v6 的 body{width:1500px} 之类
          不会漏到设置页上，设置页的样式也不会漏进预览。
+         ▍**两张页面都预览**（顶栏下拉框切换，见 TEMPLATES）：
+            · info  用户信息页 wws-info-v6.html  —— 长页（≈2600px）
+            · ship  单船页     wws-ship-v6.html  —— 短页（大背景图纵向对齐在这里才看得出来）
+           两张共用**同一份头部**（info_header 宏），所以头像 / 小背景 / 大背景 /
+           彩色昵称 / 签名 / 卡片旋钮切来切去都照样生效。
+         ▍两份数据各管一块，别搞混：
+            · **头像设置**（avatar 那几个槽位 / card）来自
+              /public/wows/account/search/db/{id} 的 data，走 .render(userInfo)
+              —— 就是设置页正在改的那份，改一下预览立刻变。
+            · **战力数据**（PR 条 / 场次 / 胜率 / 图表…）按**当前模板**分开存：
+              info 用 /public/wows/account/user/info2 的 data（.setInfoData），
+              ship 用 /public/wows/account/ship/info 的 data（.setShipData），
+              都是只读的真实数据，不给就用内置演示快照（DEMO_INFO / DEMO_SHIP）。
          .render(userInfo)   —— 吃接口 /public/wows/account/search/db/{id}
                                 返回的 data（顶层就是 userInfo 字段）；
                                 传 {userInfo:{...}} 包装形式也认
-         .getStageSize()     -> {w, h} 当前整页尺寸（大背景图裁剪要用）
+         .setTemplate('info'|'ship') 换预览哪张页面（重建文档）
+         .setInfoData(data)  —— 换一份 info2 的真实战力数据（重建信息区块）；
+                                传 null 回到演示快照
+         .getInfoData()      -> 当前那份 info2 数据（没设过是 null）
+         .setShipData(data)  —— 换一份单船数据（同上）；null 回演示快照
+         .getShipData()      -> 当前那份单船数据（没设过是 null）
          .setMode('fit'|'width')  缩放模式（默认 fit = 整页全览）
          .onModeChange = fn(mode) 模式切换回调
          .destroy()
@@ -32,10 +50,12 @@
    ▍dark 在两个槽位里语义不同，别混用：
        banner.dark  = 0|1   深色标记（1 -> .dark-banner 白字）；只看 dark 值本身，
                             与 banner.status（显示开关）**无关**
-       poster.dark  = 0-100 大背景图透明度（0 = 不透明 / 100 = 全透明，越大越淡）
-   ▍poster.align = 0-100（或 'top' / 'center' / 'bottom'）大背景图的**纵向取景位置**，
-                   缺省 50 = 居中。**宏和预览都认它**，见 posterAlignY()。
-                   只在页高 < 2250px 的短页上看得出来（cover 的分界，见宏里的注释）。
+   ▍poster.dark  = 0-100 大背景图透明度（0 = 不透明 / 100 = 全透明，越大越淡）
+   ▍大背景图的**纵向取景位置固定贴顶**（background-position 纵向恒 0%）——
+     不可配、也没有对应字段了（原先有个 poster.align，2026-09-19 起连同面板旋钮一起撤掉，
+     宏侧同样写死 0，见 partials/*-v6-macros.html 的 poster_pos_y 注释）。
+     只有页高 < 2250px 的短页才看得出这条：长页按高贴合、纵向整幅铺满，
+     贴顶与居中渲染完全相同；短页按宽贴合、纵向被裁，固定贴顶才能保证各页取景一致。
    ▍另有一个**不是槽位**的全局配置（没有 status / data / crop，也不是图片）：
        avatar.card = { dark: 0-100, blur: 0-200 }
                    毛玻璃「元素块」的两个旋钮 —— 卡片底色透明度 / 模糊强度，
@@ -45,7 +65,8 @@
    crop 是设置页附加的字段，模板侧**不读它**（宏里 background-position 的横向恒为
    center）—— 所以「拖动平移」目前只在预览里生效。想让模板也吃这个位置，
    把宏里的 `center` 换成 crop.x 即可（默认 50 与 center 等价，改不改都不影响老数据）。
-   （纵向换成了显式的 poster.align，理由见 posterAlignY() 的注释。）
+   （纵向不可用 crop.y 表达：预览的取景框 = 实时页高，cover 之下纵向溢出≈0，
+     getPosition() 一律报 50 —— 所以它当年是另开的 align 字段，现在干脆固定贴顶。）
    ========================================================= */
 (function (global) {
     'use strict';
@@ -55,7 +76,7 @@
        页面顶栏会显示它：改完代码刷新后时间没变，说明浏览器还在用缓存里的旧文件
        （Ctrl+F5 强制刷新即可）。
        （不走 ?v= 查询串是因为 file:// 下查询串会被当成文件名，直接加载失败。） */
-    var HIKARI_BUILD = '2026-09-18 17:35';
+    var HIKARI_BUILD = '2026-09-19 16:58';
 
     var STAGE_W = 1500;          // .page-box / .main-content 的固定宽度（main-v6.css）
     var PAGE_HEADER_W = 1400;    // 1500 - margin 50*2
@@ -105,34 +126,27 @@
         return clamp(x, 0, 100) + '% ' + clamp(y, 0, 100) + '%';
     }
 
-    /* 只要 crop 的横向那半（纵向对 poster 另有来源，见 posterAlignY）。 */
+    /* 只要 crop 的横向那半（大背景图的纵向恒为贴顶，见 POSTER_POS_Y_TOP）。 */
     function cropPosX(slot) {
         var c = slot && slot.crop;
         var x = c && typeof c.x === 'number' ? c.x : 50;
         return clamp(x, 0, 100);
     }
 
-    /* 大背景图的**纵向取景位置**（对齐方式）—— 与 partials/*-v6-macros.html 的
-       poster.align 段严格同构（改一边记得改另一边）：
-           数字 0-100：直接当纵向百分比，0 = 贴顶 / 50 = 居中 / 100 = 贴底
-           关键字    ：'top' / 'center' / 'bottom'
-       缺省 50（居中）= 旧写死的 `center`，所以老数据渲染不变。
-       ▍为什么不走 crop.y：预览的 poster 取景框 = **实时页高**（当前 fixture ≈ 2600），
-         而 cover 之下纵向溢出 ≈ 0 —— getPosition() 里「溢出不足 1px 就当没有可移动
-         空间、一律报 50%」那条判断会把它钉死在 50。也就是说纵向**本来就无法用拖动
-         表达**，所以单独给一个 align，和 crop（横向拖动）各管一维、互不干扰。
-       ▍这个值只在页面比 2250px 矮时才看得出差别（cover 在该高度以上按高贴合、
-         纵向正好铺满）—— 编辑器预览的 fixture 页高 2600，所以在这里它看不出变化，
-         要到单船页那种短页上才生效。分界算法见宏里的注释。 */
-    function posterAlignY(slot) {
-        var raw = slot && slot.align;
-        if (typeof raw === 'string') {
-            var kw = { top: 0, center: 50, bottom: 100 }[raw.trim().toLowerCase()];
-            return typeof kw === 'number' ? kw : 50;
-        }
-        if (typeof raw === 'number' && isFinite(raw)) return clamp(Math.round(raw), 0, 100);
-        return 50;
-    }
+    /* 大背景图的**纵向取景位置：固定贴顶**（0%）—— 与 partials/*-v6-macros.html 的
+       poster_pos_y 严格同构（改一边记得改另一边）。
+       ▍**不再读 poster.align**：原先这是一个可调字段（0-100 或 'top'|'center'|'bottom'，
+         缺省居中），2026-09-19 起产品决定固定顶部，面板旋钮也撤了 —— 老数据里
+         存着的对齐值一律忽略。要改回可调得同时动四处：两个宏 + 这里 + index.html 面板。
+       ▍为什么固定顶部：这个值只在页面比 2250px 矮时才看得出来。
+         分界点 = 图高 4096 × 容器宽 1500 / 图宽 2731 = 2250px：
+           页高 ≥ 2250 → 按高贴合、纵向正好铺满 → **贴顶与居中渲染完全相同**；
+           页高 < 2250 → 按宽贴合、纵向被裁 → 只有贴顶能保证各页取景一致。
+       ▍为什么不走 crop.y：预览的 poster 取景框 = **实时页高**，而 cover 之下纵向溢出≈0，
+         getPosition() 里「溢出不足 1px 就当没有可移动空间、一律报 50%」那条判断会把它
+         钉死在 50 —— 纵向本来就无法用拖动表达。（这条是当年另开 align 的原因，
+         也是现在"干脆写死"的前提。） */
+    var POSTER_POS_Y_TOP = 0;
 
     /* 槽位取「背景尺寸」：用户缩放过（crop.size 有值）就跟着它走，
        否则用模板原本的写法（头像/小背景 100%，大背景 cover）。 */
@@ -232,8 +246,245 @@
        真类名、真内容块、真 ECharts 配置，只把 userInfo 那几个节点留空壳，
        由 render() 填。CSS 走 assetBase 指向的真实 v6 样式表
        —— 所以预览长什么样，机器人渲染出来就长什么样。
+
+       ▍信息区块（PR 条 / 最新战斗时间 / 核心数据 / 战舰类型 / 战斗类型 /
+       最高记录 / 等级图表）是**按数据生成的**：下面每个 builder 都逐条照抄
+       Template/wws-info-v6.html 的取数与排版口径（颜色缺省、存活率的三元表达式、
+       空级别在胜率线上写 null……），改模板那几段就回来改这里 —— 与宏
+       「改一边记得改另一边」是同一条规矩。
+         数据来源 = /public/wows/account/user/info2 的 data，见 setInfoData()；
+         没有数据时用演示快照 DEMO_INFO，版面永远有东西看。
        ===================================================== */
-    function buildFixture(base, uid) {
+
+    /* 演示快照：**结构与 info2 的 data 完全一致**（只裁掉渲染用不到的字段），
+       所以它和真实数据走同一套 builder，不存在「两条排版路径」。
+       取自亚服 2022515210 的一次真实响应。
+       ▍lastBattleTime / prInfo / userInfo.prStatus 都参与渲染：
+         少一个就会让「最后战斗时间」变 N/A、或整条 PR 消失 —— 改这份数据时留神。 */
+    var DEMO_INFO = {
+        lastBattleTime: 1789739954,
+        prInfo: {value: 1868, name: '非常好', color: '#00BCD4'},
+        userInfo: {prStatus: 0},
+        battleTypeInfo: {
+            PVP: {battle: 9853, prInfo: {value: 1873, color: '#00BCD4'}, shipInfo: {battleInfo: {battle: 9853, survived: 6276}, avgInfo: {win: 63.53, winsData: {color: '#673ab7'}, damage: 96790, damageData: {color: '#A00DC5'}, frags: 1.14, kd: 3.13, xp: 2295, planesKilled: 6}, hitRatioInfo: {ratioMain: 34.46, ratioTpd: 5.93}, maxInfo: {maxDamageDealt: {value: 419610}, maxTotalAgro: {value: 5711200}, maxScoutingDamage: {value: 339950}, maxFrags: {value: 8}, maxPlanesKilled: {value: 99}, maxXp: {value: 6440}}}},
+            PVP_SOLO: {battle: 3115, prInfo: {value: 1872, color: '#00BCD4'}, shipInfo: {battleInfo: {battle: 3115, survived: 1910}, avgInfo: {win: 57.11, winsData: {color: '#9c27b0'}, damage: 93494, damageData: {color: '#A00DC5'}, frags: 1.12, kd: 2.91, xp: 2169, planesKilled: 5}, hitRatioInfo: {ratioMain: 34.7, ratioTpd: 6.08}}},
+            PVP_DIV2: {battle: 2368, prInfo: {value: 1837, color: '#00BCD4'}, shipInfo: {battleInfo: {battle: 2368, survived: 1438}, avgInfo: {win: 60.05, winsData: {color: '#673ab7'}, damage: 96781, damageData: {color: '#A00DC5'}, frags: 1.14, kd: 2.9, xp: 2281, planesKilled: 6}, hitRatioInfo: {ratioMain: 34.71, ratioTpd: 6.09}}},
+            PVP_DIV3: {battle: 4370, prInfo: {value: 1896, color: '#00BCD4'}, shipInfo: {battleInfo: {battle: 4370, survived: 2928}, avgInfo: {win: 70, winsData: {color: '#673ab7'}, damage: 99145, damageData: {color: '#A00DC5'}, frags: 1.14, kd: 3.46, xp: 2393, planesKilled: 6}, hitRatioInfo: {ratioMain: 34.15, ratioTpd: 5.76}}},
+            RANK_SOLO: {battle: 425, prInfo: {value: 1667, color: '#4CAF50'}, shipInfo: {battleInfo: {battle: 425, survived: 217}, avgInfo: {win: 57.18, winsData: {color: '#9c27b0'}, damage: 87608, damageData: {color: '#A00DC5'}, frags: 0.97, kd: 1.99, xp: 2194, planesKilled: 4}, hitRatioInfo: {ratioMain: 41.74, ratioTpd: 7.28}}}
+        },
+        shipTypeInfo: {
+            Battleship: {PVP: {battle: 3904, prInfo: {value: 1912, color: '#00BCD4'}, shipInfo: {battleInfo: {battle: 3904, survived: 2384}, avgInfo: {win: 65.29, winsData: {color: '#673ab7'}, damage: 117033, damageData: {color: '#A00DC5'}, frags: 1.21, kd: 3.1, xp: 2397, planesKilled: 5}, hitRatioInfo: {ratioMain: 30.93, ratioTpd: 4.59}}}},
+            Cruiser: {PVP: {battle: 3248, prInfo: {value: 1949, color: '#00BCD4'}, shipInfo: {battleInfo: {battle: 3248, survived: 1954}, avgInfo: {win: 61.88, winsData: {color: '#673ab7'}, damage: 86788, damageData: {color: '#A00DC5'}, frags: 1.05, kd: 2.64, xp: 2237, planesKilled: 7}, hitRatioInfo: {ratioMain: 34.22, ratioTpd: 2.85}}}},
+            Destroyer: {PVP: {battle: 1343, prInfo: {value: 1959, color: '#00BCD4'}, shipInfo: {battleInfo: {battle: 1343, survived: 876}, avgInfo: {win: 66.27, winsData: {color: '#673ab7'}, damage: 57731, damageData: {color: '#A00DC5'}, frags: 1.08, kd: 3.11, xp: 2277, planesKilled: 5}, hitRatioInfo: {ratioMain: 42.55, ratioTpd: 6.13}}}},
+            AirCarrier: {PVP: {battle: 1274, prInfo: {value: 1593, color: '#4CAF50'}, shipInfo: {battleInfo: {battle: 1274, survived: 1010}, avgInfo: {win: 60.83, winsData: {color: '#673ab7'}, damage: 105413, damageData: {color: '#A00DC5'}, frags: 1.22, kd: 5.91, xp: 2186, planesKilled: 5}, hitRatioInfo: {ratioMain: 0, ratioTpd: 0}}}},
+            Submarine: {PVP: {battle: 84, prInfo: {value: 1279, color: '#FFC107'}, shipInfo: {battleInfo: {battle: 84, survived: 52}, avgInfo: {win: 42.86, winsData: {color: '#ff9800'}, damage: 36425, damageData: {color: '#FE7903'}, frags: 0.6, kd: 1.56, xp: 1740, planesKilled: 0}, hitRatioInfo: {ratioMain: 18.18, ratioTpd: 21.57}}}}
+        },
+        levelInfo: {
+            '1': {PVP: {shipInfo: {battleInfo: {battle: 1}, avgInfo: {win: 0}}}},
+            '2': {PVP: {shipInfo: {battleInfo: {battle: 1}, avgInfo: {win: 100}}}},
+            '3': {PVP: {shipInfo: {battleInfo: {battle: 6}, avgInfo: {win: 50}}}},
+            '4': {PVP: {shipInfo: {battleInfo: {battle: 45}, avgInfo: {win: 64.44}}}},
+            '5': {PVP: {shipInfo: {battleInfo: {battle: 70}, avgInfo: {win: 62.86}}}},
+            '6': {PVP: {shipInfo: {battleInfo: {battle: 394}, avgInfo: {win: 60.15}}}},
+            '7': {PVP: {shipInfo: {battleInfo: {battle: 399}, avgInfo: {win: 61.65}}}},
+            '8': {PVP: {shipInfo: {battleInfo: {battle: 1487}, avgInfo: {win: 62.54}}}},
+            '9': {PVP: {shipInfo: {battleInfo: {battle: 1989}, avgInfo: {win: 64.5}}}},
+            '10': {PVP: {shipInfo: {battleInfo: {battle: 5229}, avgInfo: {win: 63.89}}}},
+            '11': {PVP: {shipInfo: {battleInfo: {battle: 232}, avgInfo: {win: 62.93}}}}
+        }
+    };
+
+    /* 单船页的演示快照 —— 结构与 /public/wows/account/ship/info 的 data 一致
+       （只裁掉渲染用不到的字段：dwpData / rank / shipInfo 的那几张别的尺寸图…）。
+       取自亚服 2022515210 的真实响应，shipId 4276041424（大和）。
+       ▍与 DEMO_INFO 是**两份不同的数据**：单船页的战斗块结构比用户页少一层
+         （typeInfo[bt].battleInfo 直接挂着，没有 shipInfo），所以两边各用各的取数器。
+       ▍typeInfo[bt].battle 是**布尔标记**（打没打过），场次在 battleInfo.battleInfo.battle
+         —— 模板里 `{% if data['typeInfo']['PVP']['battle'] %}` 判的就是这个布尔值，
+         别拿它当数字用。
+       ▍PVP 那几个 branch 各带自己的 prInfo / battleInfo；只有 PVP 有 maxInfo 与
+         originalServer（最高记录 / 服务器数据两块只读 PVP）。 */
+    var DEMO_SHIP = {
+        shipInfo: {nameCn:'大和',levelStr:'X',shipTypeImage:'https://v3-api.wows.shinoaki.com/nahida-static/wows/Battleship-ShipType-image.png',countryImage:'https://v3-api.wows.shinoaki.com/nahida-static/wows/Japan-Nation-image.png',imgSmall:'https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/asia-4276041424-small.png'},
+        userInfo: {server:'asia',serverCn:'亚服',accountId:2022515210,userName:'Nahida_official',accountCreateTime:1549278766,dogTag:'https://v3-api.wows.shinoaki.com/nahida-static/root/2022515210.png',prStatus:0,clanInfo:{tag:'YU_RI',color:'#b3b3b3'}},
+        typeInfo: {
+            PVP: {battle:true,prInfo:{value:1740,name:'很好',color:'#4CAF50',details:{originalServer:{damage:84826.7,wins:48.77,frags:0.65}}},battleInfo:{battleInfo:{battle:187,survived:111},avgInfo:{damage:115953,damageData:{color:'#A00DC5'},win:54.55,winsData:{color:'#00bcd4'},kd:2.09,frags:0.85,xp:2410,planesKilled:3},hitRatioInfo:{ratioMain:29.14,ratioTpd:0.0},lastBattleTime:1789610923,maxInfo:{maxDamageDealt:{value:337943},maxTotalAgro:{value:3868318},maxScoutingDamage:{value:78635},maxFrags:{value:4},maxPlanesKilled:{value:22},maxXp:{value:5465}}}},
+            PVP_SOLO: {battle:true,prInfo:{value:1619,name:'很好',color:'#4CAF50'},battleInfo:{battleInfo:{battle:76,survived:50},avgInfo:{damage:105429,damageData:{color:'#A00DC5'},win:52.63,winsData:{color:'#00bcd4'},kd:2.73,frags:0.93,xp:2358,planesKilled:3},hitRatioInfo:{ratioMain:27.49,ratioTpd:0.0}}},
+            PVP_DIV2: {battle:true,prInfo:{value:1520,name:'好',color:'#8BC34A'},battleInfo:{battleInfo:{battle:50,survived:24},avgInfo:{damage:111956,damageData:{color:'#A00DC5'},win:46.0,winsData:{color:'#8bc34a'},kd:1.35,frags:0.7,xp:2226,planesKilled:3},hitRatioInfo:{ratioMain:29.44,ratioTpd:0.0}}},
+            PVP_DIV3: {battle:true,prInfo:{value:2071,name:'非常好',color:'#00BCD4'},battleInfo:{battleInfo:{battle:61,survived:37},avgInfo:{damage:132342,damageData:{color:'#A00DC5'},win:63.93,winsData:{color:'#673ab7'},kd:2.21,frags:0.87,xp:2626,planesKilled:4},hitRatioInfo:{ratioMain:30.73,ratioTpd:0.0}}},
+            RANK_SOLO: {battle:false,prInfo:{value:0,name:'暂无数据',color:'#828282'},battleInfo:{battleInfo:{battle:0,survived:0},avgInfo:{damage:0,damageData:{color:'#FE7903'},win:0.0,winsData:{color:'#f44336'},kd:0.0,frags:0.0,xp:0,planesKilled:0},hitRatioInfo:{ratioMain:0.0,ratioTpd:0.0}}}
+        }
+    };
+
+    /* 模板里写死的两张表的行（顺序、中文名、命中率取哪一列都照抄 wws-info-v6.html）：
+       潜艇的命中率取 ratioTpd（鱼雷），其余取 ratioMain。 */
+    var SHIP_TYPE_ROWS = [
+        ['Battleship', '战列舰', 'ratioMain'],
+        ['Cruiser', '巡洋舰', 'ratioMain'],
+        ['Destroyer', '驱逐舰', 'ratioMain'],
+        ['AirCarrier', '航母', 'ratioMain'],
+        ['Submarine', '潜艇', 'ratioTpd']
+    ];
+    var BATTLE_TYPE_ROWS = [
+        ['PVP_SOLO', '单野'], ['PVP_DIV2', '自行车'], ['PVP_DIV3', '三轮车'], ['RANK_SOLO', '排位']
+    ];
+
+    /* ---------- 数值格式化：与 Jinja 的 '{:,}' / '%.2f' / '%.1f' 同构 ----------
+       模板那边写的是 '{:,}'.format(x) 和 '%.2f' | format(x)，这里必须给出**逐字
+       相同**的字符串，否则「预览即成品」这个前提就破了。
+       ▍缺字段 / null / 非数字一律当 0：Jinja 遇到缺字段会直接报错，而预览是版式
+         工具 —— 不能因为接口少一个字段就整页白屏，那样反而看不出问题在哪。 */
+    function infoNum(v) {
+        var n = Number(v);
+        return isFinite(n) ? n : 0;
+    }
+
+    /* '{:,}' —— 千分位。整数照抄；值是浮点时只给整数部分加分隔符
+       （别让它退化成科学计数法）。 */
+    function fmtInt(v) {
+        var n = infoNum(v);
+        var parts = String(Math.abs(n)).split('.');
+        var head = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return (n < 0 ? '-' : '') + head + (parts[1] ? '.' + parts[1] : '');
+    }
+
+    /* '%.2f' / '%.1f' */
+    function fmtFix(v, digits) {
+        return infoNum(v).toFixed(digits);
+    }
+
+    /* 存活率 = 存活场次 / 总场次 × 100（0 场取 0）—— 就是模板里的三元表达式。 */
+    function surviveRatio(b) {
+        return b.battle > 0 ? b.survived / b.battle * 100 : 0;
+    }
+
+    /* battleTypeInfo[bt] / shipTypeInfo[st]['PVP'] / levelInfo[lv]['PVP'] 是同一个
+       「战斗块」结构，这里统一取成渲染要用的那几个数（颜色的缺省值照抄模板的兜底）。 */
+    function battleOf(tb) {
+        var si = (tb && tb.shipInfo) || {};
+        var bi = si.battleInfo || {};
+        var av = si.avgInfo || {};
+        var pr = (tb && tb.prInfo) || {};
+        return {
+            battle: infoNum(bi.battle),
+            survived: infoNum(bi.survived),
+            win: infoNum(av.win),
+            winColor: (av.winsData || {}).color || '#673ab7',
+            damage: infoNum(av.damage),
+            damageColor: (av.damageData || {}).color || '#A00DC5',
+            frags: infoNum(av.frags),
+            kd: infoNum(av.kd),
+            xp: infoNum(av.xp),
+            planesKilled: infoNum(av.planesKilled),
+            hitMain: infoNum((si.hitRatioInfo || {}).ratioMain),
+            hitTpd: infoNum((si.hitRatioInfo || {}).ratioTpd),
+            pr: infoNum(pr.value),
+            prColor: pr.color || '#828282'
+        };
+    }
+
+    /* PR 条 —— 与 common-v6-macros.html 的 info_pr() 同构。 */
+    function buildPr(pr) {
+        return '        <div class="pr" style="background: ' + (pr.color || '#828282') + ';">\n'
++ '            <div class="svg-waves">\n'
++ '                <svg viewBox="0 0 500 200" preserveAspectRatio="none">\n'
++ '                    <path class="wave-path" d="M0,100 C150,200 350,0 500,100 L500,200 L0,200 Z"></path>\n'
++ '                </svg>\n'
++ '            </div>\n'
++ '            <span class="pr-number">' + infoNum(pr.value) + '\n'
++ '                <span class="pr-text">' + (pr.name || '') + '</span></span>\n'
++ '        </div>\n';
+    }
+
+    /* 核心数据的一个格子：大数字 + 两个小项。color 为空 = 不写 style
+       （模板里「场次」那格本来就没有颜色）。 */
+    function buildStatItem(label, value, color, minis) {
+        return '            <div class="overview-change-item">\n'
++ '                <div class="item-top one-background-color">\n'
++ '                    <div class="stat-label">' + label + '</div>\n'
++ '                    <div class="stat-value"' + (color ? ' style="color: ' + color + ';"' : '') + '>' + value + '</div>\n'
++ '                </div>\n'
++ '                <div class="item-bottom">\n'
++ minis.map(function (m) {
+        return '                    <div class="bottom-mini-item one-background-color">\n'
++ '                        <div class="mini-label">' + m[0] + '</div>\n'
++ '                        <div class="mini-value">' + m[1] + '</div>\n'
++ '                    </div>\n';
+    }).join('')
++ '                </div>\n'
++ '            </div>\n';
+    }
+
+    function buildOverview(main) {
+        return '        <div class="overview-change">\n'
++ buildStatItem('场次', fmtInt(main.battle), '',
+        [['加成经验', fmtInt(main.xp)], ['命中率', fmtFix(main.hitMain, 2) + '%']])
++ buildStatItem('胜率', fmtFix(main.win, 2) + '%', main.winColor,
+        [['存活率', fmtFix(surviveRatio(main), 1) + '%'], ['击落', fmtFix(main.planesKilled, 2)]])
++ buildStatItem('场均', fmtInt(main.damage), main.damageColor,
+        [['击杀', fmtFix(main.frags, 2)], ['KD', fmtFix(main.kd, 2)]])
++ '        </div>\n';
+    }
+
+    /* 表头：PR 列随 userInfo.prStatus 出现 / 消失（模板的 show_pr）。 */
+    function buildInfoHead(showPr) {
+        var cols = ['类型', '场次', '胜率'];
+        if (showPr) cols.push('PR');
+        cols = cols.concat(['场均', '击杀', '存活', '命中']);
+        var s = '            <div class="information-col">\n';
+        for (var i = 0; i < cols.length; i++) {
+            s += '                <div class="information-col-item">' + cols[i] + '</div>\n';
+        }
+        return s + '            </div>\n';
+    }
+
+    /* 表里的一行（两张表共用）。ratioKey 决定命中率取哪一列。 */
+    function buildInfoRow(name, b, ratioKey, showPr) {
+        return '            <div class="information-col">\n'
++ '                <div class="information-col-item type-name">' + name + '</div>\n'
++ '                <div class="information-col-item">' + fmtInt(b.battle) + '</div>\n'
++ '                <div class="information-col-item" style="color: ' + b.winColor + ';">' + fmtFix(b.win, 2) + '%</div>\n'
++ (showPr ? '                <div class="information-col-item" style="color: ' + b.prColor + ';">' + b.pr + '</div>\n' : '')
++ '                <div class="information-col-item" style="color: ' + b.damageColor + ';">' + fmtInt(b.damage) + '</div>\n'
++ '                <div class="information-col-item">' + fmtFix(b.frags, 2) + '</div>\n'
++ '                <div class="information-col-item">' + fmtFix(surviveRatio(b), 1) + '%</div>\n'
++ '                <div class="information-col-item">' + fmtFix(ratioKey === 'ratioTpd' ? b.hitTpd : b.hitMain, 2) + '%</div>\n'
++ '            </div>\n';
+    }
+
+    /* 最高记录的一格 —— 与模板的 .frag-item 同构。 */
+    function buildFrag(k, v) {
+        return '            <div class="frag-item one-background-color">\n'
++ '                <div class="frag-key">' + k + '</div>\n'
++ '                <div class="frag-value">' + v + '</div>\n'
++ '            </div>\n';
+    }
+
+    /* 等级图表的两条数据：1..11 级的场次与胜率。
+       ▍没有场次的级别在**胜率线上写 null**（ECharts 会把线断开）—— 模板里
+         {% if ... > 0 %}...{% else %}null{% endif %} 就是干这个的。别写成 0，
+         否则曲线上会凭空多出一个「胜率 0%」的坑。 */
+    function levelChartData(d) {
+        var battles = [], wins = [];
+        for (var lv = 1; lv <= 11; lv++) {
+            var b = battleOf(((d.levelInfo || {})[String(lv)] || {}).PVP);
+            battles.push(String(b.battle));
+            wins.push(b.battle > 0 ? fmtFix(b.win, 2) : 'null');
+        }
+        return { battles: battles.join(', '), wins: wins.join(', ') };
+    }
+
+    /* -----------------------------------------------------
+       fixture 的公共外壳 / 公共部件 —— 用户页与单船页共用
+       ▍外壳：真 v6 样式表 + 空的 <style id="aep-dyn">（头像设置的动态 CSS 由
+         _styleText() 灌进去）+ 回报就绪的 postMessage + 尾部脚本。
+       ▍**故意不引 main-v6.js**：它一加载就按「当时有没有海报」注入一套实色主题，
+         而预览的海报是后面 render() 才挂上去的 —— 那套兜底一旦注入就会永久盖住海报，
+         「有海报」的预览直接失真。代价是「无海报」时卡片偏玻璃（已知偏差），
+         两个模板保持一致。
+       ▍回报就绪那段不能省：iframe 的 load 事件有时对应 initial about:blank，
+         那时文档里一个节点都没有（_bindFrame 会自己判出来并跳过）。 */
+    function fixtureShell(base, uid, bodyHtml, tailHtml) {
         return '<!DOCTYPE html>\n'
 + '<html lang="zh-cn">\n'
 + '<head>\n'
@@ -246,7 +497,24 @@
 + '<div class="main-content">\n'
 + '    <div class="page-box">\n'
 + '\n'
-+ '        <div class="page-header">\n'
++ bodyHtml
++ '\n'
++ footerBlock()
++ '    </div>\n'
++ '</div>\n'
++ '<script>try{parent.postMessage("aep-fixture-ready:' + uid + '","*")}catch(e){}<\/script>\n'
++ '</body>\n'
++ (tailHtml || '')
++ '</html>\n';
+    }
+
+    /* 头部 —— partials/user-v6-macros.html 的 info_header() 的**空壳版**：
+       类名与层级照抄宏的输出，tag / 名字 / 账号 / 服务器 / 注册时间 / 签名一律留空，
+       由 HikariUserPreview.render() 按「头像设置」填。
+       ▍用户页与单船页调的是**同一个** info_header 宏，所以这只有一份、两边共用
+         （改宏记得回来改这里）—— 这也是「切模板后头像设置照样生效」的原因。 */
+    function headerBlock() {
+        return '        <div class="page-header">\n'
 + '            <div class="masking-header">\n'
 + '                <div class="avatar-header"></div>\n'
 + '                <div class="clan-user-server">\n'
@@ -257,117 +525,85 @@
 + '                    <div class="user-signature"></div>\n'
 + '                </div>\n'
 + '            </div>\n'
-+ '        </div>\n'
++ '        </div>\n';
+    }
+
+    /* 页脚 —— common-v6-macros.html 的 footer_box()，两个模板共用。 */
+    function footerBlock() {
+        return '        <div class="footer">\n'
++ '            <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>\n'
++ '            <p>©github:wows-yuyuko</p>\n'
++ '        </div>\n';
+    }
+
+    function buildFixture(base, uid, info) {
+        var d = info || DEMO_INFO;                 // 没有真实数据 → 演示快照
+        var u = d.userInfo || {};
+        var pr = d.prInfo || {};
+        var bt = d.battleTypeInfo || {};
+        /* 口径照抄模板开头两行：
+             show_pr = userInfo.prStatus != 1        → PR 条与 PR 列一起开关
+             main    = 打过仗的 PVP，没打过就退到排位 */
+        var showPr = infoNum(u.prStatus) !== 1;
+        var main = battleOf(bt.PVP);
+        if (main.battle <= 0) main = battleOf(bt.RANK_SOLO);
+
+        /* 两张表都只画「有场次」的行 —— 模板里是 {% if info['battle'] %} 过滤。
+           零场次的行画出来只会是一排 0，不是成品的样子。 */
+        var shipRows = '';
+        SHIP_TYPE_ROWS.forEach(function (t) {
+            var b = battleOf(((d.shipTypeInfo || {})[t[0]] || {}).PVP);
+            if (b.battle > 0) shipRows += buildInfoRow(t[1], b, t[2], showPr);
+        });
+        var battleRows = '';
+        BATTLE_TYPE_ROWS.forEach(function (t) {
+            var b = battleOf(bt[t[0]]);
+            if (b.battle > 0) battleRows += buildInfoRow(t[1], b, 'ratioMain', showPr);
+        });
+
+        var max = ((bt.PVP || {}).shipInfo || {}).maxInfo || {};
+        function maxVal(key) { return fmtInt((max[key] || {}).value); }
+
+        var chart = levelChartData(d);
+        var last = infoNum(d.lastBattleTime);
+        var lastText = last > 0 ? fmtTime(last) : 'N/A';
+
+        return fixtureShell(base, uid,
+            headerBlock()
 + '\n'
-+ '        <div class="pr" style="background: #00BCD4;">\n'
-+ '            <div class="svg-waves">\n'
-+ '                <svg viewBox="0 0 500 200" preserveAspectRatio="none">\n'
-+ '                    <path class="wave-path" d="M0,100 C150,200 350,0 500,100 L500,200 L0,200 Z"></path>\n'
-+ '                </svg>\n'
-+ '            </div>\n'
-+ '            <span class="pr-number">1868\n'
-+ '                <span class="pr-text">非常好</span></span>\n'
-+ '        </div>\n'
-+ '\n'
++ (showPr && infoNum(pr.value) > 0 ? buildPr(pr) + '\n' : '')
 + '        <div class="recnet-time">\n'
-+ '            <span class="time-item">最后战斗时间：2026-09-11 22:08</span>\n'
++ '            <span class="time-item">最后战斗时间：' + lastText + '</span>\n'
 + '        </div>\n'
 + '\n'
-+ '        <div class="overview-change">\n'
-+ '            <div class="overview-change-item">\n'
-+ '                <div class="item-top one-background-color">\n'
-+ '                    <div class="stat-label">场次</div>\n'
-+ '                    <div class="stat-value">9,830</div>\n'
-+ '                </div>\n'
-+ '                <div class="item-bottom">\n'
-+ '                    <div class="bottom-mini-item one-background-color">\n'
-+ '                        <div class="mini-label">加成经验</div>\n'
-+ '                        <div class="mini-value">2,295</div>\n'
-+ '                    </div>\n'
-+ '                    <div class="bottom-mini-item one-background-color">\n'
-+ '                        <div class="mini-label">命中率</div>\n'
-+ '                        <div class="mini-value">34.45%</div>\n'
-+ '                    </div>\n'
-+ '                </div>\n'
-+ '            </div>\n'
-+ '            <div class="overview-change-item">\n'
-+ '                <div class="item-top one-background-color">\n'
-+ '                    <div class="stat-label">胜率</div>\n'
-+ '                    <div class="stat-value" style="color: #673ab7;">63.53%</div>\n'
-+ '                </div>\n'
-+ '                <div class="item-bottom">\n'
-+ '                    <div class="bottom-mini-item one-background-color">\n'
-+ '                        <div class="mini-label">存活率</div>\n'
-+ '                        <div class="mini-value">63.7%</div>\n'
-+ '                    </div>\n'
-+ '                    <div class="bottom-mini-item one-background-color">\n'
-+ '                        <div class="mini-label">击落</div>\n'
-+ '                        <div class="mini-value">6.00</div>\n'
-+ '                    </div>\n'
-+ '                </div>\n'
-+ '            </div>\n'
-+ '            <div class="overview-change-item">\n'
-+ '                <div class="item-top one-background-color">\n'
-+ '                    <div class="stat-label">场均</div>\n'
-+ '                    <div class="stat-value" style="color: #A00DC5;">96,775</div>\n'
-+ '                </div>\n'
-+ '                <div class="item-bottom">\n'
-+ '                    <div class="bottom-mini-item one-background-color">\n'
-+ '                        <div class="mini-label">击杀</div>\n'
-+ '                        <div class="mini-value">1.14</div>\n'
-+ '                    </div>\n'
-+ '                    <div class="bottom-mini-item one-background-color">\n'
-+ '                        <div class="mini-label">KD</div>\n'
-+ '                        <div class="mini-value">3.13</div>\n'
-+ '                    </div>\n'
-+ '                </div>\n'
-+ '            </div>\n'
-+ '        </div>\n'
++ buildOverview(main)
 + '\n'
 + '        <div class="random-header one-background-color">战舰类型</div>\n'
 + '        <div class="information-body data-battle-type">\n'
-+ buildInfoHead()
-+ buildInfoCol('战列舰', ['3,897', '65.28%', '#673ab7', '1912', '#00BCD4', '117,015', '#A00DC5', '1.21', '61.1%', '30.93%'])
-+ buildInfoCol('巡洋舰', ['3,237', '61.94%', '#673ab7', '1948', '#00BCD4', '86,677', '#A00DC5', '1.05', '60.2%', '34.20%'])
-+ buildInfoCol('驱逐舰', ['1,338', '66.14%', '#673ab7', '1964', '#00BCD4', '57,823', '#A00DC5', '1.08', '65.2%', '42.54%'])
-+ buildInfoCol('航母', ['1,274', '60.83%', '#673ab7', '1593', '#4CAF50', '105,413', '#A00DC5', '1.22', '79.3%', '0.00%'])
-+ buildInfoCol('潜艇', ['84', '42.86%', '#ff9800', '1278', '#FFC107', '36,425', '#FE7903', '0.60', '61.9%', '21.57%'])
++ buildInfoHead(showPr)
++ shipRows
 + '        </div>\n'
 + '\n'
 + '        <div class="random-header one-background-color">战斗类型</div>\n'
 + '        <div class="information-body data-battle-type">\n'
-+ buildInfoHead()
-+ buildInfoCol('单野', ['3,114', '57.13%', '#9c27b0', '1872', '#00BCD4', '93,479', '#A00DC5', '1.12', '61.3%', '34.70%'])
-+ buildInfoCol('自行车', ['2,367', '60.08%', '#673ab7', '1837', '#00BCD4', '96,778', '#A00DC5', '1.14', '60.8%', '34.70%'])
-+ buildInfoCol('三轮车', ['4,349', '69.99%', '#673ab7', '1897', '#00BCD4', '99,135', '#A00DC5', '1.14', '67.0%', '34.14%'])
-+ buildInfoCol('排位', ['425', '57.18%', '#9c27b0', '1667', '#4CAF50', '87,608', '#A00DC5', '0.97', '51.1%', '41.74%'])
++ buildInfoHead(showPr)
++ battleRows
 + '        </div>\n'
 + '\n'
 + '        <div class="random-header one-background-color">最高记录</div>\n'
 + '        <div class="frag-data">\n'
-+ buildFrag('伤害', '419,610')
-+ buildFrag('潜在', '5,711,200')
-+ buildFrag('侦查', '339,950')
-+ buildFrag('击杀', '8')
-+ buildFrag('飞机数', '99')
-+ buildFrag('经验', '6,440')
++ buildFrag('伤害', maxVal('maxDamageDealt'))
++ buildFrag('潜在', maxVal('maxTotalAgro'))
++ buildFrag('侦查', maxVal('maxScoutingDamage'))
++ buildFrag('击杀', maxVal('maxFrags'))
++ buildFrag('飞机数', maxVal('maxPlanesKilled'))
++ buildFrag('经验', maxVal('maxXp'))
 + '        </div>\n'
 + '\n'
 + '        <div class="chart-box one-background-color">\n'
 + '            <div class="chart-bar"></div>\n'
-+ '        </div>\n'
-+ '\n'
-+ '        <div class="footer">\n'
-+ '            <p>频道搜索"战舰世界-yuyuko"即可使用稳定的腾讯官方机器人~</p>\n'
-+ '            <p>©github:wows-yuyuko</p>\n'
-+ '        </div>\n'
-+ '    </div>\n'
-+ '</div>\n'
-// 回报就绪：iframe 的 load 事件有时对应的是 initial about:blank（那时
-// contentDocument 里什么节点都没有），靠这条消息才知道真文档解析完了。
-+ '<script>try{parent.postMessage("aep-fixture-ready:' + uid + '","*")}catch(e){}<\/script>\n'
-+ '</body>\n'
-+ '<script src="' + base + 'echarts.js"><\/script>\n'
++ '        </div>\n',
+            '<script src="' + base + 'echarts.js"><\/script>\n'
 + '<script>\n'
 + 'if (typeof echarts !== "undefined" && document.querySelector(".chart-bar")) {\n'
 + '    var chart = echarts.init(document.querySelector(".chart-bar"));\n'
@@ -386,49 +622,270 @@
 + '        ],\n'
 + '        series: [\n'
 + '            {name: "场次", type: "bar", barMaxWidth: 56,\n'
-+ '             data: [1, 1, 6, 45, 70, 394, 398, 1487, 1989, 5207, 232],\n'
++ '             data: [' + chart.battles + '],\n'
 + '             label: {show: true, position: "top", fontSize: 15, color: "#5a5f6b"},\n'
 + '             itemStyle: {color: "rgba(214, 236, 251, 0.55)", borderColor: "#9FB8FF",\n'
 + '                         borderWidth: 1.5, borderRadius: [6, 6, 0, 0]}},\n'
 + '            {name: "胜率", type: "line", yAxisIndex: 1, smooth: true, symbol: "circle",\n'
-+ '             symbolSize: 7, data: [0, 100, 50, 64.44, 62.86, 60.15, 61.81, 62.54, 64.50, 63.88, 62.93],\n'
++ '             symbolSize: 7, data: [' + chart.wins + '],\n'
 + '             itemStyle: {color: "#8D67FF"}, lineStyle: {color: "#8D67FF", width: 3},\n'
 + '             label: {show: true, position: "top", fontSize: 14, color: "#8D67FF"}}\n'
 + '        ]\n'
 + '    });\n'
 + '}\n'
-+ '<\/script>\n'
-+ '</html>\n';
++ '<\/script>\n');
     }
 
-    function buildInfoHead() {
-        var cols = ['类型', '场次', '胜率', 'PR', '场均', '击杀', '存活', '命中'];
-        var s = '            <div class="information-col">\n';
-        for (var i = 0; i < cols.length; i++) {
-            s += '                <div class="information-col-item">' + cols[i] + '</div>\n';
-        }
-        return s + '            </div>\n';
+    /* =====================================================
+       单船页预览骨架：**真实 wws-ship-v6 渲染产物的结构**
+       逐块照抄 Template/wws-ship-v6.html + partials/common-v6-macros.html 的
+       ship_header / info_pr / footer_box；头部件走**共用的** headerBlock()
+       （两边调的是同一个 info_header 宏），所以头像设置那套补丁不必分叉。
+       改模板那几段就回来改这里 —— 与用户页信息区块是同一条规矩。
+
+       ▍与用户页的三处结构性差异（都是模板本身的差异，不是简化）：
+         1. 战斗块少一层：单船是 typeInfo[bt].battleInfo.xxx，用户页是
+            typeInfo[bt].shipInfo.battleInfo.xxx —— 取数器分开，别混用；
+         2. 核心数据那排的类名不同（left/mid/right-item + overview-count/win/avgdmg），
+            用户页用的是 overview-change-item + stat-label/stat-value；
+         3. 单船页的场次 / 加成经验 / PR / 最高记录 / 服务器数据都是**裸输出**
+            （模板里没有 {:} 千分位），用户页那边才带千分位 —— 所以用 fmtRaw 而非 fmtInt。
+       ===================================================== */
+
+    /* 单船页「战斗类型」表的四行 —— 顺序 / 中文名照抄 wws-ship-v6.html。 */
+    var SHIP_BATTLE_ROWS = [
+        ['PVP_SOLO', '单野'], ['PVP_DIV2', '自行车'], ['PVP_DIV3', '三轮车'], ['RANK_SOLO', '排位']
+    ];
+
+    /* 裸输出：模板里就是 `{{ x }}`，**不套 '{:,}'**。
+       与 fmtInt 分开是有意的 —— 单船页的场次 / 加成经验 / PR / 最高记录
+       在成品里都不带千分位，套上去就是「预览 ≠ 成品」。
+       （这些字段在接口里都是整数，所以 String() 与 Python 印出来的逐字一致。） */
+    function fmtRaw(v) { return String(infoNum(v)); }
+
+    /* 单船页的战斗块取数器。结构与用户页不同（少一层 shipInfo）：
+           typeInfo[bt] = {battle: 布尔, prInfo, battleInfo: {battleInfo, avgInfo,
+                           hitRatioInfo, maxInfo, lastBattleTime}}
+       ▍bt.battle 是「打没打过」的布尔标记，场次在 battleInfo.battleInfo.battle。 */
+    function shipBattleOf(tb) {
+        var bi = (tb && tb.battleInfo) || {};
+        var b = bi.battleInfo || {};
+        var av = bi.avgInfo || {};
+        var h = bi.hitRatioInfo || {};
+        var pr = (tb && tb.prInfo) || {};
+        return {
+            battle: infoNum(b.battle),
+            survived: infoNum(b.survived),
+            win: infoNum(av.win),
+            winColor: (av.winsData || {}).color || '#673ab7',
+            damage: infoNum(av.damage),
+            damageColor: (av.damageData || {}).color || '#A00DC5',
+            frags: infoNum(av.frags),
+            kd: infoNum(av.kd),
+            xp: infoNum(av.xp),
+            planesKilled: infoNum(av.planesKilled),
+            hitMain: infoNum(h.ratioMain),
+            hitTpd: infoNum(h.ratioTpd),
+            pr: infoNum(pr.value),
+            prColor: pr.color || '#828282',
+            prName: pr.name || ''
+        };
     }
 
-    function buildInfoCol(name, v) {
+    /* 顶部船名条 —— common-v6-macros.html 的 ship_header()。 */
+    function shipHeaderBlock(ship) {
+        ship = ship || {};
+        var icons = [[ship.countryImage], [ship.shipTypeImage]].map(function (t) {
+            return '                <span style="background: url(\'' + (t[0] || '')
+                + '\') no-repeat; background-size: contain; background-position: center; padding: 34px;"></span>\n';
+        }).join('');
+        return '        <div class="ship-header">\n'
++ '            <div class="ship-title-pill one-background-color">\n'
++ icons
++ '                <span>' + (ship.levelStr || '') + '</span>\n'
++ '                <img class="ship-box" src="' + (ship.imgSmall || '') + '" style="width: 120px; height: 100%;">\n'
++ '                <span class="ship-title-name">' + (ship.nameCn || '') + '</span>\n'
++ '            </div>\n'
++ '        </div>\n';
+    }
+
+    /* 核心数据方块的底排小项。三个方块用两套盒子类名（见模板）：
+       左/中是 change-avgdmg-box + change-win-box，右边换成 overview-kd-box +
+       overview-hit-box，后面再挂 bottom-mini-item-left / -right。 */
+    function shipMiniBox(boxCls, isLeft, label, value) {
+        return '                    <div class="' + boxCls + ' bottom-mini-item-'
+            + (isLeft ? 'left' : 'right') + ' one-background-color">\n'
++ '                        <div class="mini-item-top">' + label + '</div>\n'
++ '                        <div class="mini-item-bottom">' + value + '</div>\n'
++ '                    </div>\n';
+    }
+
+    /* 核心数据那一排：场次 / 胜率 / 场均。
+       ▍PVP 与 RANK_SOLO 两个分支在模板里是**各写一遍**、排版逐字相同的，
+         所以这里只实现一份，由调用方决定喂哪块数据（取数见 buildShipFixture）。 */
+    function shipOverview(b) {
+        return '        <div class="overview-change">\n'
++ '            <div class="overview-change-item left-item">\n'
++ '                <div class="left-item-top item-top one-background-color">\n'
++ '                    <div class="overview-count-title item-top-top">场次</div>\n'
++ '                    <div class="overview-count item-top-bottom">' + fmtRaw(b.battle) + '</div>\n'
++ '                </div>\n'
++ '                <div class="left-item-bottom item-bottom">\n'
++ shipMiniBox('change-avgdmg-box', true, '加成经验', fmtRaw(b.xp))
++ shipMiniBox('change-win-box', false, '命中率', fmtFix(b.hitMain, 2) + '%')
++ '                </div>\n'
++ '            </div>\n'
++ '            <div class="overview-change-item mid-item">\n'
++ '                <div class="mid-item-top item-top one-background-color">\n'
++ '                    <div class="overview-win-title item-top-top">胜率</div>\n'
++ '                    <div class="overview-win item-top-bottom" style="color: ' + b.winColor + ';">'
++ fmtFix(b.win, 2) + '%</div>\n'
++ '                </div>\n'
++ '                <div class="mid-item-bottom item-bottom">\n'
++ shipMiniBox('change-avgdmg-box', true, '存活率', fmtFix(surviveRatio(b), 1) + '%')
++ shipMiniBox('change-win-box', false, '击落', fmtFix(b.planesKilled, 2))
++ '                </div>\n'
++ '            </div>\n'
++ '            <div class="overview-change-item right-item">\n'
++ '                <div class="right-item-top item-top one-background-color">\n'
++ '                    <div class="overview-avgdmg-title item-top-top">场均</div>\n'
++ '                    <div class="overview-avgdmg item-top-bottom" style="color: ' + b.damageColor + ';">'
++ fmtInt(b.damage) + '</div>\n'
++ '                </div>\n'
++ '                <div class="right-item-bottom item-bottom">\n'
++ shipMiniBox('overview-kd-box', true, '击杀', fmtFix(b.frags, 2))
++ shipMiniBox('overview-hit-box', false, 'KD', fmtFix(b.kd, 2))
++ '                </div>\n'
++ '            </div>\n'
++ '        </div>\n';
+    }
+
+    /* 「战斗类型」表里的一行（模板里四段 {% if %} 各写一遍，排版相同）。
+       表头复用用户页那个 buildInfoHead —— 两张表的列与顺序完全一样
+       （类型 / 场次 / 胜率 / [PR] / 场均 / 击杀 / 存活 / 命中）。 */
+    function shipInfoRow(name, b, showPr) {
         return '            <div class="information-col">\n'
-            + '                <div class="information-col-item type-name">' + name + '</div>\n'
-            + '                <div class="information-col-item">' + v[0] + '</div>\n'
-            + '                <div class="information-col-item" style="color: ' + v[2] + ';">' + v[1] + '</div>\n'
-            + '                <div class="information-col-item" style="color: ' + v[4] + ';">' + v[3] + '</div>\n'
-            + '                <div class="information-col-item" style="color: ' + v[6] + ';">' + v[5] + '</div>\n'
-            + '                <div class="information-col-item">' + v[7] + '</div>\n'
-            + '                <div class="information-col-item">' + v[8] + '</div>\n'
-            + '                <div class="information-col-item">' + v[9] + '</div>\n'
-            + '            </div>\n';
++ '                <div class="information-col-item">' + name + '</div>\n'
++ '                <div class="information-col-item">' + fmtRaw(b.battle) + '</div>\n'
++ '                <div class="information-col-item" style="color: ' + b.winColor + ';">' + fmtFix(b.win, 2) + '%</div>\n'
++ (showPr ? '                <div class="information-col-item" style="color: ' + b.prColor + ';">' + fmtRaw(b.pr) + '</div>\n' : '')
++ '                <div class="information-col-item" style="color: ' + b.damageColor + ';">' + fmtInt(b.damage) + '</div>\n'
++ '                <div class="information-col-item">' + fmtFix(b.frags, 2) + '</div>\n'
++ '                <div class="information-col-item">' + fmtFix(surviveRatio(b), 1) + '%</div>\n'
++ '                <div class="information-col-item">' + fmtFix(b.hitMain, 2) + '%</div>\n'
++ '            </div>\n';
     }
 
-    function buildFrag(k, v) {
-        return '            <div class="frag-item one-background-color">\n'
-            + '                <div class="frag-key">' + k + '</div>\n'
-            + '                <div class="frag-value">' + v + '</div>\n'
-            + '            </div>\n';
+    /* 最高记录里的一格。 */
+    function shipFrag(k, v) {
+        return '                <div class="frag-item one-background-color">\n'
++ '                    <div class="frag-key">' + k + '</div>\n'
++ '                    <div class="frag-value">' + v + '</div>\n'
++ '                </div>\n';
     }
+
+    function buildShipFixture(base, uid, ship) {
+        var d = ship || DEMO_SHIP;                 // 没有真实数据 → 演示快照
+        var u = d.userInfo || {};
+        var ti = d.typeInfo || {};
+        var pvp = ti.PVP || {};
+        var showPr = infoNum(u.prStatus) !== 1;
+
+        /* 口径照抄模板：
+             PR 条 —— prStatus != 1 才画，取的是「PVP 打过就用 PVP，否则退排位」
+                      那个内联三元（**没有** value > 0 这一层判断，与用户页不同）；
+             核心数据 —— 同样是 PVP 优先、退排位。
+           typeInfo[bt].battle 是布尔标记，判的就是「打没打过」。 */
+        var mainKey = pvp.battle ? 'PVP' : 'RANK_SOLO';
+        var main = shipBattleOf(ti[mainKey]);
+        var prBlock = showPr
+            ? buildPr({value: main.pr, name: main.prName, color: main.prColor}) + '\n'
+            : '';
+
+        /* 最后战斗时间**只读 PVP**（模板里写死了 data['typeInfo']['PVP']，
+           即使上面退到了排位也一样）—— 别顺手改成读 mainKey。 */
+        var last = infoNum((pvp.battleInfo || {}).lastBattleTime);
+        var lastText = last > 0 ? fmtTime(last) : 'N/A';
+
+        var battleRows = '';
+        SHIP_BATTLE_ROWS.forEach(function (t) {
+            var tb = ti[t[0]] || {};
+            if (tb.battle) battleRows += shipInfoRow(t[1], shipBattleOf(tb), showPr);
+        });
+
+        /* 最高记录 / 服务器数据两块也只读 PVP（模板同款写死）。 */
+        var mx = (pvp.battleInfo || {}).maxInfo || {};
+        function maxVal(k) { return fmtRaw((mx[k] || {}).value); }
+        var origin = ((((pvp.battle ? ti.PVP : ti.RANK_SOLO) || {}).prInfo || {}).details || {}).originalServer || {};
+
+        return fixtureShell(base, uid,
+            headerBlock()
++ '\n'
++ shipHeaderBlock(d.shipInfo)
++ '\n'
++ prBlock
++ '        <div class="recnet-time">\n'
++ '            <span>最后战斗时间：</span>\n'
++ '            <span>' + lastText + '</span>\n'
++ '        </div>\n'
++ '\n'
++ shipOverview(main)
++ '\n'
++ '        <div class="random-header one-background-color">战斗类型</div>\n'
++ '        <div class="information-body one-background-color data-battle-type">\n'
++ buildInfoHead(showPr)
++ battleRows
++ '        </div>\n'
++ '\n'
++ '        <div class="random-header one-background-color">最高记录</div>\n'
++ '        <div class="frag-data">\n'
++ '            <div class="frag-data-col">\n'
++ shipFrag('伤害', maxVal('maxDamageDealt'))
++ shipFrag('潜在', maxVal('maxTotalAgro'))
++ shipFrag('侦查', maxVal('maxScoutingDamage'))
++ '            </div>\n'
++ '            <div class="frag-data-col">\n'
++ shipFrag('击杀', maxVal('maxFrags'))
++ shipFrag('飞机数', maxVal('maxPlanesKilled'))
++ shipFrag('经验', maxVal('maxXp'))
++ '            </div>\n'
++ '        </div>\n'
++ '\n'
++ '        <div class="random-header one-background-color">服务器数据</div>\n'
++ '        <div class="information-body one-background-color">\n'
++ '            <div class="information-col">\n'
++ '                <div class="information-col-item">场均</div>\n'
++ '                <div class="information-col-item">胜率</div>\n'
++ '                <div class="information-col-item">击杀</div>\n'
++ '            </div>\n'
++ '            <div class="information-col">\n'
++ '                <div class="information-col-item">' + fmtFix(origin.damage, 2) + '</div>\n'
++ '                <div class="information-col-item">' + fmtFix(origin.wins, 2) + '</div>\n'
++ '                <div class="information-col-item">' + fmtFix(origin.frags, 2) + '</div>\n'
++ '            </div>\n'
++ '        </div>\n',
+            '');   // 单船页没有图表，尾部不用引 echarts
+    }
+
+    /* =====================================================
+       预览支持的模板 —— 页面顶栏那个下拉框的数据源。
+       加一个模板 = 这里加一行 + 写一个 buildXxxFixture()（结构照抄对应模板），
+       页面侧不用改（下拉框是按这张表现拼的）。
+       ▍两个模板共用**同一份头部**（headerBlock），所以头像设置 / 卡片旋钮 /
+         大背景图这些设置切来切去都照样生效 —— 它们改的是同一套类名。
+       ===================================================== */
+    var TEMPLATES = {
+        info: {
+            label: '用户信息 info',
+            brand: 'info-v6 / userInfo',
+            build: function (base, uid, data) { return buildFixture(base, uid, data); }
+        },
+        ship: {
+            label: '单船 ship',
+            brand: 'ship-v6 / 单船',
+            build: function (base, uid, data) { return buildShipFixture(base, uid, data); }
+        }
+    };
 
     /* =====================================================
        HikariUserPreview
@@ -447,6 +904,14 @@
         this.ready = false;
         this._pending = null;
         this._lastUserInfo = null;
+        /* 当前预览哪个模板（info / ship），换模板走 setTemplate()。 */
+        this.template = TEMPLATES[opts.template] ? opts.template : 'info';
+        /* 页面里那些**真实战力数据**（场次 / 胜率 / PR / 图表…）——
+           就是 /public/wows/account/user/info2 的 data；null = 用内置演示快照。
+           换数据走 setInfoData()，那是重建文档而不是改节点。 */
+        this.infoData = opts.info || null;
+        /* 单船页的数据（/public/wows/account/ship/info 的 data），同上走 setShipData()。 */
+        this.shipData = opts.ship || null;
 
         // fixture 解析完会 postMessage 回来（比 iframe 的 load 可靠，
         // 首次 load 经常对应 initial about:blank，那时文档里还没有节点）
@@ -492,8 +957,66 @@
         this._syncModeBtn();
 
         // srcdoc 必须最后设：先挂监听，避免 load 抢跑
-        var fixture = this.opts.fixture || buildFixture(this.assetBase, this.uid);
-        frame.srcdoc = fixture;
+        frame.srcdoc = this._fixtureHtml();
+    };
+
+    /* 当前该往 iframe 里塞哪份 fixture。
+       ▍opts.fixture 是「整份 fixture 由调用方给」的老口子（谁传谁负责），
+         不传就按当前模板 + 该模板的数据现场生成。 */
+    HikariUserPreview.prototype._fixtureHtml = function () {
+        if (this.opts.fixture) return this.opts.fixture;
+        var t = TEMPLATES[this.template] || TEMPLATES.info;
+        return t.build(this.assetBase, this.uid,
+            this.template === 'ship' ? this.shipData : this.infoData);
+    };
+
+    /* 重建 iframe 文档 —— 换模板、换数据都走这里。
+       ▍为什么是重建而不是改节点：信息区块（ship_header / PR 条 / 核心数据 /
+         两张表 / 最高记录 / 图表）在成品里就是**按数据排版**的 —— 行数、
+         有没有 PR 条、图表的两条曲线都随数据变，逐节点去改只会把
+         「预览即成品」搞丢；换模板更是整棵 DOM 都不一样。
+       ▍重建后 iframe 会自己再走一次 _bindFrame，render() 拿 _lastUserInfo
+         把头部那几块（头像 / 彩色名 / 签名 / 服务器行）补回来，
+         所以调用方**不需要**再 render 一次，头像设置也不会丢。
+       ▍先关掉 ready：旧文档里那些节点马上就不作数了，
+         免得 fit() / getStageSize() 在空档里量到上一份页面的高度。 */
+    HikariUserPreview.prototype._rebuild = function () {
+        this.ready = false;
+        this.doc = null;
+        this.dom = null;
+        this.frameEl.srcdoc = this._fixtureHtml();
+    };
+
+    /* 换预览模板。同名不重建（音调用方可能在 change 事件里重复调）。 */
+    HikariUserPreview.prototype.setTemplate = function (name) {
+        if (!TEMPLATES[name] || name === this.template) return;
+        this.template = name;
+        this._rebuild();
+    };
+
+    HikariUserPreview.prototype.getTemplate = function () {
+        return this.template;
+    };
+
+    /* 换一份「用户 v2 数据」（info2 的 data）并重建预览。
+       ▍传 null（或不传）＝回到演示快照。 */
+    HikariUserPreview.prototype.setInfoData = function (info) {
+        this.infoData = info || null;
+        this._rebuild();
+    };
+
+    HikariUserPreview.prototype.getInfoData = function () {
+        return this.infoData;
+    };
+
+    /* 换一份单船数据（/public/wows/account/ship/info 的 data）并重建预览。 */
+    HikariUserPreview.prototype.setShipData = function (data) {
+        this.shipData = data || null;
+        this._rebuild();
+    };
+
+    HikariUserPreview.prototype.getShipData = function () {
+        return this.shipData;
     };
 
     HikariUserPreview.prototype._syncModeBtn = function () {
@@ -686,9 +1209,9 @@
                linear-gradient(rgba(0,0,0,.5), ...) 压暗一半），背景图越淡遮罩也越小。
                背景位置 / 尺寸写成**独立长手属性**，单值会套用到所有图层，写一次即可。
                ▍位置的两个维度来源不同（这是刻意的，别合并）：
-                  横向 = crop.x     —— 裁剪器拖出来的，**目前只有预览认**（宏里恒 center）
-                  纵向 = align      —— 宏和预览都认，见 posterAlignY() 的注释
-                 所以「拖动平移」仍然只在预览里看得见；纵向对齐是两边的共识。 */
+                  横向 = crop.x          —— 裁剪器拖出来的，**目前只有预览认**（宏里恒 center）
+                  纵向 = 固定 0（贴顶）  —— 不可配，与宏里的 poster_pos_y 同值，
+                                          见 POSTER_POS_Y_TOP 的注释 */
             var opacity = posterOpacity(poster);   // dark 是「透明度」，这里换算成 CSS 不透明度
             var maskAlpha = posterMaskAlpha(opacity);
             css.push('.main-content {\n'
@@ -703,7 +1226,7 @@
                 + '    opacity: ' + opacity + '%;\n'
                 + '    background: linear-gradient(rgba(0, 0, 0, ' + maskAlpha + '), rgba(0, 0, 0, ' + maskAlpha + ')),\n'
                 + '                url("' + poster.data + '") no-repeat;\n'
-                + '    background-position: ' + cropPosX(poster) + '% ' + posterAlignY(poster) + '%;\n'
+                + '    background-position: ' + cropPosX(poster) + '% ' + POSTER_POS_Y_TOP + '%;\n'
                 + '    background-size: ' + cropSize(poster, 'cover') + ';\n'
                 + '}');
         }
@@ -753,9 +1276,9 @@
          poster.dark 0-100      -> .main-content::before 的 opacity。
                                   dark 是「透明度」（越大越淡），
                                   写进 CSS 的是 100 - dark。
-         poster.align 0-100     -> .main-content::before 的 background-position 纵向
-                                  （0 = 贴顶 / 50 = 居中缺省）。只在页高 < 2250px
-                                  的短页上看得出来，见 posterAlignY()。
+         poster 纵向位置        -> .main-content::before 的 background-position 纵向，
+                                  固定贴顶（0%）。**不读数据**，见 POSTER_POS_Y_TOP；
+                                  只在页高 < 2250px 的短页上看得出来。
          avatar.card.dark/blur  -> .main-content 的 --card-alpha / --card-blur
                                   （只在该页有海报时下发；见 cardVarsCss）。
        ----------------------------------------------------- */
@@ -1519,6 +2042,9 @@
     global.HikariColorUtil = HikariColorUtil;
 
     global.HikariUserPreview = HikariUserPreview;
+    /* 可预览的模板表（键 + label + brand）—— 设置页顶栏那个下拉框按它拼，
+       这样「加模板」只需要改组件一处。 */
+    global.HikariUserPreview.TEMPLATES = TEMPLATES;
     global.HikariImageCropper = HikariImageCropper;
 
     global.HikariBuild = HIKARI_BUILD;

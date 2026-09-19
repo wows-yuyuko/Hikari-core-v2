@@ -2,7 +2,7 @@
 <html lang="zh-cn">
 <head>
 <meta charset="utf-8">
-<title>Hikari 用户信息预览 / 设置</title>
+<title>Hikari 模板预览 / 设置</title>
 <!-- 注意：这里**不要**给本地 css/js 加 ?v=20260917 这类查询串 ——
      file:// 下查询串会被当成文件名的一部分，cropper.min.js 会加载不出来。
      靠浏览器强制刷新（Ctrl+F5）来避免缓存，或者看顶栏那个版本号确认加载的是新版。 -->
@@ -87,6 +87,36 @@
     }
 
     #accountId { width: 180px; }
+
+    /* 模板下拉框：和输入框长一样，免得顶栏看着两套控件风格 */
+    #tpl {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 7px 8px;
+        font-size: 12.5px;
+        font-family: inherit;
+        color: var(--ink);
+        background: #fff;
+    }
+
+    #tpl:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px #efeaff;
+    }
+
+    /* 单船专属的 Ship Id —— 只有切到单船模板时才显示。
+       ▍必须显式写 [hidden]：下面那条 id 选择器的优先级高于 UA 那条
+         `[hidden] { display: none }`，不写这一条会「藏不住」。 */
+    #ship-field {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #ship-field[hidden] { display: none; }
+
+    #shipId { width: 150px; }
 
     /* 顶栏按钮比面板里的稍大一点，加载按钮是主操作，要有存在感 */
     .topbar .aep-btn {
@@ -279,10 +309,23 @@
 
     <!-- ===================== 顶栏 ===================== -->
     <div class="topbar">
-        <div class="brand">Hikari 用户信息预览<small>info-v6 / userInfo · <span id="build-tag">—</span></small></div>
+        <div class="brand">Hikari 模板预览<small><span id="brand-tpl">—</span> · <span id="build-tag">—</span></small></div>
+
+        <!-- 预览哪张页面。选项由组件里的 TEMPLATES 表现拼（见脚本 fillTemplateSelect），
+             加模板只改组件一处。 -->
+        <label for="tpl">模板</label>
+        <select id="tpl"></select>
 
         <label for="accountId">Account&nbsp;Id</label>
         <input id="accountId" type="text" placeholder="例如 2022515210" spellcheck="false">
+
+        <!-- 单船专属：看哪条船。值是 WG 的 shipId（大和 = 4276041424）——
+             船名 / 国旗 / 舰种图标 / 船只图都是服务端按它取的。 -->
+        <span id="ship-field" hidden>
+            <label for="shipId">Ship&nbsp;Id</label>
+            <input id="shipId" type="text" value="4276041424" spellcheck="false">
+        </span>
+
         <button class="aep-btn primary" id="btnLoad" type="button">加载配置</button>
     </div>
 
@@ -292,10 +335,21 @@
         <!-- ---------- 左：设置 ---------- -->
         <div class="panel">
             <div class="panel-intro">
-
+                左边改的是这个账号的<b>头像设置</b>，右边是<b>真实的 v6 页面</b>（引真实的 main-v6.css /
+                avatar-v6.css，图表也是真 ECharts）—— 预览长什么样，机器人渲染出来就长什么样。<br>
+                顶栏「模板」切换预览哪张页面：<b>用户信息</b>（info-v6，长页）与<b>单船</b>（ship-v6，短页，
+                要填 Ship Id）。两张页面的头部是<b>同一个宏</b>渲染的，所以这里改的头像 / 小背景 /
+                大背景 / 彩色昵称 / 签名 / 卡片旋钮，切到哪张都照样生效。<br>
+                点「加载配置」时，除了读配置，还会拿配置接口返回的 <code>server</code> +
+                <code>accountId</code> 去请求<b>当前模板</b>对应的接口，把真实数据填进预览：
+                用户信息取 <code>/public/wows/account/user/info2</code>（PR 条 / 场次 / 胜率 / 两张表 /
+                最高记录 / 等级图表），单船取 <code>/public/wows/account/ship/info</code>
+                （船名条 / 该船的核心数据 / 战斗类型 / 最高记录 / 服务器数据）；另外「账号信息」里的
+                用户名 / 军团 / 服务器 / 注册时间也以接口现拼的那份为准（配置表里那份可能已经旧了）。<br>
+                取不到数据（没绑过、接口挂了）只是退回内置演示快照，不影响改头像。
             </div>
 
-            <div id="status-bar" class="aep-status">填入 Account Id 后点「加载配置」，把该玩家的当前设置读进来</div>
+            <div id="status-bar" class="aep-status">填入 Account Id 后点「加载配置」：头像设置走配置接口，预览里的战绩按顶栏选的模板走 info2 / 单船接口</div>
 
             <!-- ============ 账号信息（只读，来自接口） ============ -->
             <details class="aep-group">
@@ -369,17 +423,8 @@
                         <div class="aep-label"><span>透明度</span><span id="poster-dark-val">0</span></div>
                         <input class="aep-range" id="poster-dark" type="range" min="0" max="100" step="1" value="0">
                     </div>
-                    <div class="aep-field">
-                        <div class="aep-label"><span>纵向对齐</span><span id="poster-align-val">居中</span></div>
-                        <div class="aep-tabs" id="poster-align-tabs">
-                            <button type="button" class="aep-tab" data-align="0">顶部</button>
-                            <button type="button" class="aep-tab" data-align="50">居中</button>
-                            <button type="button" class="aep-tab" data-align="100">底部</button>
-                        </div>
-                    </div>
                     <div class="aep-hint">铺满整页（<code>cover</code>），取景框 = 预览整页尺寸，所以页面越高可平移空间越大。<br>透明度写进 <code>poster.dark</code>（0-100）：<code>0</code> = 背景图<b>完全显示</b>（默认，与老数据一致），<code>100</code> = <b>完全透明</b>（看不见）。往右拉越淡。</div>
-                    <div class="aep-hint"><b>纵向对齐</b>写进 <code>poster.align</code>（<code>0</code> / <code>50</code> / <code>100</code>，也认 <code>'top'|'center'|'bottom'</code>）：决定背景图纵向<b>裁在哪一段</b>。<code>居中</code> 是缺省，与老数据一致。<br><b>只在页高低于 2250px 的短页上看得出差别</b>——图片 2731×4096 按宽铺满 1500px 时正好 2250px 高；页高超过它，背景图会改成按高贴合、纵向整幅铺满，怎么对齐都是同一个画面。短页（单船页等）按宽贴合、纵向被裁，这时「顶部」才能保证各页看到的都是同一段。</div>
-                    <div class="aep-hint"><b>⚠️ 本页预览看不出对齐的变化</b>：预览的页面高约 2600px（已超过 2250px 的分界），纵向本来就没得裁。要验证顶部对齐，得看短页模板渲染出来的成品。</div>
+                    <div class="aep-hint"><b>纵向固定贴顶</b>（不可调，<code>poster.align</code> 字段已废弃）：背景图纵向永远从图的最上面那一段取景 —— 长页短页取的是同一段，不会各页飘。<br>图片 2731×4096 按宽铺满 1500px 时正好 2250px 高：页高超过它时改成按高贴合、纵向整幅铺满（那时贴顶与居中本来就是同一个画面，看不出区别），所以这条只在单船页那类短页上才起作用。</div>
                     <div class="aep-hint">右侧预览默认「整页全览」（整页缩进一屏，看版式全貌）；想看清字就点预览右上角的按钮切到「适应宽度」。</div>
                 </div>
             </details>
@@ -531,6 +576,17 @@
        上线后把这里改成正式域名即可（临时换也可以直接在 URL 上加 ?api=http://xxx）。 */
     var API_BASE = 'https://v3-api.wows.shinoaki.com';
 
+    /* 用户 v2 数据（真实战力数据：PR 条 / 场次 / 胜率 / 两张表 / 最高记录 / 等级图表）。
+       配置接口只给「头像设置」，页面上那些数字全来自这里 ——
+       参数就是配置接口返回的 server + accountId（只有这一对能把配置和战绩对上）。 */
+    var INFO2_PATH = '/public/wows/account/user/info2';
+
+    /* 单船数据（船名条 / 该船的核心数据 / 战斗类型 / 最高记录 / 服务器数据）——
+       与机器人「wws 单船」指令走的是同一条接口。
+       ▍参数是三联：server（来自配置接口）+ accountId + shipId，缺一不可 ——
+         所以单船预览要先加载过一次配置（或者用 ?id= 带参进来）。 */
+    var SHIP_INFO_PATH = '/public/wows/account/ship/info';
+
     /* ============ 1. 状态 ============ */
     /* 槽位的 dark 在两个位置语义不同：
          banner.dark  0|1   深色标记（1 -> 白字）；只看 dark 值，与显示开关无关
@@ -587,6 +643,50 @@
             if (openSlot && croppers[openSlot].cropper) croppers[openSlot].onResize();
         }
     };
+
+    /* ============ 2.5 模板（预览哪一张页面）============
+       可选项直接读组件里的那张表 —— 加模板只改组件一处，页面这边不用跟着改。
+       ▍accountId 两个模板都要（配置接口按它查头像设置，单船数据也要它当入参），
+         只有 Ship Id 是单船专属（决定看哪条船）。 */
+    var TPL = HikariUserPreview.TEMPLATES || {};
+
+    function fillTemplateSelect() {
+        var sel = $('tpl');
+        Object.keys(TPL).forEach(function (k) {
+            var o = document.createElement('option');
+            o.value = k;
+            o.textContent = TPL[k].label;
+            sel.appendChild(o);
+        });
+    }
+
+    function currentTemplate() { return TPL[$('tpl').value] ? $('tpl').value : 'info'; }
+
+    /* 把「当前模板」反映到顶栏：品牌后面那行小字 + Ship Id 的显隐 + 加载按钮的说明。 */
+    function syncTemplateUI() {
+        var t = currentTemplate();
+        $('brand-tpl').textContent = (TPL[t] || {}).brand || t;
+        $('ship-field').hidden = t !== 'ship';
+        $('btnLoad').title = t === 'ship'
+            ? '按 Account Id 载入头像设置，再按 Ship Id 载入这条船的单船水表'
+            : '按 Account Id 载入头像设置与账号水表（info2）';
+    }
+
+    /* 切换模板：组件重建 fixture（整棵 DOM 都不一样），页面这边只管顶栏与数据。
+       ▍头像设置不用管 —— 它在 state 里，重建后组件会让 _bindFrame 拿 _lastUserInfo
+         重放一次，切来切去都不丢。
+       ▍已经加载过配置的话顺手把这一种模板的数据也拉一次，「切过去就是真数据」，
+         不用再点一次「加载配置」。 */
+    function switchTemplate() {
+        var t = currentTemplate();
+        syncTemplateUI();
+        preview.setTemplate(t);
+        if (state.accountId && state.server) loadTemplateData();
+        else setStatus('已切到「' + ((TPL[t] || {}).label || t) + '」预览（当前是内置演示数据）—— '
+            + '填 Account Id 后点「加载配置」换成真数据。');
+    }
+
+    $('tpl').addEventListener('change', switchTemplate);
 
     /* 三个裁剪器都建在弹窗里（actions: false —— 操作栏由弹窗底部统一提供）。
        ▍maxHeight = 裁剪区（Cropper 舞台）的高度上限，px —— 想调大调小改这三个数。
@@ -907,41 +1007,15 @@
 
     bindSwitch('d-banner', 'avatar.banner.dark');
 
-    /* ---------- 大背景图纵向对齐（poster.align）：三个预设 ----------
-       写进数据的就是数字 0 / 50 / 100（宏也认 'top'|'center'|'bottom' 三个关键字）。
-       语义与宏同构，见 avatar-editor.js 的 posterAlignY()。
-       ▍为什么不复用裁剪器的纵向位置：预览的 poster 取景框 = **实时页高**（≈2600），
-         cover 之下纵向溢出≈0，裁剪器的 getPosition() 一律报 50 —— 纵向本来就拖不出来，
-         所以单独给一个显式字段。
-       ▍缺省 50（居中）= 宏里旧的写死 center，所以不设这个字段时观感不变。 */
-    var POSTER_ALIGN_LABEL = { 0: '顶部', 50: '居中', 100: '底部' };
-
-    function posterAlignNum(v) {
-        if (typeof v === 'string') {
-            var kw = { top: 0, center: 50, bottom: 100 }[v.trim().toLowerCase()];
-            return typeof kw === 'number' ? kw : 50;
-        }
-        if (v === undefined || v === null || v === '') return 50;
-        var n = Number(v);
-        if (!isFinite(n)) return 50;
-        return Math.min(100, Math.max(0, Math.round(n)));
-    }
-
-    function syncPosterAlign() {
-        var cur = posterAlignNum(state.avatar.poster && state.avatar.poster.align);
-        document.querySelectorAll('#poster-align-tabs .aep-tab').forEach(function (b) {
-            b.classList.toggle('active', Number(b.dataset.align) === cur);
-        });
-        $('poster-align-val').textContent = POSTER_ALIGN_LABEL[cur] || (cur + '%');
-    }
-
-    document.querySelectorAll('#poster-align-tabs .aep-tab').forEach(function (b) {
-        b.addEventListener('click', function () {
-            state.avatar.poster.align = Number(this.dataset.align);
-            syncPosterAlign();
-            render();
-        });
-    });
+    /* ---------- 大背景图纵向对齐：**已固定贴顶，面板旋钮已撤**（2026-09-19）----------
+       原先这里有「顶部 / 居中 / 底部」三档，写进 poster.align（0 / 50 / 100），
+       缺省居中。现在产品决定固定顶部、不允许改，所以：
+         · 模板侧 partials/*-v6-macros.html 的 poster_pos_y 写死 0，**不再读这个字段**；
+         · 预览侧 avatar-editor.js 同样写死（POSTER_POS_Y_TOP），也不读；
+         · 这里不再有控件，序列化时也不再输出 poster.align（老数据里存的会被忽略）。
+       要改回可调得同时动四处：两个宏 + avatar-editor.js + 本文件的面板。
+       ▍为什么这条只在短页上看得出：图片 2731×4096 按宽铺满 1500px 时正好 2250px 高，
+         页高超过它时改成按高贴合、纵向整幅铺满 —— 那时贴顶与居中渲染完全相同。 */
 
     $('poster-dark').addEventListener('input', function () {
         state.avatar.poster.dark = setPosterDark(this.value);
@@ -1298,7 +1372,6 @@
 
         refreshAvatarHint();
         syncCard();
-        syncPosterAlign();
         render();
     }
 
@@ -1334,10 +1407,9 @@
             dark: dark,
             crop: slot && slot.crop ? { x: slot.crop.x, y: slot.crop.y } : { x: 50, y: 50 }
         };
-        /* 只有大背景图有纵向对齐（0-100，或 'top'|'center'|'bottom'）。
-           缺省 50 = 居中 = 宏里旧的写死 center，所以老数据渲染不变。
-           其它槽位不写这个字段（它们没有纵向裁切的场景）。 */
-        if (key === 'poster') out.align = posterAlignNum(slot && slot.align);
+        /* 大背景图原先还会写一个 poster.align（0 / 50 / 100 纵向对齐）——
+           现在纵向固定贴顶、宏与预览都不读它，所以**不再输出**这个字段
+           （老数据里存的会被静默忽略；见上面「纵向对齐已固定」那段注释）。 */
         return out;
     }
 
@@ -1369,6 +1441,133 @@
         };
     }
 
+    /* 「已加载 …」这句状态文案。放在函数里而不是开头算一次 ——
+       因为 info2 回来之后 state 里的用户名 / 服务器会被真实资料覆盖掉。 */
+    function loadedBase() {
+        return '已加载 Account Id ' + state.accountId + '（' + (state.userName || '未命名') + '，'
+            + (state.serverCn || state.server || '未知') + '）';
+    }
+
+    /* info2 回来时，用它那份 userInfo 覆盖 state 里的**只读身份字段**：
+       用户名 / 军团 / 服务器 / Account Id / 注册时间 / dogTag。
+       ▍为什么要覆盖：配置接口给的是**数据库里那份快照**，会旧。实测就有账号
+         配置表的 clanInfo 是空的（面板显示「（无）」、预览头也没有军团标签），
+         而 info2 现拼的 userInfo 里明明有 [YU_RI] —— 而 v6 模板渲染头部时吃的
+         正是 info2 的 userInfo（见 partials/user-v6-macros.html 开头那行注释），
+         所以只有覆盖过来，预览才和成品一致。
+       ▍军团以 info2 为准（它有就是它有、没有就是没有）：只在那份数据里
+         clanInfo 整个缺席时才保留配置里那份。
+       ▍头像槽位**一个都不碰** —— 那是本页正在编辑的设置，只能来自配置接口。 */
+    function applyLiveUserInfo(u) {
+        if (!u) return;
+        if (u.userName) state.userName = u.userName;
+        if (u.server) state.server = u.server;
+        if (u.serverCn) state.serverCn = u.serverCn;
+        if (u.accountId) state.accountId = u.accountId;
+        if (u.accountCreateTime) state.accountCreateTime = u.accountCreateTime;
+        if (u.dogTag) state.dogTag = u.dogTag;
+        if (u.clanInfo) {
+            state.clanInfo = {
+                tag: u.clanInfo.tag || '',
+                color: u.clanInfo.color || '#b3b3b3'
+            };
+        }
+        syncForm();          // 账号信息面板 + 预览头部一起换成真实资料
+    }
+
+    /* 用户 v2 数据 —— 预览里那些**真实战力数字**（PR 条 / 场次 / 胜率 /
+       两张表 / 最高记录 / 等级图表）的来源。配置接口只给「头像设置」，
+       要拿战绩就得用它的 server + accountId 再请求一次 info2。
+       ▍取不到**不挡着改头像**：预览退回内置演示快照（DEMO_INFO），
+         状态栏把原因说清楚就行 —— 这是版式工具，不是数据看板。 */
+    function loadInfoData() {
+        var server = state.server || '';
+        if (!server || !state.accountId) {
+            setStatus(loadedBase() + ' · 接口没给 server / accountId，取不到用户 v2 数据，预览仍是演示数据。', 'err');
+            return;
+        }
+        var url = API_BASE.replace(/\/+$/, '') + INFO2_PATH
+            + '?server=' + encodeURIComponent(server) + '&accountId=' + encodeURIComponent(state.accountId);
+        setStatus('正在请求 ' + url + ' …');
+
+        // 与配置接口一样，公开接口、不需要 Authorization
+        return fetch(url).then(function (r) {
+            return r.json();
+        }).then(function (res) {
+            if (!res || Number(res.code) !== 200 || !res.data) {
+                setStatus(loadedBase() + ' · 用户 v2 数据返回 code=' + (res && res.code) + '：'
+                    + ((res && res.message) || '无数据') + '，预览退回演示数据。', 'err');
+                return;
+            }
+            // 顺序要紧：先把身份字段换成真实资料（它会 syncForm 重绘一次头部），
+            // 再让预览按真实战绩重建信息区块 —— 重建时重放的就是更新后的那份。
+            applyLiveUserInfo(res.data.userInfo);
+            preview.setInfoData(res.data);
+            var last = Number(res.data.lastBattleTime) || 0;
+            setStatus(loadedBase() + ' · 预览与账号信息都换成真实数据（最后战斗 '
+                + (last > 0 ? fmtTime(last) : 'N/A') + '）。', 'ok');
+        }).catch(function (e) {
+            setStatus(loadedBase() + ' · 用户 v2 数据请求失败：' + e.message + '，预览退回演示数据。', 'err');
+        });
+    }
+
+    /* 单船数据 —— 预览里那条船的船名条 / 核心数据 / 战斗类型 / 最高记录 /
+       服务器数据。接口与机器人「wws 单船」是同一条
+       （/public/wows/account/ship/info）。
+       ▍取不到**不挡着改头像**：预览退回内置演示快照（DEMO_SHIP），
+         状态栏把原因说清楚就行 —— 这是版式工具，不是数据看板。 */
+    function loadShipData() {
+        var server = state.server || '';
+        var shipId = ($('shipId').value || '').trim();
+        if (!server || !state.accountId) {
+            setStatus(loadedBase() + ' · 接口没给 server / accountId，取不到单船数据，预览仍是演示数据。', 'err');
+            return;
+        }
+        if (!/^\d+$/.test(shipId)) {
+            setStatus('Ship Id 必须是纯数字（接口按数字 ID 查船，例如大和 4276041424）。', 'err');
+            return;
+        }
+        var url = API_BASE.replace(/\/+$/, '') + SHIP_INFO_PATH
+            + '?server=' + encodeURIComponent(server)
+            + '&accountId=' + encodeURIComponent(state.accountId)
+            + '&shipId=' + encodeURIComponent(shipId);
+        setStatus('正在请求 ' + url + ' …');
+
+        // 与其它公开接口一样，不需要 Authorization
+        return fetch(url).then(function (r) {
+            return r.json();
+        }).then(function (res) {
+            if (!res || Number(res.code) !== 200 || !res.data) {
+                setStatus(loadedBase() + ' · 单船数据返回 code=' + (res && res.code) + '：'
+                    + ((res && res.message) || '无数据') + '，预览退回演示数据。', 'err');
+                return;
+            }
+            // 顺序同 info2：先把身份字段换成真实资料（它会 syncForm 重绘一次头部），
+            // 再让预览按这份单船数据重建 —— 重建时重放的就是更新后的那份。
+            applyLiveUserInfo(res.data.userInfo);
+            preview.setShipData(res.data);
+            var ship = res.data.shipInfo || {};
+            var last = Number((((res.data.typeInfo || {}).PVP || {}).battleInfo || {}).lastBattleTime) || 0;
+            setStatus(loadedBase() + ' · 预览换成单船数据（' + (ship.nameCn || '未知船')
+                + ' · Ship Id ' + shipId + '，最后战斗 ' + (last > 0 ? fmtTime(last) : 'N/A') + '）。', 'ok');
+        }).catch(function (e) {
+            setStatus(loadedBase() + ' · 单船数据请求失败：' + e.message + '，预览退回演示数据。', 'err');
+        });
+    }
+
+    /* 当前模板该请求哪一份数据。 */
+    function loadTemplateData() {
+        return currentTemplate() === 'ship' ? loadShipData() : loadInfoData();
+    }
+
+    /* 换账号时先把**当前模板**的预览退回演示快照：
+       别让上一个账号的战绩留在页面上（新数据回来会自己顶上；
+       期间用户改头像也不受影响）。 */
+    function resetTemplateData() {
+        if (currentTemplate() === 'ship') preview.setShipData(null);
+        else preview.setInfoData(null);
+    }
+
     function load() {
         var id = $('accountId').value.trim();
         if (!/^\d+$/.test(id)) {
@@ -1378,6 +1577,9 @@
         var url = API_BASE.replace(/\/+$/, '') + '/public/wows/account/search/db/' + id;
 
         $('btnLoad').disabled = true;
+        // 换账号：先把当前模板的预览退回演示快照，别让上一个账号的战绩留在页面上
+        // （新数据回来会自己顶上；期间用户改头像也不受影响）
+        resetTemplateData();
         setStatus('正在请求 ' + url + ' …');
 
         // 这个接口不需要 Authorization，直接 GET
@@ -1391,8 +1593,8 @@
             }
             state = fromApi(res.data);
             syncForm();
-            setStatus('已加载 Account Id ' + state.accountId + '（' + (state.userName || '未命名') + '，'
-                + (state.serverCn || state.server) + '）', 'ok');
+            // 配置已经进状态了，接着拿真实战绩数据（它自己会写状态栏）
+            return loadTemplateData();
         }).catch(function (e) {
             setStatus('请求失败：' + e.message + '。检查本地服务是否在跑、接口地址是否正确。', 'err');
         }).then(function () {
@@ -1404,16 +1606,29 @@
     $('accountId').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') load();
     });
+    // 换船也走同一个「加载」—— Ship Id 变了要重新取一次单船数据
+    $('shipId').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') load();
+    });
 
     /* ============ 7. 启动 ============ */
     // 顶栏显示组件版本 —— 改完代码点了刷新、这里时间却没变，就说明浏览器
     // 还在用缓存里的旧 JS（Ctrl+F5 强制刷新即可）
     $('build-tag').textContent = (typeof HikariBuild === 'string') ? HikariBuild : '未知(旧版缓存?)';
 
+    // 模板下拉框的选项按组件那张 TEMPLATES 表现拼（加模板不用改这里）
+    fillTemplateSelect();
+
     // 支持 ?id=<accountId> 直接带参打开（便于分享调试链接）
+    // 也认 ?tpl=info|ship 选预览哪张页面、?ship=<shipId> 指定船。
     var qs = new URLSearchParams(location.search);
     if (qs.get('api')) API_BASE = qs.get('api').replace(/\/+$/, '');
     if (qs.get('id')) $('accountId').value = qs.get('id');
+    if (TPL[qs.get('tpl')]) $('tpl').value = qs.get('tpl');
+    if (qs.get('ship')) $('shipId').value = qs.get('ship');
+    // 组件默认建的是 info，?tpl=ship 进来时这里切过去（同名不会重建）
+    preview.setTemplate(currentTemplate());
+    syncTemplateUI();
     syncForm();
 
     // 带 ?id= 进来就自动加载一次，否则等用户填 Account Id 后点「加载配置」

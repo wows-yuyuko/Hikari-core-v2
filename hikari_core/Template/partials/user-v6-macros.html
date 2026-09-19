@@ -60,33 +60,24 @@
 {%- set poster_mask_pct = (100 - poster_opacity) * 100 // 200 | int -%}
 {%- set poster_mask_frac = '%02d' | format((poster_mask_pct % 100) | int) -%}
 {%- set poster_mask = (poster_mask_pct // 100) | int ~ '.' ~ poster_mask_frac -%}
-{# 大背景图的**纵向取景位置**（对齐方式）—— poster_img['align']。
-   两种写法都认（服务端按自己的列型挑一种存即可）：
-       数字 0-100：直接当 background-position 的纵向百分比，0 = 贴顶 / 50 = 居中 / 100 = 贴底
-       关键字    ：'top' / 'center' / 'bottom'（就是 0 / 50 / 100 的糖）
-   缺省 50（居中）—— 与旧的写死 `center` **完全等价**，历史数据观感不变。
-   其它值（布尔、认不出的字符串）一律回 50，脏数据不会写出非法 CSS。
-
-   ▍这个值**只在页面比 2250px 矮时看得出来**：cover 的缩放比取 max(宽比, 高比)，
-     而分界点 = 图高 4096 × 容器宽 1500 / 图宽 2731 = 2250px。
-       页高 ≥ 2250 → 按高贴合，图片高度正好铺满，纵向位置无论如何都没区别
-                    （此时 `center` 与 `top` 渲染出来一模一样）；
-       页高 < 2250 → 按宽贴合，图片纵向被裁，这个值才决定「看到截图的哪一段」。
-     —— 单船页之类的短页就是后者，对齐方式决定它们的取景是否一致。
-
-   ▍为什么不做成 poster.crop.y：裁剪器那边表达不了。预览的取景框 = 实时页高(~2600)，
+{# 大背景图的**纵向取景位置**（对齐方式）。
+   ▍**固定「顶部」= 0%，不读数据、不可调**（2026-09-19 起，产品决定）。
+     早先这里认 poster_img['align']（数字 0-100，或 'top'/'center'/'bottom'，缺省居中），
+     现在一律按顶部渲染 —— 老数据里存着的对齐值**直接忽略**（不是"缺省值变了"，
+     是彻底不读）。编辑器（web/avatar-editor）那边也已把「纵向对齐」这个旋钮撤掉。
+     要改回可调得同时动四处：本文件 + partials/clan-v6-macros.html +
+     web/avatar-editor/avatar-editor.js 的 _styleText + index.html 的面板。
+   ▍为什么固定顶部：这个值**只在页面比 2250px 矮时看得出来**（cover 按宽贴合、纵向被裁）。
+     分界点 = 图高 4096 × 容器宽 1500 / 图宽 2731 = 2250px：
+       页高 ≥ 2250 → 按高贴合，图片高度正好铺满，纵向位置怎么调都是同一个画面
+                    （也就是说**长页上「顶部」与「居中」渲染完全相同**）；
+       页高 < 2250 → 按宽贴合、纵向被裁，这时只有「顶部」能保证**各页取景一致**
+                    （短页看到的永远是图的最上面那一段）。
+     所以固定顶部既覆盖了长页，又让短页之间不再飘。
+   ▍为什么当初不做成 poster.crop.y：裁剪器那边表达不了 —— 预览的取景框 = 实时页高，
      cover 之下纵向溢出≈0，getPosition() 一律报 50（见 avatar-editor.js 的注释）。
-     所以纵向单独给一个 align，与 crop（横向拖动）互不干扰。
-   与用户侧 partials/user-v6-macros.html 同源，改一边记得改另一边。 #}
-{%- set poster_align_raw = poster_img['align'] if poster_img and poster_img['align'] is defined else none -%}
-{%- if poster_align_raw is string -%}
-    {%- set poster_pos_y = dget({'top': 0, 'center': 50, 'bottom': 100}, poster_align_raw | trim | lower, 50) -%}
-{%- elif poster_align_raw is number and not poster_align_raw is boolean -%}
-    {%- set poster_pos_y = poster_align_raw | int(50) -%}
-{%- else -%}
-    {%- set poster_pos_y = 50 -%}
-{%- endif -%}
-{%- set poster_pos_y = [[poster_pos_y, 0] | max, 100] | min -%}
+   与公会侧 partials/clan-v6-macros.html 同源，改一边记得改另一边。 #}
+{%- set poster_pos_y = 0 -%}
 {# 毛玻璃「元素块」（卡片）的两个全局旋钮 —— 都下发到 .main-content 上的 CSS 变量，
    由 main-v6.css / avatar-v6.css 里各条 background / backdrop-filter 去乘：
        --card-alpha  卡片底色透明度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全透明
@@ -146,7 +137,7 @@
                             rgba(0, 0, 0, {{ poster_mask }})),
             url("{{ poster_img['data'] }}") no-repeat;
         /* 横向恒为 center（裁剪器拖出来的是「只在预览生效」的 crop，模板不读）；
-           纵向由 poster.align 决定，0% = 贴顶 / 50% = 居中（= 旧写死的 center）。
+           纵向固定贴顶（poster_pos_y 恒为 0，理由见上面的注释）。
            两个值都是长手属性，会一起套用到遮罩层与图片层。 */
         background-position: center {{ poster_pos_y }}%;
         background-size: cover;
