@@ -13,7 +13,7 @@
      头像槽位 4 个：poster / colorName / banner / avatar（**没有 sign，也没有 dogTag 兜底**）
    ========================================================== #}
 
-{% macro info_header_style(poster=True) %}
+{% macro info_header_style(poster=true) %}
 {%- set u = data -%}
 {%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
 {%- set poster_img = avatar_box['poster'] if avatar_box['poster'] is defined else none -%}
@@ -30,8 +30,8 @@
      2) 只看真实 http(s) 链接 —— data:base64 的载荷里也可能带 '/'，照样 rsplit 会拆出垃圾地址。
    取不到底座时保持 none，退回单图（见下面 .avatar-header 的分支）。 #}
 {%- set avatar_base = none -%}
-{%- if avatar_status == 2 and avatar_img['data'] is string and avatar_img['data'].startswith('http') -%}
-    {%- set avatar_path = avatar_img['data'].rsplit('/', 1) -%}
+{%- if avatar_status == 2 and avatar_img['data'] is string and avatar_img['data'].startsWith('http') -%}
+    {%- set avatar_path = rsplit1(avatar_img['data'], '/') -%}
     {%- if avatar_path | length == 2 -%}
         {%- set avatar_base = avatar_path[0] ~ '/' ~ (avatar_path[1] | replace('-', '_')) -%}
     {%- endif -%}
@@ -68,6 +68,33 @@
 {%- set poster_mask_pct = (100 - poster_opacity) * 100 // 200 | int -%}
 {%- set poster_mask_frac = '%02d' | format((poster_mask_pct % 100) | int) -%}
 {%- set poster_mask = (poster_mask_pct // 100) | int ~ '.' ~ poster_mask_frac -%}
+{# 大背景图的**纵向取景位置**（对齐方式）—— poster_img['align']。
+   两种写法都认（服务端按自己的列型挑一种存即可）：
+       数字 0-100：直接当 background-position 的纵向百分比，0 = 贴顶 / 50 = 居中 / 100 = 贴底
+       关键字    ：'top' / 'center' / 'bottom'（就是 0 / 50 / 100 的糖）
+   缺省 50（居中）—— 与旧的写死 `center` **完全等价**，历史数据观感不变。
+   其它值（布尔、认不出的字符串）一律回 50，脏数据不会写出非法 CSS。
+
+   ▍这个值**只在页面比 2250px 矮时看得出来**：cover 的缩放比取 max(宽比, 高比)，
+     而分界点 = 图高 4096 × 容器宽 1500 / 图宽 2731 = 2250px。
+       页高 ≥ 2250 → 按高贴合，图片高度正好铺满，纵向位置无论如何都没区别
+                    （此时 `center` 与 `top` 渲染出来一模一样）；
+       页高 < 2250 → 按宽贴合，图片纵向被裁，这个值才决定「看到截图的哪一段」。
+     —— 单船页之类的短页就是后者，对齐方式决定它们的取景是否一致。
+
+   ▍为什么不做成 poster.crop.y：裁剪器那边表达不了。预览的取景框 = 实时页高(~2600)，
+     cover 之下纵向溢出≈0，getPosition() 一律报 50（见 avatar-editor.js 的注释）。
+     所以纵向单独给一个 align，与 crop（横向拖动）互不干扰。
+   与用户侧 partials/user-v6-macros.html 同源，改一边记得改另一边。 #}
+{%- set poster_align_raw = poster_img['align'] if poster_img and poster_img['align'] is defined else none -%}
+{%- if poster_align_raw is string -%}
+    {%- set poster_pos_y = dget({'top': 0, 'center': 50, 'bottom': 100}, poster_align_raw | trim | lower, 50) -%}
+{%- elif poster_align_raw is number and not poster_align_raw is boolean -%}
+    {%- set poster_pos_y = poster_align_raw | int(50) -%}
+{%- else -%}
+    {%- set poster_pos_y = 50 -%}
+{%- endif -%}
+{%- set poster_pos_y = [[poster_pos_y, 0] | max, 100] | min -%}
 {# 毛玻璃「元素块」（卡片）的两个全局旋钮 —— 都下发到 .main-content 上的 CSS 变量，
    由 main-v6.css / avatar-v6.css 里各条 background / backdrop-filter 去乘：
        --card-alpha  卡片底色透明度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全透明
@@ -86,7 +113,7 @@
    与用户侧 partials/user-v6-macros.html 同源，改一边记得改另一边。 #}
 {%- set card_box = avatar_box['card'] if avatar_box['card'] is defined and avatar_box['card'] else {} -%}
 {# ▍取值一律走 `| int(缺省)` 而不是裸 `| int`：两者对「字段在但值是 null」
-   （JSON 的 null / Python 的 None）和「值不是数字字符串」的处理天差地别 ——
+   （JSON 的 null / Python 的 null）和「值不是数字字符串」的处理天差地别 ——
    裸 int 会把它们都变成 0，而 blur 的缺省是 100，0 就等于「把模糊全关掉」，
    一个 null 就能让页面糊度跑偏。带缺省的写法会回落到各自的缺省值。 #}
 {%- set card_dark = (card_box['dark'] | int(0)) if card_box['dark'] is defined else 0 -%}
@@ -126,7 +153,10 @@
             linear-gradient(rgba(0, 0, 0, {{ poster_mask }}),
                             rgba(0, 0, 0, {{ poster_mask }})),
             url("{{ poster_img['data'] }}") no-repeat;
-        background-position: center;
+        /* 横向恒为 center（裁剪器拖出来的是「只在预览生效」的 crop，模板不读）；
+           纵向由 poster.align 决定，0% = 贴顶 / 50% = 居中（= 旧写死的 center）。
+           两个值都是长手属性，会一起套用到遮罩层与图片层。 */
+        background-position: center {{ poster_pos_y }}%;
         background-size: cover;
     }
     {% endif %}
@@ -168,7 +198,7 @@
 </style>
 {% endmacro %}
 
-{% macro info_header(register=True) %}
+{% macro info_header(register=true) %}
 {%- set u = data -%}
 {%- set avatar_box = u['avatar'] if u['avatar'] is defined and u['avatar'] else {} -%}
 {%- set banner = avatar_box['banner'] if avatar_box['banner'] is defined else none -%}
@@ -192,8 +222,8 @@
 {%- set avatar_text_lines = [] -%}
 {%- if avatar_text -%}
     {%- set avatar_text_parts = avatar_text.split('-') -%}
-    {%- set _ = avatar_text_lines.append(avatar_text_parts[0]) -%}
-    {%- set _ = avatar_text_lines.append('-'.join(avatar_text_parts[1:])) -%}
+    {%- set _ = avatar_text_lines.push(avatar_text_parts[0]) -%}
+    {%- set _ = avatar_text_lines.push(avatar_text_parts.slice(1).join('-')) -%}
 {%- endif -%}
 {%- set name = u['name'] -%}
 {%- set tag = u['tag'] or '' -%}
@@ -202,9 +232,9 @@
 {# 公会接口的建号时间是**毫秒**，统一成秒再交给 localtime #}
 {%- set created = (u['createdAt'] | int) / 1000 -%}
 {%- set server = server_cn(u['server']) -%}
-{%- set banner_dark = banner and banner.get('dark') == 1 -%}
+{%- set banner_dark = banner and dget(banner, 'dark') == 1 -%}
 {# ▍banner_dark 只看 dark 值本身，**不带 status > 0 条件**（与用户侧同源）。
-   曾经是 `banner['status'] > 0 and banner.get('dark') == 1`，
+   曾经是 `banner['status'] > 0 and dget(banner, 'dark') == 1`，
    结果「关掉小背景图显示开关」会连带把深色白字也取消 ——
    但 status 管背景图显不显示、dark 管文字黑/白，是两个独立设置，
    临时关掉背景图不该把深色设置一并丢掉。 #}
@@ -231,8 +261,8 @@
     {%- set hide_avatar = false -%}
 {%- endif -%}
 {%- set avatar_logo_cut = (tag | length) // 2 -%}
-{%- set avatar_logo_left = tag[:avatar_logo_cut] -%}
-{%- set avatar_logo_right = tag[avatar_logo_cut:] -%}
+{%- set avatar_logo_left = tag.slice(0, avatar_logo_cut) -%}
+{%- set avatar_logo_right = tag.slice(avatar_logo_cut) -%}
 {# 两个词的宽度（em）交给 render_helpers.ba_text_em 按 Microsoft YaHei Bold 的实测字表算。
    不要退回「拉丁字一律 0.62em」那种均匀估算：W / M 实测 1.08 / 1.03em，
    估窄了 logo 就会冲出方框（WWWWWW 这种 tag 尤其明显）。 #}
@@ -270,14 +300,14 @@
    免得长文案冲出圆角头像。行数 / 字号都只在有待显示文字时才算。
    字号不走 map|max / |min 这类过滤器：模板环境是 async 的（enable_async），map 回来的是
    async generator，直接喂给 max 会 TypeError。这里就老老实实循环取最长一行。 #}
-{%- set avatar_text_longest = namespace(value=0) -%}
+{%- set avatar_text_longest = 0 -%}
 {%- for line in avatar_text_lines -%}
-    {%- if line | length > avatar_text_longest.value -%}
-        {%- set avatar_text_longest.value = line | length -%}
+    {%- if line | length > avatar_text_longest -%}
+        {%- set avatar_text_longest = line | length -%}
     {%- endif -%}
 {%- endfor -%}
-{%- set show_avatar_text = not hide_avatar and avatar_status == 2 and avatar_text_lines -%}
-{%- set avatar_text_fit = (185 / avatar_text_longest.value) | int if avatar_text_longest.value else 72 -%}
+{%- set show_avatar_text = not hide_avatar and avatar_status == 2 and avatar_text_lines | length -%}
+{%- set avatar_text_fit = (185 / avatar_text_longest) | int if avatar_text_longest else 72 -%}
 {%- set avatar_text_font = avatar_text_fit if avatar_text_fit < 36 else 36 -%}
 <div class="page-header{% if banner_dark %} dark-banner{% endif %}">
     <div class="masking-header{% if hide_avatar %} no-avatar{% endif %}">

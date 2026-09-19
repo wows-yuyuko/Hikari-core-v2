@@ -19,49 +19,84 @@
 ban / 封号记录 已纳入用例（仅国服可查：服务器 cn + 昵称 西行寺雨季）。
 
 运行前请按实际环境修改下方接入配置（token 有效、me 类需平台账号已绑定）。
-用法: python tests/all_test.py
+
+▍用法：就一个全局开关 `RENDER_MODE`（在下面的接入配置里，直接改那行）
+
+    RENDER_MODE = 'none'    # 只打 API 看数据摘要（最快，验解析/取数）
+    RENDER_MODE = 'html'    # 走模板：渲染出 HTML（不开浏览器、不截图）
+    RENDER_MODE = 'image'   # 走模板：渲染 + 截图出图（需要 playwright 浏览器）
+
+就是 config 里两个开关的组合：
+    none  → auto_rendering=False              （不碰模板）
+    html  → auto_rendering=True,  auto_image=False
+    image → auto_rendering=True,  auto_image=True
+
+▍产物（RENDER_MODE 非 none 时）
+每条用例的产物写进 `OUT_DIR`：
+    <序号>-<命令片段>.html    渲染用的 HTML —— **自带渲染器**，浏览器直接打开就是成品页
+    <序号>-<命令片段>.jpg     出图模式的截图（png/webp 跟随 config.image_type）
 """
 
 import asyncio
+import os
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from hikari_core import callback_hikari, init_hikari  # noqa: E402
-from hikari_core.core.config import set_hikari_config  # noqa: E402
+from hikari_core import callback_hikari, init_hikari, get_cache_file  # noqa: E402
+from hikari_core.core.config import hikari_config, set_hikari_config  # noqa: E402
 
 # ============================================================
 # 接入配置（按实际环境修改）
 # ============================================================
-PLATFORM = 'QQ'                 # 平台类型（QQ / QQ_OFFICIAL 等）
-PLATFORM_ID = '2622749113'      # 发送者 ID（me 类需要该账号已绑定）
-GROUP_ID = '967546463'          # 群号
+PLATFORM = 'QQ'  # 平台类型（QQ / QQ_OFFICIAL 等）
+PLATFORM_ID = '2622749113'  # 发送者 ID（me 类需要该账号已绑定）
+GROUP_ID = '967546463'  # 群号
 BOT_ID = '0'
-TOKEN = '2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr'  # yuyuko API token
+# 环境变量优先（与 tests/js_render_guard.py 共用同一个 HIKARI_TOKEN），不设就用下面的默认值
+TOKEN = os.environ.get('HIKARI_TOKEN') or '2622749113:TAN9iMARSDJbzLVOUK1a9cTSiKtb32GIbpr'
 PROXY = None
-GAME_PATH = ''                  # 空 = 默认 data/wows-yuyuko
-AUTO_RENDERING = False          # False：只打 API 看数据摘要（快）；True：渲染模板
-AUTO_IMAGE = False              # True：渲染后截图出图（需 playwright 浏览器）
+GAME_PATH = ''  # 空 = 默认 data/wows-yuyuko
+
+# ============================================================
+# 全局开关：是否走模板输出
+# ============================================================
+#   'none'  只打 API 看数据摘要（最快）—— 验解析 / 取数用这个
+#   'html'  走模板渲染，产物是 HTML（不开浏览器、不截图）
+#   'image' 走模板渲染 + 截图出图（需要 playwright 浏览器）
+RENDER_MODE = 'image'
+
+# 产物目录（RENDER_MODE 非 none 时，每条用例的 html / 图写到这里）
+OUT_DIR = get_cache_file() / 'all_test'
+
+# 档位 → config 里那两个开关（(auto_rendering, auto_image)）
+RENDER_MODES = {
+    'none': (False, False),
+    'html': (True, False),
+    'image': (True, True),
+}
+IMAGE_EXT = {'jpeg': 'jpg', 'png': 'png', 'webp': 'webp'}
 
 # ============================================================
 # 真执行用例：全部指令的只读组合（写操作指令已排除）
 # ============================================================
 CASES = [
     # ---- 水表 / 身份三态 ----
-    'asia nahida_official',          # 服务器+昵称
-    '亚服 nahida_official',          # 中文服务器别名
-    'me',                            # 绑定账号
+    'asia nahida_official',  # 服务器+昵称
+    '亚服 nahida_official',  # 中文服务器别名
+    'me',  # 绑定账号
     # ---- 近期战绩（天数 / 日期 / 随机 / 排位）----
     'asia nahida_official recent',
     'asia nahida_official recent 7',
-    '近期 7',                        # me 缺省 + 中文别名
+    '近期 7',  # me 缺省 + 中文别名
     'me recent 15',
-    'recent 2024-05-30',             # 指定日期（该日无战绩 → failed，属数据层）
+    'recent 2024-05-30',  # 指定日期（该日无战绩 → failed，属数据层）
     'asia nahida_official recent 随机 7',
     'recent_random 7',
     '近期随机',
-    'recent_rank 7',                 # 无排位战绩 → failed，属数据层
+    'recent_rank 7',  # 无排位战绩 → failed，属数据层
     '近期排位 7',
     # ---- 单船 / 单船近期（含多词船名走 me、双分支顺序）----
     'asia nahida_official ship 得梅因',
@@ -111,6 +146,51 @@ CASES = [
 ]
 
 
+def _resolve_mode():
+    """把全局开关 RENDER_MODE 翻成 config 用的两个开关，返回 (档位, auto_rendering, auto_image)。
+
+    档位写错就直接报错退出 —— 这个常量是手改的，写错字静默跑成 none 会白跑一轮。
+    """
+    if RENDER_MODE not in RENDER_MODES:
+        raise SystemExit(f'RENDER_MODE={RENDER_MODE!r} 不认识，只能是 '
+                         f'{" / ".join(RENDER_MODES)}')
+    auto_rendering, auto_image = RENDER_MODES[RENDER_MODE]
+    return RENDER_MODE, auto_rendering, auto_image
+
+
+def _slug(text: str, limit: int = 40) -> str:
+    """命令文本 → 能当文件名的片段（中文/字母数字保留，其余压成下划线）。"""
+    cleaned = re.sub(r'[^0-9A-Za-z\u4e00-\u9fff.-]+', '_', text.strip())
+    return cleaned.strip('_.')[:limit] or 'case'
+
+
+def _dump_artifacts(out_dir: Path, index: int, text: str, fn: str, step: int,
+                    hikari, image_type: str):
+    """把一条用例这一次执行的产物落盘，返回写出的文件列表。
+
+    ▍产物有两个来源，**都要留**：
+      · `hikari.template_content`（local_test=True 时由 output_hikari 填）→ 渲染用的 HTML。
+        注意它是**自带渲染器的外壳**（数据 + 模板源码 + hikari-render.js），
+        浏览器直接打开就是成品页 —— 这也是排模板问题最方便的东西。
+      · `hikari.Output.Data`：出图模式是图片字节；只渲染模式就是同一份 HTML。
+    """
+    written = []
+    base = f'{index:02d}-{_slug(text)}' + (f'-s{step}' if step > 1 else '')
+    data = hikari.Output.Data
+    html = getattr(hikari, 'template_content', '') or ''
+    if not html and isinstance(data, str) and 'hikari-render.js' in data:
+        html = data
+    if html:
+        target = out_dir / f'{base}.html'
+        target.write_text(html, encoding='utf-8')
+        written.append(target)
+    if isinstance(data, (bytes, bytearray)):
+        target = out_dir / f'{base}.{IMAGE_EXT.get(image_type, "jpg")}'
+        target.write_bytes(bytes(data))
+        written.append(target)
+    return written
+
+
 def _summarize(hikari) -> str:
     """把执行结果压成一行摘要。"""
     data = hikari.Output.Data
@@ -132,19 +212,27 @@ def _summarize(hikari) -> str:
 
 
 async def _execute(text: str):
-    """真执行单条命令，返回 (功能名, [(status, 摘要), ...])。"""
+    """真执行单条命令。
+
+    Returns:
+        (功能名, [(status, 摘要), ...], [(第几步, hikari), ...])
+        第三步留给调用方落盘产物（`--render` 非 none 时用）—— 在这里直接写文件会把
+        「执行」和「输出」搅在一起，也不方便只跑报告。
+    """
     hikari = await init_hikari(
         platform=PLATFORM, PlatformId=PLATFORM_ID, BotId=BOT_ID,
         command_text=text, GroupId=GROUP_ID,
     )
     fn = getattr(hikari.Function, '__name__', 'None')
     steps = [(hikari.Status, _summarize(hikari))]
+    seen = [(1, hikari)]
     if hikari.Status == 'wait':
         # 多选流程：自动选第 1 项后回调（用例已排除写操作指令，选择均为只读查询）
         hikari.Input.Select_Index = 1
         hikari = await callback_hikari(hikari)
         steps.append((hikari.Status, _summarize(hikari)))
-    return fn, steps
+        seen.append((2, hikari))
+    return fn, steps, seen
 
 
 def _build_report(results) -> str:
@@ -181,17 +269,30 @@ def _build_report(results) -> str:
 
 
 async def main() -> int:
+    mode, auto_rendering, auto_image = _resolve_mode()
+
     set_hikari_config(
         token=TOKEN, proxy=PROXY, use_broswer='chromium', http2=False,
-        local_test=True, auto_rendering=AUTO_RENDERING, auto_image=AUTO_IMAGE,
+        local_test=True, auto_rendering=auto_rendering, auto_image=auto_image,
         game_path=GAME_PATH, yuyuko_type='QQ_CHANNEL',
     )
 
+    out_dir = Path(OUT_DIR)
+    if mode != 'none':
+        out_dir.mkdir(parents=True, exist_ok=True)
+
     results = []
+    artifacts = []
     for i, text in enumerate(CASES, 1):
         entry = {'index': i, 'text': text, 'fn': None, 'steps': [], 'exception': None}
         try:
-            entry['fn'], entry['steps'] = await _execute(text)
+            entry['fn'], entry['steps'], seen = await _execute(text)
+            if mode != 'none':
+                # 产物就地落盘（不攒到最后）：出图模式的图片有几 MB，攒着容易白占内存
+                for step_no, hikari in seen:
+                    artifacts.extend(_dump_artifacts(
+                        out_dir, i, text, entry['fn'] or '-', step_no,
+                        hikari, hikari_config.image_type))
         except Exception as e:  # noqa: BLE001
             entry['exception'] = f'{type(e).__name__}: {e}'
         results.append(entry)
@@ -199,7 +300,10 @@ async def main() -> int:
 
     # —— 全部流程执行完毕，统一输出报告 ——
     print(f'平台 {PLATFORM}/{PLATFORM_ID}  bot={BOT_ID} 群={GROUP_ID}  '
-          f'渲染={AUTO_RENDERING}/{AUTO_IMAGE}  共 {len(results)} 条用例（写操作指令已排除）')
+          f'渲染={mode}（auto_rendering={auto_rendering} auto_image={auto_image}）  '
+          f'共 {len(results)} 条用例（写操作指令已排除）')
+    if mode != 'none':
+        print(f'渲染产物 {len(artifacts)} 个 → {out_dir.resolve()}')
     print(_build_report(results))
 
     error_count = sum(

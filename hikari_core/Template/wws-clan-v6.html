@@ -189,7 +189,7 @@
     <div class="page-box">
 
         {# ==================== 头部（info 系公共组件） ==================== #}
-        {{ info_header(register=True) }}
+        {{ info_header(register=true) }}
 
         {# ==================== PR 条（info 系公共组件） ==================== #}
         {% set stats = data['userStatisticsInfo'] %}
@@ -269,9 +269,9 @@
         {% set season = league['dataMap'][data['latest_season']] if (data['latest_season'] is defined and league['dataMap'][data['latest_season']] is defined) else none %}
         {% set teams = [] %}
         {% if league['battle'] and season %}
-            {% for key, team_name in [('alpha', 'Alpha'), ('bravo', 'Bravo')] %}
+            {% for key, team_name in [['alpha', 'Alpha'], ['bravo', 'Bravo']] %}
                 {% if season[key] is defined and season[key] and season[key]['battlesCount'] %}
-                    {% set _ = teams.append((team_name, season[key])) %}
+                    {% set _ = teams.push([team_name, season[key]]) %}
                 {% endif %}
             {% endfor %}
         {% endif %}
@@ -288,7 +288,7 @@
                 <div class="information-col">
                     <div class="information-col-item flex-2">{{ team_name }}</div>
                     <div class="information-col-item flex-2">{{ team['battlesCount'] }}</div>
-                    <div class="information-col-item flex-2">{{ team['winsCount'] }}(<span style="color: {{ team['winsData']['color'] }};">{{ team['wins'] }}%</span>)</div>
+                    <div class="information-col-item flex-2">{{ team['winsCount'] }}(<span style="color: {{ team['winsData']['color'] }};">{{ '%.2f' | format(team['wins']) }}%</span>)</div>
                     <div class="information-col-item flex-5">
                         <span class="league-tag"><i style="background: {{ team['leagueName']['color'] }};"></i>{{ team['leagueName']['buff'] }}{{ team['divisionName'] }} {{ team['divisionRating'] }}（{{ team['currentWinningStreak'] }}连胜）</span>
                     </div>
@@ -297,7 +297,7 @@
                     </div>
                 </div>
             {% endfor %}
-            {% if not teams %}
+            {% if teams | length == 0 %}
                 <div class="information-col">
                     <div class="information-col-item">本赛季暂无军团战数据</div>
                 </div>
@@ -316,24 +316,24 @@
            不在表里的 originName 交给下面的「其他」兜底 —— 接口以后再加建筑，
            不加分类表也一定会显示出来，不会再出现「少显示几条」。 #}
         {% set facility_groups = [
-            ('折扣', '#e64e3f', ['dry_dock', 'shipbuilding_factory']),
-            ('加成', '#3797da', ['coal_yard', 'steel_yard', 'paragon_yard']),
-            ('收入', '#20bb9b', ['academy', 'university', 'design_department']),
-            ('设施', '#f39b19', ['superships_home', 'treasury', 'headquarters']),
-            ('舰队', '#9a5ab5', ['monument', 'ships', 'vessels'])
+            ['折扣', '#e64e3f', ['dry_dock', 'shipbuilding_factory']],
+            ['加成', '#3797da', ['coal_yard', 'steel_yard', 'paragon_yard']],
+            ['收入', '#20bb9b', ['academy', 'university', 'design_department']],
+            ['设施', '#f39b19', ['superships_home', 'treasury', 'headquarters']],
+            ['舰队', '#9a5ab5', ['monument', 'ships', 'vessels']]
         ] %}
         {% set known_origins = [] %}
         {% for _name, _color, _origins in facility_groups %}
-            {% for _origin in _origins %}{% set _ = known_origins.append(_origin) %}{% endfor %}
+            {% for _origin in _origins %}{% set _ = known_origins.push(_origin) %}{% endfor %}
         {% endfor %}
         {% set extra_origins = [] %}
         {% for _building in data['buildingsInfos'] or [] %}
             {% if _building['originName'] not in known_origins %}
-                {% set _ = extra_origins.append(_building['originName']) %}
+                {% set _ = extra_origins.push(_building['originName']) %}
             {% endif %}
         {% endfor %}
-        {% if extra_origins %}
-            {% set _ = facility_groups.append(('其他', '#8a8fa0', extra_origins)) %}
+        {% if extra_origins | length %}
+            {% set _ = facility_groups.push(['其他', '#8a8fa0', extra_origins]) %}
         {% endif %}
 
         <div class="random-header one-background-color">军团设施</div>
@@ -342,11 +342,11 @@
                 {# 先收本类实际存在的建筑；本类一条都没有就整组不渲染（空标题不留） #}
                 {% set group_buildings = [] %}
                 {% for origin in origins %}
-                    {% for building in data['buildingsInfos'] or [] if building['originName'] == origin %}
-                        {% set _ = group_buildings.append(building) %}
-                    {% endfor %}
+                    {% for building in data['buildingsInfos'] or [] %}{% if building['originName'] == origin %}
+                        {% set _ = group_buildings.push(building) %}
+                    {% endif %}{% endfor %}
                 {% endfor %}
-                {% if group_buildings %}
+                {% if group_buildings | length %}
                     <div class="facility-group">
                         <div class="facility-group-title">
                             <i style="background: {{ group_color }};"></i>{{ group_name }}<em>{{ group_buildings | length }}</em>

@@ -3,7 +3,7 @@
 **战舰世界 yuyuko 平台 BOT SDK** —— 指令解析 + yuyuko API 查询 + 模板渲染出图。
 
 - 环境要求：Python 3.11 ~ 3.12
-- 依赖：`httpx` / `APScheduler` / `jinja2` / `pydantic` / `playwright` / `loguru` / `pillow`
+- 依赖：`httpx` / `APScheduler` / `pydantic` / `playwright` / `loguru` / `pillow`（**不含任何模板引擎** —— 模板由浏览器端 Nunjucks 渲染）
 - 首次使用会自动下载 playwright chromium 浏览器（用于模板渲染截图）
 - 建议在2G或以上内存的机器上部署 低于2G的在渲染大量数据时容易崩溃
 
@@ -159,8 +159,13 @@ async def on_user_reply(stored_hikari, reply_index: int):
 
 ## 其他
 
-- **模板渲染**：Jinja2 模板（`hikari_core/Template/*-v5.html`）+ playwright 截图出图；模板资源可通过 OSS 清单更新
+- **模板渲染**：模板（`hikari_core/Template/*-v6.html`）由 **Nunjucks 在浏览器里渲染**（`Template/hikari-render.js`，Python 侧只打包数据与模板源码，见 `core/js_render.py`）+ playwright 截图出图；**服务端没有模板引擎**；模板资源可通过 OSS 清单更新
+- **写模板要注意的三个坑**（都是"不报错只出错"，实测踩过）：
+  1. `{% if 集合变量 %}`：**空数组在 Nunjucks 里是真**（JS 真值性），要判空一律写 `| length` / `| length == 0`；
+  2. 内联 `{% for x in a if cond %}`：**静默输出空**，拆成 `{% for %}` + `{% if %}`；
+  3. 浮点字段别裸输出（Python 印 `50.0`、JS 印 `50`）：显式格式化，场均伤害用 `'{:,}'.format(x | int)`，其它浮点用 `'%.2f' | format(x)`。
+     渲染器已实现 Python 语义的 `int` / `format` / `dget` / 四舍六入五成双，细节见 `Template/hikari-render.js` 的注释。
 - **调试**：开启 `save_template_html` 后，每次渲染的 HTML 会保存到缓存目录 `template_html/`，可在浏览器直接打开复现
-- **测试**：`python tests/test_command_suggest.py`（指令路由单测）、`python tests/test_templates_render.py`（模板渲染回归）
+- **测试**：`python tests/all_test.py`（全量指令真执行，联网；渲染出图看 `RENDER_MODE`）、`python tests/js_render_guard.py`（模板渲染冒烟：真在浏览器里渲染一遍 + 模板编译检查，无需额外依赖）
 - **版本号**：定义于 `hikari_core/__init__.py` 的 `__version__`
 - **许可证**：GNU General Public License（详见 [LICENSE](LICENSE)）

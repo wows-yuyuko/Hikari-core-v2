@@ -119,21 +119,71 @@ async def async_update_ship_cache(hikari: Hikari_Model = Hikari_Model()):
         return hikari.error(f'更新战舰资源失败: {str(e)}')
 
 
-def update_template():
-    """更新模板"""
+# ▍清单（template-v2.json）里**必须**包含这些文件，否则渲染直接报错：
+#     · 各个 *.html 模板
+#     · partials/*.html 之类的宏（键带子目录，这里会按需建目录）
+#     · **nunjucks.min.js / hikari-render.js** —— 渲染改在浏览器里做之后，
+#       这两个是本机渲图的必需资源（js_render.assert_assets 会查），
+#       漏了它们就等于"模板更新得再勤也换不了渲染器"。
+TEMPLATE_MANIFEST_URL = 'https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/template-v2.json'
+# 清单里必须有的浏览器端渲染资源
+RENDER_ASSETS = ('nunjucks.min.js', 'hikari-render.js')
+
+
+def _iter_manifest(manifest) -> dict:
+    """把清单归一成 {相对路径: 下载地址}。
+
+    兼容两种形状：`[{'a.html': url}, ...]`（现在的样子）与 `{'a.html': url, ...}`。
+    顺手把反斜杠统一成正斜杠、去掉开头的 '/'，避免 `..`/`/` 开头的键写到模板目录外面去。
+    """
+    chunks = [manifest] if isinstance(manifest, dict) else list(manifest or [])
+    entries = {}
+    for chunk in chunks:
+        if not isinstance(chunk, dict):
+            continue
+        for name, url in chunk.items():
+            key = str(name).replace('\\', '/').lstrip('/')
+            if not key or '..' in key.split('/'):
+                logger.warning(f'模板清单里有可疑的键，已忽略: {name!r}')
+                continue
+            entries[key] = url
+    return entries
+
+
+def update_template() -> bool:
+    """从 OSS 清单更新模板（含 partials 子目录与浏览器端渲染资源）。
+
+    Returns:
+        bool: 全部成功为 True；有任何一个失败为 False（成功的那些照样落盘）
+    """
     try:
-        # tasks = []
-        url = 'https://hikari-resource.oss-cn-shanghai.aliyuncs.com/hikari_core_template/template-v2.json'
         with httpx.Client() as client:
-            resp = client.get(url, timeout=20)
-            result = json.loads(resp.content)
-            for each in result:
-                for name, url in each.items():
-                    resp = client.get(url, timeout=5)
-                    with open(template_path / name, 'wb+') as file:
-                        file.write(resp.content)
-            logger.info('更新模板成功')
-        return True
+            resp = client.get(TEMPLATE_MANIFEST_URL, timeout=20)
+            entries = _iter_manifest(json.loads(resp.content))
+            if not entries:
+                logger.error('模板清单为空或格式不认识，本次不更新')
+                return False
+            written = unchanged = failed = 0
+            for name, file_url in entries.items():
+                target = template_path / name
+                try:
+                    content = client.get(file_url, timeout=15).content
+                    # 内容没变就别写：这套清单每 4 小时跑一次，全量重写只会白折腾磁盘
+                    if target.exists() and target.read_bytes() == content:
+                        unchanged += 1
+                        continue
+                    target.parent.mkdir(parents=True, exist_ok=True)   # partials/ 这类子目录
+                    target.write_bytes(content)
+                    written += 1
+                except Exception as e:                                 # noqa: BLE001
+                    failed += 1
+                    logger.error(f'模板 {name} 更新失败: {e}')
+            logger.info(f'模板更新完成：写入 {written} 个，未变化 {unchanged} 个，失败 {failed} 个')
+            missing = [n for n in RENDER_ASSETS if n not in entries]
+            if missing:
+                logger.warning('模板清单里没有 ' + ' / '.join(missing) +
+                               '：浏览器端渲染必需，清单应把它们一起带上，否则无法通过 OSS 更新渲染器')
+            return failed == 0
     except Exception:
         logger.error(traceback.format_exc())
         return False

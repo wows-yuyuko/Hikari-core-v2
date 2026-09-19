@@ -120,7 +120,7 @@
                     <tr>
                         <td>场次:{{ data['clan']['battlesCount'] }}</td>
                         <td></td>
-                        <td>胜率:{{ data['clan']['wins'] }}%</td>
+                        <td>胜率:{{ '%.2f' | format(data['clan']['wins']) }}%</td>
                     </tr>
                     <tr>
                         <td>最高连胜:{{ data['clan']['longestWinningStreak'] }}</td>

@@ -23,6 +23,16 @@ class Config_Model(BaseModel):
     yuyuko_type: Optional[str] = 'BOT'
     local_test: bool = False
     save_template_html: bool = False  # 渲染图片时额外保存一份 HTML，便于查看与调试
+    # 浏览器端渲染失败时怎么办（模板写坏 / 渲染器资源缺失 / 超时）：
+    #   False（缺省）= 照常截图 —— 用户会收到一张**写着报错的图**（hikari-render.js 把错误
+    #                  渲染进页面），日志里有 '浏览器端渲染失败: error: …'；
+    #   True         = 不截图，抛给上层 → output_hikari 回一条**文本错误**给用户。
+    # 两种都能看见错误，区别是"图里带着"还是"文本回给用户"，按接入端偏好选。
+    render_error_fallback: bool = False
+    # ▍这里曾经有一个 js_rendering 开关（Jinja / 浏览器端 Nunjucks 二选一）。
+    #   模板整体迁到 Nunjucks 之后它已经没有意义 —— 迁移后的模板 Jinja 渲染不了
+    #   （dget() / .push() / .slice() 这些写法 Jinja 不认），所以开关被删掉了：
+    #   渲染路径只有一条，见 core/js_render.py。
     # 指令输错时的智能提示配置
     command_suggest_max: int = 3  # 最大提示条数，设为 0 则关闭智能提示
     command_suggest_dedupe: bool = True  # 同一效果(相同功能)的多个别名只提示一条
@@ -44,6 +54,7 @@ def set_hikari_config(  # noqa: PLR0913
     yuyuko_type: Optional[str] = 'BOT',
     local_test: bool = False,
     save_template_html: bool = False,
+    render_error_fallback: bool = False,
     command_suggest_max: int = 3,
     command_suggest_dedupe: bool = True,
     command_language: str = 'zh',
@@ -66,6 +77,8 @@ def set_hikari_config(  # noqa: PLR0913
         command_suggest_dedupe (bool): 相同功能的多别名只提示一条，默认开启
         command_language (str): 指令提示语言，zh=中文(默认)，en=英文（提示英文指令与英文参数用法）
         save_template_html (bool): 渲染图片时额外保存一份 HTML 到缓存目录 template_html/，默认关闭
+        render_error_fallback (bool): 浏览器端渲染失败（模板报错/资源缺失/超时）时是否改为回文本错误。
+            默认 False = 照常截图（图里带着报错信息）；True = 不截图，抛给上层由 output_hikari 回文本错误
         Authorization (str): 自定义 Authorization（如 data_user 私有接口鉴权），为空时回退用 token
     """
     global hikari_config  # noqa: PLW0602
@@ -79,6 +92,7 @@ def set_hikari_config(  # noqa: PLR0913
     hikari_config.yuyuko_type = yuyuko_type
     hikari_config.local_test = local_test
     hikari_config.save_template_html = save_template_html
+    hikari_config.render_error_fallback = render_error_fallback
     hikari_config.command_suggest_max = command_suggest_max
     hikari_config.command_suggest_dedupe = command_suggest_dedupe
     hikari_config.command_language = 'en' if str(command_language).lower().startswith('en') else 'zh'

@@ -18,6 +18,18 @@ from loguru import logger
 from playwright.async_api import async_playwright, Browser, Page
 
 from hikari_core.core.cache_utils import get_cache_file
+from hikari_core.core.config import hikari_config
+
+
+class BrowserRenderError(RuntimeError):
+    """浏览器端模板渲染没成功（模板报错 / 渲染器资源缺失 / 等不到完成标记）。
+
+    ▍为什么单独一个类型：默认这条路只打日志、照常截图（用户拿到一张写着报错的图），
+      但接入端可能更想要"回一条文本错误"。配上 `hikari_config.render_error_fallback=True`
+      这个异常会被抛到 `output_hikari`，由它转成 `hikari.error(...)`。
+      注意：只有在页面里含 `hikari-render.js`（即模板渲染那条路）时才会抛，
+      markdown / 纯文本渲染不受影响。
+    """
 
 
 class minimal_screens_hot_service:
@@ -320,6 +332,17 @@ class minimal_screens_hot_service:
             except:
                 await route.fulfill(status=404)
 
+    def _on_render_error(self, message: str) -> None:
+        """浏览器端渲染失败时的统一出口。
+
+        默认（`render_error_fallback=False`）只记日志、继续截图 —— 保持历史行为：
+        用户收到的是一张**带着报错信息**的图，而不是什么都没有。
+        置 True 时抛出 `BrowserRenderError`，让上层 `output_hikari` 回一条文本错误。
+        """
+        logger.error(message)
+        if hikari_config.render_error_fallback:
+            raise BrowserRenderError(message)
+
     async def screenshot(self, html_content: str, session_id: str = None, **kwargs) -> bytes:
         """核心截图方法 - 优化执行流程"""
         self.request_count += 1
@@ -380,6 +403,26 @@ class minimal_screens_hot_service:
                             """)
             load_time = time.time() - load_start
             logger.debug(f"页面加载: {load_time:.2f}s")
+
+            # =========================
+            # 浏览器端渲染：等待渲染完成
+            # =========================
+            # 送进来的是「数据 + 模板源码」的外壳时，真正的整页要等 hikari-render.js
+            # 在浏览器里渲染完才存在。判断方式是**看 HTML 里有没有渲染器脚本** ——
+            # 这个服务也被 markdown / 纯文本渲染共用（那些页面没有渲染器，不必等）。
+            # 渲染完 DOM 会被整体替换，所以这一步必须排在字体/图片等待**之前**。
+            if 'hikari-render.js' in html_content:
+                try:
+                    await page.wait_for_function(
+                        '() => window.__hikari_render_done !== undefined',
+                        timeout=15000,
+                    )
+                    render_state = await page.evaluate('() => window.__hikari_render_done')
+                except Exception:
+                    self._on_render_error('等待浏览器端渲染超时（模板报错 / 资源缺失？）')
+                else:
+                    if render_state is not True:
+                        self._on_render_error(f'浏览器端渲染失败: {render_state}')
 
             # 4. 智能等待渲染（load / 字体 / 图片解码 / 绘制稳定）
             await self._smart_wait(page)

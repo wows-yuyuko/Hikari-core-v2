@@ -1,10 +1,7 @@
 import os
-import time
 import traceback
 from typing import List
 
-import jinja2
-from jinja2.exceptions import UndefinedError
 from loguru import logger
 from playwright.async_api import Error as playwright_Error
 from pydantic import ValidationError, Field
@@ -14,9 +11,13 @@ __version__ = '1.2.5'
 from .core.cache_utils import get_cache_file
 from .core.config import hikari_config, set_hikari_config  # noqa:F401 set_hikari_config为外部程序引用
 from .core.constants import template_path
+from .core import js_render
 from .core.model import Hikari_Model, Input_Model, UserInfo_Model
-from .core.render_helpers import ba_text_em, server_cn, set_render_params
-from .Html_Render import html_to_pic
+# ba_text_em / server_cn 不再被服务端渲染用到（它们现在是浏览器端兼容层的真值来源，
+# 由 js_render.compat_tables() 序列化下发）；这里保留为**公开再导出**，
+# 免得下游 'from hikari_core import server_cn' 这类用法断掉。
+from .core.render_helpers import ba_text_em, server_cn, set_render_params  # noqa: F401
+from .Html_Render import BrowserRenderError, html_to_pic
 from .commands.parser import analyze_command
 # 供外部 bot 使用的公共指令 API（显式导出，替代通配导入）
 from .commands.router import (  # noqa: F401
@@ -53,16 +54,10 @@ from .commands.router import (  # noqa: F401
     get_help,
 )
 
-env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path), enable_async=True)
-env.globals.update(
-    time=time,
-    abs=abs,
-    enumerate=enumerate,
-    int=int,
-    server_cn=server_cn,
-    ba_text_em=ba_text_em,
-)
-
+# 服务端**没有**模板引擎了：模板由浏览器端的 Nunjucks 渲染（Template/hikari-render.js），
+# Python 只负责把数据与模板源码打包成外壳 HTML（core/js_render.py）。
+# 历史上这里有一个 jinja2.Environment，硬切换之后已删除 —— 迁移后的模板用了
+# Nunjucks 专有写法（dget() / .push() / .slice()），Jinja 渲染不了它们。
 logger.info(f'模板目录 as_uri: {template_path.as_uri()}')
 
 
@@ -153,7 +148,6 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
                 and hikari.Output.Template
                 and (isinstance(hikari.Output.Data, dict) or isinstance(hikari.Output.Data, list))  # noqa: PLR1701
         ):
-            template = env.get_template(hikari.Output.Template)
             # 获取全部的 shipInfo节点
             if hikari.Status == 'success':
                 # 对 shipInfo节点进行修改 使用本地文件来渲染
@@ -162,7 +156,17 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
                 template_data = await set_render_params(hikari.Input.Select_Data)
             else:
                 template_data = {}
-            content = await template.render_async(template_data)
+            # 浏览器端渲染（**唯一路径**）：Python 只打包数据与模板源码，
+            # 真正的渲染在浏览器里由 Template/hikari-render.js 用 Nunjucks 完成，
+            # 截图服务会等 window.__hikari_render_done 再截图。
+            # 见 tests/js_render_guard.py。
+            render_root = template_data.get('template_path')
+            content = js_render.render_shell(
+                hikari.Output.Template,
+                template_data.get('data'),
+                root=render_root,
+                template_path_uri=render_root.as_uri() if render_root else None,
+            )
             # 测试模式下才赋值给模板内容
             if hikari_config.local_test:
                 hikari.template_content = content
@@ -189,9 +193,11 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
                 # 记录实际输出的图片格式（jpeg / png / webp），供接入端按格式发送
                 hikari.Output.Data_Type = hikari_config.image_type
         return hikari
-    except UndefinedError as e:
+    except BrowserRenderError as e:
+        # 只在 set_hikari_config(render_error_fallback=True) 时才会走到这里：
+        # 浏览器端渲染没成功，与其给用户一张写着报错的图，不如回一条文本错误。
         logger.error(traceback.format_exc())
-        return Hikari_Model().error(f'模板渲染错误，请将错误日志提交给开发者\n{e}')
+        return Hikari_Model().error(f'模板渲染错误（浏览器端），请将日志中的报错提交给开发者\n{e}')
     except playwright_Error as e:
         logger.error(traceback.format_exc())
         return Hikari_Model().error(f'playwright错误，请检查浏览器内核是否异常结束，可能是由于服务器版本过低，请升级至winserver2016+或改为firefox启动。\n{e}')

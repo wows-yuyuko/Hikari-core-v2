@@ -15,7 +15,7 @@
     <div class="page-box">
 
         {# ==================== 头部 ==================== #}
-        {{ info_header(register=True) }}
+        {{ info_header(register=true) }}
 
         {# ==================== PR 条（v2 结构顶层 prInfo） ==================== #}
         {% if show_pr and data['prInfo']['value'] > 0 %}
@@ -100,11 +100,11 @@
                 <div class="information-col-item">命中</div>
             </div>
             {% set ship_types = [
-                ('Battleship', '战列舰', 'ratioMain'),
-                ('Cruiser', '巡洋舰', 'ratioMain'),
-                ('Destroyer', '驱逐舰', 'ratioMain'),
-                ('AirCarrier', '航母', 'ratioMain'),
-                ('Submarine', '潜艇', 'ratioTpd')
+                ['Battleship', '战列舰', 'ratioMain'],
+                ['Cruiser', '巡洋舰', 'ratioMain'],
+                ['Destroyer', '驱逐舰', 'ratioMain'],
+                ['AirCarrier', '航母', 'ratioMain'],
+                ['Submarine', '潜艇', 'ratioTpd']
             ] %}
             {% for st, st_name, ratio_key in ship_types %}
                 {% set info = data['shipTypeInfo'][st] if st in data['shipTypeInfo'] else none %}
@@ -138,7 +138,7 @@
                 <div class="information-col-item">存活</div>
                 <div class="information-col-item">命中</div>
             </div>
-            {% for bt, bt_name in [('PVP_SOLO', '单野'), ('PVP_DIV2', '自行车'), ('PVP_DIV3', '三轮车'), ('RANK_SOLO', '排位')] %}
+            {% for bt, bt_name in [['PVP_SOLO', '单野'], ['PVP_DIV2', '自行车'], ['PVP_DIV3', '三轮车'], ['RANK_SOLO', '排位']] %}
                 {% set info = data['battleTypeInfo'][bt] %}
                 {% if info['battle'] %}
                     <div class="information-col">

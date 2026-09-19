@@ -395,7 +395,7 @@
     <div class="title-header">
         <span class="ship-tier">{{ data['shipInfo']['levelStr'] }}</span>
 
-        {% if data['shipInfo'].get('imgSmall') %}
+        {% if dget(data['shipInfo'], 'imgSmall') %}
         <span class="ship-thumb" style="background-image: url('{{ data['shipInfo']['imgSmall'] }}');"></span>
         {% endif %}
         <span class="ship-name">{{ data['shipInfo']['nameCn'] }}</span>
@@ -403,7 +403,7 @@
 
     {% set rank_list = data['data']['value'] %}
 
-    {% if rank_list %}
+    {% if rank_list | length %}
     <!-- 表头 -->
     <div class="rank-header">
         <div class="rh-player">
@@ -420,7 +420,7 @@
 
     <!-- Top 10 -->
     <div class="rank-list">
-        {% for rank in rank_list[:10] %}
+        {% for rank in rank_list.slice(0, 10) %}
         {% set rank_num = loop.index %}
         <div class="rank-row {% if rank_num == 1 %}rank-1{% elif rank_num == 2 %}rank-2{% elif rank_num == 3 %}rank-3{% endif %}">
             <div class="player-section">
@@ -473,7 +473,7 @@
     {% if rank_list|length > 10 %}
     <div class="compact-title">11 - 30 名</div>
     <div class="rank-list-compact">
-        {% for rank in rank_list[10:30] %}
+        {% for rank in rank_list.slice(10, 30) %}
         <div class="rank-row-compact">
             <div class="compact-player">
                 <div class="compact-badge">{{ rank['sortIndex'] }}</div>

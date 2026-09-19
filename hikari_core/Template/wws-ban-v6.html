@@ -162,7 +162,7 @@
 <div class="main-content">
     <div class="header">
         <div class="clan">
-            {% if data['clanInfo'] %}
+            {% if data['clanInfo'] | length %}
             <div class="clan-tag" style="color: {{ data['clanInfo']['colorRgb'] }};">[{{ data['clanInfo']['tag'] }}]</div>
             {% endif %}
             <div class="username">{{ data['userName'] }}</div>
@@ -184,7 +184,7 @@
     </div>
     <div class="ban">
         <div class="title">可能符合条件的历史记录</div>
-        {% if data['voList'] %}
+        {% if data['voList'] | length %}
         {% for ban in data['voList'] %}
         <div class="ban-item">
             <div class="ban-left">
