@@ -3,7 +3,7 @@
 **战舰世界 yuyuko 平台 BOT SDK** —— 指令解析 + yuyuko API 查询 + 模板渲染出图。
 
 - 环境要求：Python 3.11 ~ 3.12
-- 依赖：`httpx` / `APScheduler` / `pydantic` / `playwright` / `loguru` / `pillow`（**不含任何模板引擎** —— 模板由浏览器端 Nunjucks 渲染）
+- 依赖：`httpx` / `APScheduler` / `pydantic` / `playwright` / `loguru` / `pillow`（模板由浏览器端 Nunjucks 渲染）
 - 首次使用会自动下载 playwright chromium 浏览器（用于模板渲染截图）
 - 建议在2G或以上内存的机器上部署 低于2G的在渲染大量数据时容易崩溃
 
