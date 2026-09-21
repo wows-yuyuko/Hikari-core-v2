@@ -648,7 +648,29 @@
         });
     }
 
-    function currentTemplate() { return TPL[$('tpl').value] ? $('tpl').value : 'info'; }
+    /* 缺省模板 = **用户信息**。地址栏里不带 tpl 参数时用它，切回它时
+       也会把 tpl 参数从地址栏里去掉（见 syncTemplateUrl）。 */
+    var DEFAULT_TEMPLATE = 'info';
+
+    function currentTemplate() { return TPL[$('tpl').value] ? $('tpl').value : DEFAULT_TEMPLATE; }
+
+    /* 把当前模板同步进地址栏 —— 下拉框一改，地址栏跟着变，
+       刷新页面 / 复制链接打开都还是这一张。
+       ▍info 是缺省值：切回它就把 tpl 参数**删掉**（链接保持干净），
+         只有 ship 这类非缺省值才写进去。
+       ▍用 replaceState 而不是 pushState：切模板是「同一个编辑现场换个看法」，
+         不该往浏览器历史里塞条目（否则后退键要按好几下才退得出去）。
+       ▍万一被浏览器拒（极少数 file:// 场景），静默跳过 —— 预览功能不依赖它。 */
+    function syncTemplateUrl() {
+        var t = currentTemplate();
+        var qs = new URLSearchParams(location.search);
+        if (t === DEFAULT_TEMPLATE) qs.delete('tpl');
+        else qs.set('tpl', t);
+        var q = qs.toString();
+        try {
+            history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash);
+        } catch (e) { /* 改不动就算了，不影响预览本身 */ }
+    }
 
     /* 把「当前模板」反映到顶栏：品牌后面那行小字 + Ship Id 的显隐 + 加载按钮的说明。 */
     function syncTemplateUI() {
@@ -660,7 +682,7 @@
             : '按 Account Id 载入头像设置与账号水表（info2）';
     }
 
-    /* 切换模板：组件重建 fixture（整棵 DOM 都不一样），页面这边只管顶栏与数据。
+    /* 切换模板：组件重建 fixture（整棵 DOM 都不一样），页面这边管顶栏、地址栏与数据。
        ▍头像设置不用管 —— 它在 state 里，重建后组件会让 _bindFrame 拿 _lastUserInfo
          重放一次，切来切去都不丢。
        ▍已经加载过配置的话顺手把这一种模板的数据也拉一次，「切过去就是真数据」，
@@ -668,6 +690,7 @@
     function switchTemplate() {
         var t = currentTemplate();
         syncTemplateUI();
+        syncTemplateUrl();
         preview.setTemplate(t);
         if (state.accountId && state.server) loadTemplateData();
         else setStatus('已切到「' + ((TPL[t] || {}).label || t) + '」预览（当前是内置演示数据）—— '
@@ -1609,6 +1632,8 @@
 
     // 支持 ?id=<accountId> 直接带参打开（便于分享调试链接）
     // 也认 ?tpl=info|ship 选预览哪张页面、?ship=<shipId> 指定船。
+    // 反向也成立：之后在下拉框里换模板，地址栏会跟着改（见 syncTemplateUrl）；
+    // 其中 info 是缺省值，切回它会把 tpl 参数删掉。
     var qs = new URLSearchParams(location.search);
     if (qs.get('api')) API_BASE = qs.get('api').replace(/\/+$/, '');
     if (qs.get('id')) $('accountId').value = qs.get('id');

@@ -76,7 +76,7 @@
        页面顶栏会显示它：改完代码刷新后时间没变，说明浏览器还在用缓存里的旧文件
        （Ctrl+F5 强制刷新即可）。
        （不走 ?v= 查询串是因为 file:// 下查询串会被当成文件名，直接加载失败。） */
-    var HIKARI_BUILD = '2026-09-19 16:58';
+    var HIKARI_BUILD = '2026-09-19 21:26';
 
     var STAGE_W = 1500;          // .page-box / .main-content 的固定宽度（main-v6.css）
     var PAGE_HEADER_W = 1400;    // 1500 - margin 50*2
