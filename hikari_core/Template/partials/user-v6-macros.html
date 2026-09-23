@@ -82,11 +82,15 @@
    由 main-v6.css / avatar-v6.css 里各条 background / backdrop-filter 去乘：
        --card-alpha  卡片底色透明度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全透明
        --card-blur   毛玻璃模糊强度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全不模糊
-   数据位置（用户 / 公会一致）：avatar_box['card'] = { dark: 0-100, blur: 0-200 }
-       card.dark = 卡片「透明度」，与 poster.dark **同向**：越大越淡，0 = 完全不透明（缺省）
-       card.blur = 模糊强度百分比：100 = 缺省，0 = 关掉模糊，200 = 两倍
-   ▍两个缺省值都取「当前观感」，所以历史数据（没有 card 字段）渲染出来一模一样。
-   ▍**只在「有海报」的分支里下发**：没海报时主 JS 会把卡片整套换成实色
+
+   ▍数据位置（2026-09-22 起，用户 / 公会一致）：avatar_box['glassmorphismCard']，
+     是个**槽位形状**的对象，两个值都塞在 data 里：
+         { status: 1, data: "AAA-BBB", dark: 0 }
+         data 以 '-' 分割：AAA = 卡片透明度 0-100，BBB = 模糊强度 0-200
+     所以 "000-100" 就是「完全不透明 + 缺省模糊」= 没改过的状态。
+     旧的 `card: {dark, blur}` 写法已废弃（服务端不再返回）。
+   ▍**status / dark 不参与渲染**：服务端只是复用槽位形状存这两个值（dark 恒 0）。
+     唯一的门槛是**有海报** —— 没海报时主 JS 会把卡片整套换成实色
      （见 Template/main-v6.js 的浅色主题兜底），旋钮在那时没有任何意义。
    ▍CSS 侧一律写 var(--card-alpha, 1) —— 这里不输出时也是 1（= 现状）。
      反过来说，**这里绝不能输出空串或畸形值**：var() 拿到非法值会让整条
@@ -94,14 +98,18 @@
      模糊直接没了），而且不报错。所以必须先夹取、再用「整数 + 两位小数」拼成
      合法数字 —— 沿用上面 poster_mask 的写法（Jinja 的 // 是浮点除，要 | int 收口；
      也不能用 round()，整数浮点会输出 "50.0"）。 #}
-{%- set card_box = avatar_box['card'] if avatar_box['card'] is defined and avatar_box['card'] else {} -%}
+{%- set gc_box = avatar_box['glassmorphismCard'] if avatar_box['glassmorphismCard'] is defined and avatar_box['glassmorphismCard'] else {} -%}
 {# ▍取值一律走 `| int(缺省)` 而不是裸 `| int`：两者对「字段在但值是 null」
    （JSON 的 null / Python 的 null）和「值不是数字字符串」的处理天差地别 ——
    裸 int 会把它们都变成 0，而 blur 的缺省是 100，0 就等于「把模糊全关掉」，
-   一个 null 就能让页面糊度跑偏。带缺省的写法会回落到各自的缺省值。 #}
-{%- set card_dark = (card_box['dark'] | int(0)) if card_box['dark'] is defined else 0 -%}
+   一个 null 就能让页面糊度跑偏。带缺省的写法会回落到各自的缺省值。
+   ▍data 不是字符串也认：先 `| string` 再 split（服务端要是哪天填了个纯数字，
+   这里会当成「只有一段」，BBB 走缺省 100）。
+   ▍缺段 / 空串 / 脏串一律回落缺省：'abc-xyz' → int 认不出来 → 0 / 100。 #}
+{%- set gc_parts = (gc_box['data'] | string).split('-') if gc_box['data'] is defined and gc_box['data'] else [] -%}
+{%- set card_dark = (gc_parts[0] | int(0)) if gc_parts | length > 0 else 0 -%}
 {%- set card_dark = [[card_dark, 0] | max, 100] | min -%}
-{%- set card_blur_pct = (card_box['blur'] | int(100)) if card_box['blur'] is defined else 100 -%}
+{%- set card_blur_pct = (gc_parts[1] | int(100)) if gc_parts | length > 1 else 100 -%}
 {%- set card_blur_pct = [[card_blur_pct, 0] | max, 200] | min -%}
 {%- set card_alpha_pct = 100 - card_dark -%}
 {%- set card_alpha_frac = '%02d' | format((card_alpha_pct % 100) | int) -%}
