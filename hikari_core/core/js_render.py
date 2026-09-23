@@ -114,6 +114,10 @@ def build_payload(
         root: 模板根目录
         asset_base: 模板里 ``template_path.as_uri()`` 拼出的前缀，缺省为模板目录的 file:// 地址
         frozen_time: 冻结 ``time.time()``（仅回归比对用；不传则用浏览器当前时间）
+
+    ▍``assets`` 是模板目录的**顶层文件名清单**（只给文件名，不含路径）。浏览器侧拿它实现
+    ``asset_exists('echarts.js')`` —— 只有一个进程能看文件系统，就是这里；模板里要判断
+    「某个本地资源在不在」时必须走它，别用 pathlib 运算（JS 侧没有，条件会静默恒假）。
     """
     base = _root(root)
     payload = {
@@ -121,6 +125,8 @@ def build_payload(
         'templates': collect_templates(entry, base),
         'data': data,
         'assetBase': asset_base or base.as_uri(),
+        # 顶层文件（echarts.js / main-v6.js / 各 css 都在这一层）。目录本身不在清单里。
+        'assets': sorted(item.name for item in base.iterdir() if item.is_file()),
         'frozenTime': frozen_time,
     }
     payload.update(compat_tables())

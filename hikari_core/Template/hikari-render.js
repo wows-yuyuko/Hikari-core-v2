@@ -17,11 +17,14 @@
  *   fetch 本地文件会被 CORS 拦掉**（实测 Failed to fetch）。所以模板源码由 Python
  *   内联进页面，本脚本用内存 loader 交给 Nunjucks。
  *
- * ▍写法上的两个硬要求
+ * ▍写法上的几个硬要求
  *   · autoescape 必须 false —— 服务端的 Jinja 环境本来就不开。（开了会把 URL 里的
  *     `&` 转成 `&amp;`，而 <style> 块内不解析字符引用 → 背景图/头像直接失效。）
  *   · 兼容层里的自定义函数必须**逐字**对齐 Python 版（如 ba_text_em 的字表），
  *     近似实现会以「文本全对但像素对不上」的形式暴露，很难查。
+ *   · **别在模板里用 pathlib 的运算符**：`template_path / "x"` 在 Jinja 下永远为真
+ *     （拼出来的是对象，不查文件在不在），在 JS 下则是「对象 / 字符串 = NaN」，恒假 ——
+ *     条件是静默走错分支，页面上没有任何报错。要判断资源在不在，用 asset_exists()。
  *
  * ▍对外接口
  *   HikariRender.boot()                      载入后自动渲染并替换整个文档（生产路径）
@@ -204,6 +207,21 @@
     };
   }
 
+  /* 「模板目录里有没有这个资源」—— 给 {% if asset_exists('echarts.js') %} 用。
+     为什么要专门给个函数：模板里原来写的是 Jinja 的 pathlib 运算
+         {% if template_path and template_path / "echarts.js" %}
+     pathlib 的 `/` 拼出来永远是个**真值对象**（它不检查文件在不在），所以那行在
+     Jinja 下的真实语义就是「template_path 存在」；而 JS 侧没有 pathlib，
+     `template_path` 只是个 { as_uri } 对象，对象 / 字符串 = NaN = **恒假** ——
+     迁移后这条判断会静默翻到 else（CDN）那一支，页面上不报错、只是 echarts 换源。
+     文件在不在只有 Python 侧知道（载荷里的 assets 就是模板目录的顶层文件名清单），
+     所以判断改成走这个函数。 */
+  function makeAssetExists(names) {
+    var set = {};
+    (names || []).forEach(function (name) { set[String(name)] = true; });
+    return function (name) { return set[String(name)] === true; };
+  }
+
   /* ============================================================
      3. 环境构建 + 渲染
      ============================================================ */
@@ -233,6 +251,7 @@
     env.addGlobal('abs', Math.abs);
     env.addGlobal('dget', dictGet);
     env.addGlobal('rsplit1', rsplit1);
+    env.addGlobal('asset_exists', makeAssetExists(payload.assets));
     env.addGlobal('range', function (a, b) {
       var s = (b === undefined) ? 0 : a, t = (b === undefined) ? a : b, r = [];
       for (var i = s; i < t; i++) r.push(i);
@@ -247,7 +266,8 @@
   }
 
   /* 渲染成 HTML 字符串。opts.assetBase 决定模板里 template_path.as_uri() 拼出的前缀
-     （CSS/JS/echarts 都靠它定位，必须是 file:// 绝对地址 —— 页面是从临时目录打开的）。 */
+     （CSS/JS/echarts 都靠它定位，必须是 file:// 绝对地址 —— 页面是从临时目录打开的）。
+     opts.assets = 模板目录的顶层文件名清单，只给模板里的 asset_exists() 判断用。 */
   function render(entry, data, opts) {
     opts = opts || {};
     var payload = {
@@ -255,6 +275,7 @@
       templates: opts.templates || {},
       data: data,
       assetBase: opts.assetBase,
+      assets: opts.assets,          /* 模板目录的顶层文件名清单，供 asset_exists() 判断 */
       baEm: opts.baEm,
       serverCn: opts.serverCn,
       frozenTime: opts.frozenTime,
@@ -285,6 +306,7 @@
       var html = render(payload.entry, payload.data, {
         templates: payload.templates,
         assetBase: payload.assetBase,
+        assets: payload.assets,
         baEm: payload.baEm,
         serverCn: payload.serverCn,
         frozenTime: payload.frozenTime,
