@@ -21,10 +21,9 @@ _client_default: AsyncClient = None
 
 async def create_client_yuyuko() -> AsyncClient:
     global _client_yuyuko
-    # **不再请求 Base64UserInfoImg**：服务端把头像/横幅内联成 base64 之后，排行榜一页
-    # 30 个玩家就是几十 MB 的响应体（实测 70,307,159 字节），既拖慢 httpx 读包，
-    # 也让渲染外壳膨胀到 70MB。现在改由 Python 侧把远程图片 URL 落到本地
-    # `<缓存>/user-cache/` 再替换（见 core/user_image_cache.py）。
+    # 不再请求 Base64UserInfoImg：服务端内联 base64 后排行榜响应体实测 70,307,159 字节
+    # （拖慢 httpx 读包、渲染外壳胀到 70MB），改由 Python 侧把远程图片落到
+    # <缓存>/user-cache/ 再替换（见 core/user_image_cache.py）。
     _client_yuyuko = httpx.AsyncClient(
         headers={
             'Authorization': hikari_config.token,

@@ -1,85 +1,44 @@
 """把渲染数据里的用户 / 军团头像、横幅、海报等**远程图片**落到本地缓存。
 
-▍为什么需要这一层
-  客户端不再请求服务端内联 base64（请求头里的 ``Base64UserInfoImg`` 已去掉），
-  ``userInfo.avatar.{avatar,banner,poster}.data`` 这类槽位回到了**远程图片 URL**。
-  直接交给浏览器有两个代价：
-    · 截图进程必须真能访问那些 CDN（q.qlogo.cn / nahida-static / 用户自定义外链）；
-    · 排行榜一页 50 个玩家 ×（头像 + 横幅 + dogTag）≈ 上百个远程请求，
-      ``wait_until='networkidle'`` 很难平息，很容易把 ``goto`` 拖到超时。
-  所以统一在 Python 侧先把 URL 落盘，再把字段替换成 ``file://`` 本地路径，
-  浏览器只读本地文件 —— 与 ``shipInfo`` 走 ship_cache 是同一个思路。
+▍为什么要有这一层
+  `Base64UserInfoImg` 去掉后这些槽位回到远程 URL：排行榜一页 50 个玩家就是上百个远程请求，
+  `wait_until='networkidle'` 很难平息、容易把 goto 拖超时。所以先在 Python 侧落盘、把字段换成
+  `file://` —— 与 shipInfo 走 ship_cache 同路。
 
-▍目录布局（按归属者分目录，归属由 **URL 路径** 判定）
-    <缓存>/user-cache/
-      user-<accountId>/   用户图：路径形如 /nahida-static/avatar/<accountId>-…
-                                        /nahida-static/root/<accountId>.png
-      clan-<clanId>/      军团图：路径形如 /nahida-static/wows-clan/<clanId>-…
-      _shared/            通用图（**不是上面三种路径的一律归这里**，集中一处）
-                          例：nahida-static/avatar-template/wwn-banner.jpg（默认模板图）
-                              wows.shinoaki.com/v2.jpg（全局默认海报）
-                              q.qlogo.cn/headimg_dl?…（外链头像）
+▍目录：`<缓存>/user-cache/{user-<accountId>|clan-<clanId>|_shared}/`
+  归属只看 **URL 路径**（图片自身的属性，不随它在数据里的位置、被谁引用而变）：
+      /nahida-static/{avatar,root}/  → user-<accountId>
+      /nahida-static/wows-clan/      → clan-<clanId>
+      其余（模板图 / 外链 / 默认海报）→ _shared ← 实测 avatar-template/* 被全 50 人共用，
+                                                 各存一份是 57 → 155 个文件，必须集中
 
-  ▍为什么必须按路径判而不是按"被几个人引用"猜：路径是**图片自身的属性**，同一次渲染里
-    谁引用它、引用几次都不影响结论；按引用数猜会随数据漂移（同张图这次算独有、下次算共享）。
-  ▍为什么要有 ``_shared``：实测排行榜一页 50 人里，``avatar-template/*`` 两张默认模板图
-    被全 50 人共用。若给每人各存一份是 57 → 155 个文件（放大 2.7×），而它们本来就没人"拥有"。
-  ▍查找顺序 ``<归属者>/`` → ``_shared/``：防归属判定变化导致的重复下载。
+▍文件名（由 URL 决定，两种）
+  1. 默认：**URL 里的原文件名**（`459948.png` / `wwn-banner.jpg.jpg`）；原名没有图片后缀
+     （如 `headimg_dl`）才按响应内容补一个。
+  2. 具名来源（`_NAMED_SOURCES` 注册表）：`<来源>-<来源内 id>[-<变体>]<扩展名>`，如
+     `qq-30436880-640.jpg`。QQ 头像路径末段恒为 `headimg_dl`，不特判就全体同名。
+  ⚠ 不用 md5 前缀的前提：**同一目录里不能有两个不同 URL 用同一文件名**（撞名会静默取到错图）。
+    用户 / 军团目录天然满足；`_shared` 靠「服务端模板名固定 + 外部平台进注册表」保证。
 
-▍槽位的两种形状（**都只按父键/键名白名单识别，不靠值猜**）
-  1. ``{'status': int, 'data': str}``，父键 avatar / banner / poster
-     例：``data['userInfo']['avatar']['banner']['data']``；
-  2. **裸字符串 URL**，键名 ``dogTag``
-     例：``data['userInfo']['dogTag']`` → ``nahida-static/root/<accountId>.png``。
-     ▍dogTag 是用户接口独有的**头像兜底图**，排行榜每行都在用它当图片
-       （ship-rank-v6.html 的 background-image），很容易被漏掉。
-  同一层的 ``colorName``（CSS 渐变串）、``sign``（签名文本）、
-  ``glassmorphismCard``（"000-100" 这种档位串）**形状一样但不是图片**，靠值判断必然误伤。
+▍槽位两种形状（只按白名单识别，不靠值猜）
+  1. `{'status': int, 'data': str}`，父键 avatar / banner / poster；
+  2. 裸字符串 URL，键名 `dogTag`。
+  同层的 colorName（CSS 渐变串）/ sign（文本）/ glassmorphismCard（"000-100"）形状一样但不是图。
 
-▍文件名规则（两种，由 URL 决定）
-  1. **默认：直接用 URL 里的原文件名**（``459948.png`` / ``2022515210-banner.jpg.jpg`` /
-     ``wwn-banner.jpg`` / ``v2.jpg``）。没有 md5 前缀，看目录就知道是什么图。
-     原文件名没有图片后缀时（如 ``headimg_dl``）才按响应内容补一个。
-  2. **具名来源（见 ``_NAMED_SOURCES`` 注册表）**：``<来源>-<来源内 id>[-<变体>]<扩展名>``，
-     例 ``qq-30436880-640.jpg``。
-     ▍为什么这些要单独命名：QQ 头像的 URL 是 ``q.qlogo.cn/headimg_dl?dst_uin=…``，
-       路径最后一段恒为 ``headimg_dl`` —— 全部用户同名，光看文件名认不出是谁的头像。
-       id 取 URL 查询串里的 ``dst_uin``（QQ 号）：**只依赖 URL 本身**，与图片摆在数据里的
-       位置无关，和「归属看 URL 路径」是同一条原则。``spec`` 一并写进名字，否则同一个人的
-       不同尺寸（``spec=100`` / ``spec=640``）会互相覆盖、截出糊图。
-     ▍加新平台（微信 / B站 / …）只需往 ``_NAMED_SOURCES`` 加一行，不用改其它逻辑。
-
-  ▍不用 md5 前缀的前提（**往注册表加平台时要注意**）：同一个目录里不能有两个不同 URL
-    用同一个文件名。用户 / 军团目录天然满足（原文件名里带 id，且一目录一人）；
-    ``_shared`` 靠「服务端模板名固定」+「外部平台进 ``_NAMED_SOURCES``」来保证。
-    真出现两个不同 URL 撞同名，是**静默取到错图**——排查时看 ``file://`` 路径对不上就知道了。
-
-▍什么时候**不**下载（按 status 闸门，别白下用不到的图）
-  槽位都是「模板按 ``status`` 决定画不画」，所以下载前先看一眼 status：
-    · ``{status, data}`` 槽位（avatar / banner / poster）：**只在 ``status > 0`` 时下**。
-      ``status == 0`` 表示这块不显示（公会侧那句注释就是这么写的：整块隐藏）——
-      实测 ``clanInfo.avatar.avatar/banner`` 就是 status 0 却带着 URL。
-    · ``dogTag``：它是「没有自定义头像」时的**回落图**，所以只在 ``avatar.status == 0``
-      时才下（判据同用户信息页模板：``status > 0`` 就用 avatar 图、否则回落 dogTag；
-      槽位缺席 / status 缺失按 0 算）。
-      ▍排行榜行模板现在写的是 ``status == 2`` 才用 avatar 图（status == 1 也用 dogTag），
-        与这里不一致；**排行榜那个不用管，模板后面会修**，所以这里仍按 ``== 0`` 判。
-  ▍「跳过」= 不下载、不替换，**原 URL 原样留着**：模板真没画就用不到，画到了浏览器也能
-    远程取到，所以这个闸门只省流量、不改观感。
+▍该不该下（模板本来就按 status 决定画不画这张图）
+  · `{status, data}` 槽位：`status > 0` 才下（== 0 表示这块不显示）
+  · `dogTag`：`avatar.status == 0` 才下 —— 它是「没有自定义头像」时的回落图
+  「跳过」= 不下载不替换、URL 原样留给远程，所以只省流量、不改观感。
 
 ▍缓存策略
-  文件名 = ``md5(url)[:10]-<清洗过的原文件名><扩展名>`` —— **缓存键就是 URL**，
-  命中不看内容、不比 hash、不发条件请求。是否还在有效期只看文件 mtime：
-  ``now - mtime < TTL`` 算命中，否则重下并**原地覆盖同名文件**（不涨文件数）。
-  TTL 走配置 ``hikari_config.user_image_cache_ttl_minutes``（**分钟**，默认 10080 = 7 天），
-  ``<= 0`` = 永不过期。过期刷新失败时**继续用旧图**，而不是退回远程地址。
+  键就是文件名（源于 URL），命中不看内容、不比 hash、不发条件请求；有效期只看文件 mtime，
+  超过 TTL 就重下并**原地覆盖同名文件**。TTL 走 `hikari_config.user_image_cache_ttl_minutes`
+  （分钟，默认 10080 = 7 天，<= 0 永不过期）；刷新失败继续用旧图，不退回远程地址。
 
-▍有意不做的事
-  · **不碰 base64 / data: URL** —— 那是 ``enrich_banner_dark`` 的输入，提前转成文件会让
+▍有意不做
+  · 不碰 base64 / data: URL —— 那是 `enrich_banner_dark` 的输入，提前转成文件会让
     「深色 banner 判白字」静默失效（不报错，只是颜色错）。
-  · **不碰 shipInfo 的图片** —— 那走 ship_cache（见 ``find_and_modify_shipinfo``）。
-  · **下载失败 / 拿回来的不是图片** → 有旧缓存就继续用旧图（过期图也比远程地址稳，
-    截图机器不一定能访问那些 CDN），确实没有可用的才保留原 URL；缓存层坏掉不连累渲染。
+  · 不碰 shipInfo 的图片 —— 那走 ship_cache（见 `find_and_modify_shipinfo`）。
 """
 
 import asyncio
@@ -103,9 +62,8 @@ USER_CACHE_DIRNAME = 'user-cache'
 # 没有归属者、或被多个归属者共用时的落点
 SHARED_DIRNAME = '_shared'
 
-# ▍「这张图属于某个用户 / 军团」的判据：**只看 URL 路径前缀**。
-#   服务端的用户图只有这三种路径格式，其余（模板图、外链、默认海报）一律算通用图。
-#   前缀按路径前缀匹配，与 host 无关（yuyuko_url 是配置项，可能换域名）。
+# ▍用户 / 军团图的判据：只看 URL 路径前缀（与 host 无关，yuyuko_url 是配置项可能换域名），
+#   其余路径一律算通用图、进 _shared/。
 #       /nahida-static/avatar/     <accountId>-*.jpg     用户头像 / 横幅
 #       /nahida-static/root/       <accountId>.png       用户 dogTag 兜底图
 #       /nahida-static/wows-clan/  <clanId>-*.jpg        军团头像 / 横幅
@@ -115,7 +73,7 @@ _USER_IMAGE_PATH_PATHS = (
     ('/nahida-static/wows-clan/', 'clan'),
 )
 
-# 路径里紧跟前缀的 id（如 2515210-banner.jpg.jpg / 2022515210.png）
+# 路径里紧跟前缀的 id（如 2022515210-banner.jpg.jpg / 2022515210.png）
 _PATH_ID_RE = re.compile(r'(\d{3,})')
 
 # 缓存存活时间的兜底默认值（分钟）；正常走 hikari_config.user_image_cache_ttl_minutes
@@ -127,7 +85,7 @@ _IMAGE_PARENT_KEYS = frozenset({'avatar', 'banner', 'poster'})
 # 裸字符串 URL 的图片键（用户头像兜底图）
 _FLAT_IMAGE_KEYS = frozenset({'dogTag'})
 
-# 同时下载数：排行榜一页 50 个玩家最多上百张，8 路够快也不会把源站打疼
+# 同时下载数：一页最多上百张，8 路够快也不会把源站打疼
 _MAX_CONCURRENCY = 8
 _TIMEOUT = 20.0
 _MAX_BYTES = 12 * 1024 * 1024  # 单张图超过 12MB 视为异常，不落盘
@@ -135,10 +93,9 @@ _MAX_BYTES = 12 * 1024 * 1024  # 单张图超过 12MB 视为异常，不落盘
 _URL_EXT_RE = re.compile(r'\.(?:png|jpe?g|gif|webp|bmp)$', re.I)
 _UNSAFE_NAME_RE = re.compile(r'[^0-9A-Za-z_-]')
 
-# ▍具名来源注册表：这些平台的头像不在 nahida-static 那三种路径下，但确实是「某人在某平台的头像」，
-#   用可读的 ``<来源>-<来源内 id>[-<变体>]`` 命名，别让所有 QQ 头像都叫 ``headimg_dl``。
-#   加新平台（微信 / B站 / …）在这里加一行即可。
-#     元组含义：(来源名, 域名后缀, id 参数名, 要一并写进文件名的其它参数)
+# ▍具名来源注册表：这些平台的头像不在那三种路径下，但确实是「某人在某平台的头像」，
+#   用可读的 ``<来源>-<来源内 id>[-<变体>]`` 命名（否则 QQ 头像全叫 headimg_dl、认不出是谁）。
+#   元组含义：(来源名, 域名后缀, id 参数名, 要写进文件名的其它参数)；加平台在这里加一行。
 _NAMED_SOURCES = (
     ('qq', ('q.qlogo.cn',), 'dst_uin', ('spec',)),
 )
@@ -165,9 +122,8 @@ def is_user_image_url(url: str) -> bool:
 def user_owner_from_url(url: str) -> Optional[str]:
     """从 URL 路径取出归属者（``user-<accountId>`` / ``clan-<clanId>``）。
 
-    ▍为什么以 URL 为准而不是数据里的位置：路径里直接写着 id，是**图片自身的属性**；
-      数据里的位置只说明"这次渲染把它画在谁身上"。取不到 id 时返回 None，
-      调用方会退回数据里的最近祖先。
+    以 URL 为准是因为路径里直接写着 id（图片自身的属性），数据里的位置只说明"这次画在谁身上"。
+    取不到 id 返回 None，调用方会退回数据里的最近祖先。
     """
     path = urlparse(url).path
     for prefix, kind in _USER_IMAGE_PATH_PATHS:
@@ -220,13 +176,9 @@ def _slot_status(slot) -> int:
 
 
 def _needs_dog_tag(user_info) -> bool:
-    """dogTag 还要不要下载 —— 只在「没有自定义头像」时下，即 ``avatar.status == 0``。
+    """dogTag 还要不要下载：只在 ``avatar.status == 0``（没有自定义头像、模板会回落）时下。
 
-    判据取用户信息页模板的语义：``status > 0`` 才用 ``avatar.data``，否则回落 dogTag
-    （槽位缺席 / status 缺失也按 0 处理 → 需要 dogTag）。
-    ▍排行榜行模板目前写的是 ``status == 2`` 才用 avatar 图（也就是 status == 1 也用
-      dogTag），与这里不一致 —— **排行榜那边不用管，模板后面会修**，所以这里只按
-      ``== 0`` 判。在那个模板修好之前，status == 1 的排行榜行 dogTag 会退回远程加载。
+    槽位缺席 / status 缺失按 0 算 → 需要 dogTag。判据与 partials/user-v6-macros 一致。
     """
     avatar_box = user_info.get('avatar') if isinstance(user_info, dict) else None
     slot = avatar_box.get('avatar') if isinstance(avatar_box, dict) else None
@@ -249,19 +201,15 @@ def _sniff_ext(raw: bytes) -> Optional[str]:
 
 
 def _url_prefix(url: str) -> str:
-    """URL 的 md5 前 10 位。
-
-    ▍只用于**兼容改造前**的 md5 命名（查历史文件、清理遗留），新文件不再带这个前缀。
-    """
+    """URL 的 md5 前 10 位；只用于兼容 / 清理改造前的 md5 命名，新文件不带这个前缀。"""
     return hashlib.md5(url.encode()).hexdigest()[:10]
 
 
 def _clean_basename(url: str) -> str:
     """URL 路径里的原文件名，清洗成合法文件名。
 
-    ▍顺序：先取 basename（在**未解码**的路径上取）再 unquote。反过来先解码的话，
-      文件名里若含 ``%2F`` 会凭空多出一个 ``/``、把路径带出目录。
-      之后的正则会把 ``/`` 一并替换掉，所以这里不怕它。
+    顺序必须是「先 basename（未解码的路径上）再 unquote」：反过来的话文件名里的 ``%2F``
+    会解码成 ``/``、把路径带出目录。
     """
     base = os.path.basename(urlparse(url).path) or 'img'
     base = unquote(base)
@@ -321,9 +269,8 @@ def _file_name(url: str, ext: str) -> str:
 def _primary_pattern(url: str) -> str:
     """按**当前**命名规则查缓存用的 glob。
 
-    ▍为什么要用「当前规则」而不是「历史规则全试一遍」：改名后若查找还兼容旧名，
-      那份旧文件会被一直命中、永远不改名，缓存就成了「一半新名一半旧名」。
-      旧名交给 ``_drop_siblings``（重下时清）和 ``_move_legacy_flat``（搬运时改名）收尾。
+    只认新名：查找若兼容旧名，旧文件会被一直命中、永远不改名（缓存一半新一半旧）。
+    旧名交给 ``_drop_siblings``（重下时清）与 ``_move_legacy_flat``（搬运时改名）收尾。
     """
     return f'{_name_stem(url)}.*'
 
@@ -354,9 +301,8 @@ def _is_fresh(path: Path, ttl_minutes: int) -> bool:
 def _move_legacy_flat(base_dir: Path, target_dir: Path, url: str) -> Optional[Path]:
     """把旧版平铺在 ``user-cache/`` 根下的文件搬进分目录，省一次重下。
 
-    ▍分目录改造之前缓存是平铺的；用到时顺手搬走，比整目录重下文明。
-    ▍搬运时按**当前命名规则**改名（旧的是 md5 命名，QQ 头像这类要变成 ``qq-…``），
-      推导方式对 md5 命名是幂等的（算出来还是原名），所以只有需要换命名时才会真改名。
+    搬运时按当前命名规则改名（QQ 头像这类要从 md5 名变成 ``qq-…``）；对 md5 命名是幂等的，
+    所以只有真需要换命名时才改名。
     """
     for old in base_dir.glob(f'{_url_prefix(url)}-*'):
         if not old.is_file():
@@ -374,11 +320,8 @@ def _move_legacy_flat(base_dir: Path, target_dir: Path, url: str) -> Optional[Pa
 def _drop_siblings(dir_path: Path, url: str, keep: Path) -> None:
     """同一个目录里同一个 URL 只留一个文件（新旧两种命名都清）。
 
-    ▍为什么需要：过期后重下时若源站换了图片格式（jpg → png），新文件名会和旧的不同
-      （扩展名来自响应魔数），于是同前缀攒下两个文件；而 ``_find_cached`` 取的是
-      glob 的第一个、顺序不保证 —— 不清掉就可能一直命中旧的那份。
-      同时清 md5 命名的那份，是为了让改造前留下的 ``<md5>-headimg_dl.jpg``
-      在换成 ``qq-…`` 命名后不会变成孤儿。
+    重下时源站若换了图片格式，新文件名只差一个扩展名，会攒成两份而 glob 顺序不保证；
+    顺带清掉改造前 md5 命名的那份，免得换名后变成孤儿。
     """
     if not dir_path.is_dir():
         return
@@ -392,11 +335,10 @@ def _drop_siblings(dir_path: Path, url: str, keep: Path) -> None:
 
 
 def _drop_flat_duplicates(base_dir: Path, url: str) -> None:
-    """清掉根目录下与分目录里**同一 URL** 的旧版平铺文件。
+    """清掉根目录下与分目录里同一 URL 的旧版平铺文件。
 
-    ▍为什么：平铺时代留下的文件是「用到才搬走」。如果同一 URL 已经在分目录里存在
-      （比如改造后又下载过一次），搬运就永远不会触发，那份平铺文件会一直留着当孤儿。
-      前缀就是 URL 的 md5，所以命中前缀即同一个 URL，删掉不丢信息。
+    平铺文件是「用到才搬走」；若同一 URL 已在分目录里（改造后又下过一次），搬运不会触发，
+    那份就永远留着。前缀是 URL 的 md5，命中前缀即同一个 URL。
     """
     for dup in base_dir.glob(f'{_url_prefix(url)}-*'):
         if dup.is_file():
@@ -474,11 +416,10 @@ async def localize_user_images(data, *, cache_dir: Optional[Path] = None,
                                ttl_minutes: Optional[int] = None):
     """把 data 里 http(s) 的图片槽落到 ``<缓存>/user-cache/`` 并就地替换为本地路径。
 
-    ▍落哪个目录由 **URL 路径** 决定：命中 ``/nahida-static/{avatar,root,wows-clan}/``
+    ▍落哪个目录由 **URL 路径** 决定（见文件头）：命中 ``/nahida-static/{avatar,root,wows-clan}/``
       的按 ``user-<accountId>`` / ``clan-<clanId>`` 分目录，其余一律进 ``_shared/``。
-    ▍缓存怎么判：文件名里的 ``md5(url)[:10]`` 就是键，命中只看 URL；是否**还在有效期**
-      由文件 mtime + TTL 决定：超过 TTL 就重新下载一次，**原地覆盖同名文件**
-      （所以刷新不涨文件数、也不留旧副本）。``ttl_minutes <= 0`` = 永不过期。
+    ▍命中与有效期：文件名即键；``now - mtime < TTL`` 算命中，否则重下并原地覆盖（不涨文件数）。
+      ``ttl_minutes <= 0`` = 永不过期。
 
     Args:
         data: 渲染数据（dict / list 皆可，递归处理）

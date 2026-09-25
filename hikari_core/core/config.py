@@ -37,11 +37,9 @@ class Config_Model(BaseModel):
     command_suggest_max: int = 3  # 最大提示条数，设为 0 则关闭智能提示
     command_suggest_dedupe: bool = True  # 同一效果(相同功能)的多个别名只提示一条
     command_language: str = 'zh'  # 指令提示语言: zh=中文, en=英文（英文模式下提示英文指令）
-    # 用户头像 / 横幅 / 海报等本地图片缓存（<缓存>/user-cache）的存活时间，**单位：分钟**。
-    # 到期后下一次渲染会重新下载一次（文件名按 URL 定，所以是原地刷新，不涨文件数）。
-    # 默认 10080 = 7 天。设为 <= 0 表示**永不过期**（只在 URL 变化时才会换图）。
-    # 为什么要过期：像 QQ 头像 https://q.qlogo.cn/headimg_dl?dst_uin=xxx&spec=640 这种
-    # URL 恒定不变，用户换头像后地址不变，不过期就会一直贴旧图。
+    # 用户图片缓存（<缓存>/user-cache）的存活时间，**单位分钟**，默认 10080 = 7 天；
+    # <= 0 表示永不过期。到期后下次渲染原地重下（QQ 头像那类 URL 恒定不变，
+    # 不过期就会一直贴旧图）。
     user_image_cache_ttl_minutes: int = 10080
 
 

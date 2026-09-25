@@ -151,9 +151,8 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
         ):
             # 获取全部的 shipInfo节点
             if hikari.Status == 'success':
-                # 对 shipInfo节点进行修改 使用本地文件来渲染；
-                # 头像 / 横幅 / 海报这类远程图片同样先落到 <缓存>/user-cache 再替换，
-                # 别让浏览器去等几十个第三方 CDN 请求（见 core/user_image_cache.py）
+                # 对 shipInfo节点进行修改 使用本地文件来渲染；头像等远程图片同样先落盘
+                # （见 core/user_image_cache.py），别让浏览器去等几十个第三方 CDN 请求
                 template_data = await set_render_params(
                     await localize_user_images(find_and_modify_shipinfo(hikari.Output.Data))
                 )
