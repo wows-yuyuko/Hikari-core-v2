@@ -436,8 +436,13 @@
                      style="background-image: url('{{ rank['userInfo']['avatar']['banner']['data'] }}');"
                      {% endif %}
                 >
+                    {# 头像槽位判据与 partials/user-v6-macros 的 info_header 保持一致：
+                       status > 0 → 用 avatar.data；否则回落 dogTag。
+                       这里曾经写的是 status == 2（只有军团战头像才用自定义图），
+                       于是 status == 1 的玩家在本榜显示 dogTag、在用户页显示自定义头像，
+                       同一个人的两页对不上。 #}
                     <div class="player-avatar"
-                         {% if rank['userInfo']['avatar']['avatar']['status'] == 2 %}
+                         {% if rank['userInfo']['avatar']['avatar']['status'] > 0 %}
                          style="background-image: url('{{ rank['userInfo']['avatar']['avatar']['data'] }}');"
                          {% else %}
                          style="background-image: url('{{ rank['userInfo']['dogTag'] }}');"
@@ -477,8 +482,9 @@
         <div class="rank-row-compact">
             <div class="compact-player">
                 <div class="compact-badge">{{ rank['sortIndex'] }}</div>
+                {# 判据同上（status > 0），与 11-30 名这栏、以及用户页保持一致 #}
                 <div class="compact-avatar"
-                     {% if rank['userInfo']['avatar']['avatar']['status'] == 2 %}
+                     {% if rank['userInfo']['avatar']['avatar']['status'] > 0 %}
                      style="background-image: url('{{ rank['userInfo']['avatar']['avatar']['data'] }}');"
                      {% else %}
                      style="background-image: url('{{ rank['userInfo']['dogTag'] }}');"
