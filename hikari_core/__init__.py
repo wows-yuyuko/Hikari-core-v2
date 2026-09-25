@@ -17,6 +17,7 @@ from .core.model import Hikari_Model, Input_Model, UserInfo_Model
 # 由 js_render.compat_tables() 序列化下发）；这里保留为**公开再导出**，
 # 免得下游 'from hikari_core import server_cn' 这类用法断掉。
 from .core.render_helpers import ba_text_em, server_cn, set_render_params  # noqa: F401
+from .core.user_image_cache import localize_user_images
 from .Html_Render import BrowserRenderError, html_to_pic
 from .commands.parser import analyze_command
 # 供外部 bot 使用的公共指令 API（显式导出，替代通配导入）
@@ -150,10 +151,16 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
         ):
             # 获取全部的 shipInfo节点
             if hikari.Status == 'success':
-                # 对 shipInfo节点进行修改 使用本地文件来渲染
-                template_data = await set_render_params(find_and_modify_shipinfo(hikari.Output.Data))
+                # 对 shipInfo节点进行修改 使用本地文件来渲染；
+                # 头像 / 横幅 / 海报这类远程图片同样先落到 <缓存>/user-cache 再替换，
+                # 别让浏览器去等几十个第三方 CDN 请求（见 core/user_image_cache.py）
+                template_data = await set_render_params(
+                    await localize_user_images(find_and_modify_shipinfo(hikari.Output.Data))
+                )
             elif hikari.Status == 'wait':
-                template_data = await set_render_params(hikari.Input.Select_Data)
+                template_data = await set_render_params(
+                    await localize_user_images(hikari.Input.Select_Data)
+                )
             else:
                 template_data = {}
             # 浏览器端渲染（**唯一路径**）：Python 只打包数据与模板源码，

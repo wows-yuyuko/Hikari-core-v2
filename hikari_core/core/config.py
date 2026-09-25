@@ -37,6 +37,12 @@ class Config_Model(BaseModel):
     command_suggest_max: int = 3  # 最大提示条数，设为 0 则关闭智能提示
     command_suggest_dedupe: bool = True  # 同一效果(相同功能)的多个别名只提示一条
     command_language: str = 'zh'  # 指令提示语言: zh=中文, en=英文（英文模式下提示英文指令）
+    # 用户头像 / 横幅 / 海报等本地图片缓存（<缓存>/user-cache）的存活时间，**单位：分钟**。
+    # 到期后下一次渲染会重新下载一次（文件名按 URL 定，所以是原地刷新，不涨文件数）。
+    # 默认 10080 = 7 天。设为 <= 0 表示**永不过期**（只在 URL 变化时才会换图）。
+    # 为什么要过期：像 QQ 头像 https://q.qlogo.cn/headimg_dl?dst_uin=xxx&spec=640 这种
+    # URL 恒定不变，用户换头像后地址不变，不过期就会一直贴旧图。
+    user_image_cache_ttl_minutes: int = 10080
 
 
 hikari_config = Config_Model()
@@ -60,6 +66,7 @@ def set_hikari_config(  # noqa: PLR0913
     command_language: str = 'zh',
     image_type: str = 'jpeg',
     Authorization: Optional[str] = None,
+    user_image_cache_ttl_minutes: int = 10080,
 ):
     """配置Hikari-core
 
@@ -80,6 +87,8 @@ def set_hikari_config(  # noqa: PLR0913
         render_error_fallback (bool): 浏览器端渲染失败（模板报错/资源缺失/超时）时是否改为回文本错误。
             默认 False = 照常截图（图里带着报错信息）；True = 不截图，抛给上层由 output_hikari 回文本错误
         Authorization (str): 自定义 Authorization（如 data_user 私有接口鉴权），为空时回退用 token
+        user_image_cache_ttl_minutes (int): 用户头像/横幅等本地图片缓存的存活时间，**单位分钟**，
+            默认 10080（7 天）；设 <= 0 则永不过期
     """
     global hikari_config  # noqa: PLW0602
     hikari_config.proxy = proxy
@@ -102,6 +111,11 @@ def set_hikari_config(  # noqa: PLR0913
         image_type = 'jpeg'
     hikari_config.image_type = image_type
     hikari_config.Authorization = Authorization
+    try:
+        hikari_config.user_image_cache_ttl_minutes = int(user_image_cache_ttl_minutes)
+    except (TypeError, ValueError):
+        logger.warning(f'user_image_cache_ttl_minutes={user_image_cache_ttl_minutes!r} 不是整数，回退为默认 10080 分钟（7 天）')
+        hikari_config.user_image_cache_ttl_minutes = 10080
     # 为空则使用默认路径
     from hikari_core.core.cache_utils import get_cache_file, initial_cache_file
 

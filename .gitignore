@@ -171,6 +171,9 @@ tests/*.png
 .idea/
 .workbuddy/
 tests/data/
+# 运行期缓存：get_cache_file() = <cwd>/data/wows-yuyuko，
+# 换工作目录就换落点（IDE 跑 tests/ 落在 tests/data，从仓库根跑会在这儿落 ~700MB 浏览器内核）
+data/
 # echarts 运行时由 OSS 清单（update_style）拉取，不纳入 git 跟踪
 hikari_core/Template/echarts.js
 
