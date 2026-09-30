@@ -6,7 +6,7 @@ from loguru import logger
 from playwright.async_api import Error as playwright_Error
 from pydantic import ValidationError, Field
 
-__version__ = '1.2.5'
+__version__ = '2.0.1'
 
 from .core.cache_utils import get_cache_file
 from .core.config import hikari_config, set_hikari_config  # noqa:F401 set_hikari_config为外部程序引用
