@@ -21,9 +21,13 @@
     用户 / 军团目录天然满足；`_shared` 靠「服务端模板名固定 + 外部平台进注册表」保证。
 
 ▍槽位两种形状（只按白名单识别，不靠值猜）
-  1. `{'status': int, 'data': str}`，父键 avatar / banner / poster；
+  1. `{'status': int, 'data': str, 'attrs': {...}}`，父键 avatar / banner / poster；
   2. 裸字符串 URL，键名 `dogTag`。
-  同层的 colorName（CSS 渐变串）/ sign（文本）/ glassmorphismCard（"000-100"）形状一样但不是图。
+  ▍2026-09-30 契约 v3：槽位多了 `attrs`（参数包：banner→dark、poster→opacity、
+    glassmorphismCard→alpha/blur）。**图仍然只在 `data` 里**，参数跟下载无关，
+    所以这一层照旧只认 data、一概不碰 attrs。
+  同层的 colorName（CSS 渐变串）/ sign（文本）/ glassmorphismCard（data 恒为 null、
+  参数在两个 attrs 键里）形状一样但不是图。
 
 ▍该不该下（模板本来就按 status 决定画不画这张图）
   · `{status, data}` 槽位：`status > 0` 才下（== 0 表示这块不显示）

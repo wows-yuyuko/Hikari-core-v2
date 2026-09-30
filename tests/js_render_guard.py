@@ -393,7 +393,7 @@ def run_case(case, helpers, js_render, keep: bool, template_dir: Path):
     # 数据已由 fetch_case_data 拉取并套过 feature 层的变换（AFTER_HOOKS）
     data = case['data']
     helpers.enrich_banner_dark(data)
-    helpers.enrich_poster_dark(data)
+    helpers.enrich_poster_opacity(data)
 
     shell = render_js(js_render, template, data, template_dir)
     if 'hikari-payload' not in shell:

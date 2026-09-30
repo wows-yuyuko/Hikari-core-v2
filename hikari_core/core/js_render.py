@@ -17,7 +17,7 @@ fetch 本地文件会被 CORS 拦掉（实测 Failed to fetch）。所以本模�
 
 ▍职责边界
 本模块只负责「打包 + 组装外壳」。数据预处理（enrich_banner_dark /
-enrich_poster_dark / find_and_modify_shipinfo）仍由调用方先做完再传进来 ——
+enrich_poster_opacity / find_and_modify_shipinfo）仍由调用方先做完再传进来 ——
 那些是数据加工，不是渲染。
 """
 

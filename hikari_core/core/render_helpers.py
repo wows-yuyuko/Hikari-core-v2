@@ -86,20 +86,54 @@ def banner_is_dark(data_url: str) -> bool:
     return result
 
 
-def enrich_banner_dark(data) -> None:
-    """递归遍历渲染数据：为 ``status == 2`` 且未携带 ``dark`` 字段的 banner 补算深色标记。
+def _slot_status(slot) -> int:
+    """槽位的 ``status``；缺席 / 取不到 / 非数字一律当 0（= 不显示）。"""
+    if not isinstance(slot, dict):
+        return 0
+    try:
+        return int(slot.get('status') or 0)
+    except (TypeError, ValueError):
+        return 0
 
-    服务端已返回 ``dark``（0=浅色 / 1=深色）时优先采用服务端结果；
-    模板按 ``banner.dark == 1`` 启用深色白字样式。
+
+def _attrs_of(slot: dict) -> dict:
+    """取槽位的 ``attrs`` 参数包；缺席 / 不是对象就**就地**补一个空 dict。
+
+    2026-09-30 契约 v3 起槽位形状是 ``{status, data, attrs}``，参数都放 attrs 里。
+    这里补空包是为了让下面的补齐逻辑能直接往里写，不必各处判断 None。
+    """
+    attrs = slot.get('attrs')
+    if not isinstance(attrs, dict):
+        attrs = {}
+        slot['attrs'] = attrs
+    return attrs
+
+
+# banner 深浅色的渲染侧键（进 ``banner.attrs``）；值口径 0=浅色 / 1=深色，与契约一致写成字符串。
+_BANNER_DARK_KEY = 'dark'
+
+
+def enrich_banner_dark(data) -> None:
+    """递归遍历渲染数据：给**显示的** banner（``status > 0``）补算深色标记，写入 ``attrs.dark``。
+
+    正常路径用不到 —— 新契约里服务端恒带 ``attrs.dark``（0=浅色 / 1=深色），
+    这里只是兜底：槽位没带这个键时（历史缓存载荷 / 服务端漏给）才解码图片自己算。
+    模板按 ``banner.attrs.dark == 1`` 启用深色白字样式。
+    ▍判据由 ``status == 2`` 改成 ``status > 0``：旧契约把 2 当"显示（自定义）"，
+      值域收窄成 0/1 之后那个条件恒假（兜底等于整体失效）。模板那边 banner_dark
+      与 status 无关，所以这里取「显示的 banner」就够 —— status == 0 的不显示，
+      不值得为它去解码一张根本画不出来的图。
     """
 
     def _recurse(obj):
         if isinstance(obj, dict):
             banner = obj.get('banner')
-            if isinstance(banner, dict) and banner.get('status') == 2 and 'dark' not in banner:
-                data_url = banner.get('data')
-                if isinstance(data_url, str) and data_url:
-                    banner['dark'] = 1 if banner_is_dark(data_url) else 0
+            if isinstance(banner, dict) and _slot_status(banner) > 0:
+                attrs = _attrs_of(banner)
+                if _BANNER_DARK_KEY not in attrs:
+                    data_url = banner.get('data')
+                    if isinstance(data_url, str) and data_url:
+                        attrs[_BANNER_DARK_KEY] = '1' if banner_is_dark(data_url) else '0'
             for value in obj.values():
                 _recurse(value)
         elif isinstance(obj, list):
@@ -109,54 +143,57 @@ def enrich_banner_dark(data) -> None:
     _recurse(data)
 
 
-# poster 的 dark 不是布尔而是一个 0-100 的**透明度**比例，语义是「越淡」。
+# poster 的透明度（渲染侧键 ``attrs.opacity``）不是布尔而是一个 0-100 的**透明度**比例，语义是「越淡」。
 # ▍服务端口径（已与服务器对齐，别改）：值就是「透明度」
 #     0   = 完全不透明 → 背景图**完全显示**（最实）
 #     100 = 完全透明   → 背景图**完全看不见**
 #   0 / 100 是两端点，中间线性（50 = 半透明）。
+# ▍2026-09-30 契约 v3：键从顶层 ``poster.dark`` 挪进 ``poster.attrs.opacity`` 并改了名，
+#   **值口径与缺省都没变**（服务端把旧 dark 的值原样搬过去，缺省仍是 0）——
+#   所以这里只换键名，别顺手把方向翻过来。
 # 与 banner 的 0/1 深色标记语义完全无关，两者不要混用。
-# 缺省按 0（完全显示）——历史数据不带这个字段，等价于「保持原来的观感」。
-POSTER_DARK_DEFAULT = 0
-POSTER_DARK_MIN = 0
-POSTER_DARK_MAX = 100
+POSTER_OPACITY_DEFAULT = 0
+POSTER_OPACITY_MIN = 0
+POSTER_OPACITY_MAX = 100
 
 
-def _poster_dark_ratio(value) -> int:
-    """把服务端给的 poster.dark 归一化到 0-100 的整数（透明度，越大越淡）。
+def _poster_opacity_ratio(value) -> int:
+    """把服务端给的 poster 透明度归一化到 0-100 的整数（越大越淡）。
 
     服务端语义：0 = 完全显示（不透明）/ 100 = 完全透明。这里原样保留该口径，
     只做「夹到 0-100 + 转 int」的收口，不翻转数值 —— 翻转发生在模板 / 预览里
-    （它们要的是 CSS 不透明度，所以算 `100 - dark`）。
+    （它们要的是 CSS 不透明度，所以算 `100 - 透明度`）。
 
-    缺省 / 非数字 / 解析失败一律回落到 0（完全显示）——历史数据不带这个字段，
+    缺省 / 非数字 / 解析失败一律回落到 0（完全显示）——历史数据不带这个键，
     这么做等价于「保持原来的观感」。夹取保证脏数据不会写出非法 CSS。
     """
     if value is None or isinstance(value, bool):
-        return POSTER_DARK_DEFAULT
+        return POSTER_OPACITY_DEFAULT
     if isinstance(value, str):
         value = value.strip()
         if not value:
-            return POSTER_DARK_DEFAULT
+            return POSTER_OPACITY_DEFAULT
     try:
         ratio = int(round(float(value)))
     except (TypeError, ValueError):
-        return POSTER_DARK_DEFAULT
-    return max(POSTER_DARK_MIN, min(POSTER_DARK_MAX, ratio))
+        return POSTER_OPACITY_DEFAULT
+    return max(POSTER_OPACITY_MIN, min(POSTER_OPACITY_MAX, ratio))
 
 
-def enrich_poster_dark(data) -> None:
-    """递归遍历渲染数据：把 poster 的 ``dark`` 归一到 0-100 的透明度。
+def enrich_poster_opacity(data) -> None:
+    """递归遍历渲染数据：把 poster 的透明度归一到 0-100，写入 ``poster.attrs.opacity``。
 
-    模板侧只做「缺省按 0」的兜底，脏值（负数 / 超 100 / 字符串）由这里统一收口，
-    归一化后仍是 int，可以直接参与数值比较。
+    模板侧只做「缺省按 0」的兜底，脏值（负数 / 超 100 / 字符串）由这里统一收口；
+    归一化后**写成字符串**（与契约一致，服务端返回的也是字符串），模板一律 `| int` 取用。
     只处理 status > 0 的 poster —— 不显示的槽位归一化没有意义。
     """
 
     def _recurse(obj):
         if isinstance(obj, dict):
             poster = obj.get('poster')
-            if isinstance(poster, dict) and poster.get('status') not in (None, 0):
-                poster['dark'] = _poster_dark_ratio(poster.get('dark'))
+            if isinstance(poster, dict) and _slot_status(poster) > 0:
+                attrs = _attrs_of(poster)
+                attrs['opacity'] = str(_poster_opacity_ratio(attrs.get('opacity')))
             for value in obj.values():
                 _recurse(value)
         elif isinstance(obj, list):
@@ -199,7 +236,7 @@ def ba_text_em(text: str) -> float:
 async def set_render_params(List):
     try:
         enrich_banner_dark(List)
-        enrich_poster_dark(List)
+        enrich_poster_opacity(List)
         result = {'template_path': template_path, 'data': List}
         return result
     except Exception:

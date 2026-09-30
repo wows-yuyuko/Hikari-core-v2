@@ -13,6 +13,11 @@
      军团标签 clanInfo.tag / 标签色 clanInfo.color（用户对象也带 clanInfo = 他自己的军团）
      头像槽位 5 个：poster / colorName / banner / avatar / sign
      头像兜底 dogTag（用户接口独有，见下面的「头像槽位语义」）
+   ▍槽位形状（2026-09-30 契约 v3）：{ status, data, attrs } —— status 仍是 int 0/1
+     （0 = 不显示，1 = 显示；旧契约里「2 及以上自定义」那个第三态已取消），data 是内容，
+     参数一律进 attrs（banner→dark、poster→opacity、glassmorphismCard→alpha/blur，
+     彩色名 / 头像 / 签名没有扩展属性 → attrs 为空对象）。取参数一律 attrs 里的具名键，
+     顶层不再有 dark 这类字段（服务端不做旧格式兼容，见服务端 docs/avatar-schema-redesign.md §11）。
    ========================================================== #}
 
 {% macro info_header_style(poster=true) %}
@@ -24,24 +29,30 @@
 {%- set avatar_img = avatar_box['avatar'] if avatar_box['avatar'] is defined else none -%}
 {%- set avatar_status = (avatar_img['status'] | int) if avatar_img and avatar_img['status'] is defined else 0 -%}
 {%- set dog_tag = u['dogTag'] if u['dogTag'] is defined and u['dogTag'] else '' -%}
-{# 头像槽位语义（用户 / 公会一致）：status == 0 不显示，> 0 显示（1 以上可能有特殊处理）。
-   槽位缺席 / status 缺失按 0 处理。
+{# 头像槽位语义（用户 / 公会一致）：status == 0 不显示，> 0 显示。
+   v3 起值域只剩 0/1 —— 旧契约里"2 及以上自定义"那个第三态已取消，所以这里恒是
+   「显示 / 不显示」的二值判断。槽位缺席 / status 缺失按 0 处理。
    用户侧多一条兜底：取不到要显示的图（status == 0，或 status > 0 但 data 是空的）时，
    头像位回落到 dogTag（用户接口独有的图，形如 nahida-static/root/<accountId>.png）；
    连 dogTag 都没有才是「真的没图」→ 整块隐藏（见 info_header 的 hide_avatar）。 #}
 {%- set avatar_src = (avatar_img['data'] if avatar_status > 0 else '') or dog_tag -%}
-{# 大背景图透明度。▍服务端口径（已对齐，别改）：poster.dark 就是「透明度」
+{# 大背景图透明度：渲染侧键 `poster.attrs.opacity`。▍服务端口径（已对齐，别改）：
        0   = 完全不透明 → 背景图**完全显示**（最实，缺省）
        100 = 完全透明   → 背景图**完全看不见**
-   中间线性（50 = 半透明）。缺省 / 非数字一律按 0（完全显示）兜底
-   —— 历史数据不带这个字段，当「完全显示」处理，观感与从前一致。
+   中间线性（50 = 半透明）。缺省 / 非数字一律按 0（完全显示）兜底。
    夹到 0-100，脏数据不会写出非法 CSS。
 
-   ▍注意方向：这里的 dark 是「透明度」，而 CSS 的 opacity 是「不透明度」，
-   两者是反的 —— 所以下面要 `100 - poster_dark` 换算一次，别直接拿 dark 去当 opacity。 #}
-{%- set poster_dark = (poster_img['dark'] | int) if poster_img and poster_img['dark'] is defined else 0 -%}
-{%- set poster_dark = [[poster_dark, 0] | max, 100] | min -%}
-{%- set poster_opacity = 100 - poster_dark -%}
+   ▍2026-09-30 契约 v3（attrs 化）：这个值从顶层 `poster.dark` 挪进
+   `poster.attrs.opacity` 并改了键名 —— **只是换位置 + 改名，方向没翻**：
+   服务端是把旧的 dark 值原样写进 opacity（`AvatarItemAttrs.OPACITY`，缺省仍是 0，
+   见 WowsToolsModule `docs/avatar-schema-redesign.md` §11）。所以下面那次 `100 -`
+   换算照旧要做，别被 "opacity" 这个名字骗到、直接当 CSS 不透明度用。
+   ▍变量名刻意把两个方向分开：poster_fade = **透明度**（越大越淡，接口值），
+   poster_opacity = **不透明度**（CSS 要的，= 100 - fade）。别混。 #}
+{%- set poster_attrs = poster_img['attrs'] if poster_img and poster_img['attrs'] is defined else {} -%}
+{%- set poster_fade = dget(poster_attrs, 'opacity', 0) | int -%}
+{%- set poster_fade = [[poster_fade, 0] | max, 100] | min -%}
+{%- set poster_opacity = 100 - poster_fade -%}
 {# 遮罩 alpha = (100 - 不透明度) / 200，固定两位小数。
    统一放大成「百分位的整数」再拆：
        poster_mask_pct = (100 - opacity) * 100 / 200   ← 一千分位，例如 42 → 2900
@@ -83,15 +94,16 @@
        --card-alpha  卡片底色透明度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全透明
        --card-blur   毛玻璃模糊强度倍数   1.00 = 当前观感（缺省）→ 0.00 = 完全不模糊
 
-   ▍数据位置（2026-09-22 起，用户 / 公会一致）：avatar_box['glassmorphismCard']，
-     是个**槽位形状**的对象，两个值都塞在 data 里：
-         { status: 1, data: "AAA-BBB", dark: 0 }
-         data 以 '-' 分割：AAA = 卡片透明度 0-100，BBB = 模糊强度 0-200
-     所以 "000-100" 就是「完全不透明 + 缺省模糊」= 没改过的状态。
-     旧的 `card: {dark, blur}` 写法已废弃（服务端不再返回）。
-   ▍**status / dark 不参与渲染**：服务端只是复用槽位形状存这两个值（dark 恒 0）。
-     唯一的门槛是**有海报** —— 没海报时主 JS 会把卡片整套换成实色
-     （见 Template/main-v6.js 的浅色主题兜底），旋钮在那时没有任何意义。
+   ▍数据位置（2026-09-30 契约 v3，用户 / 公会一致）：avatar_box['glassmorphismCard']，
+     是个**槽位形状**的对象，两个值是两个**具名键**放在 attrs 里（data 留空 null）：
+         { status: 1, data: null, attrs: { alpha: "AAA", blur: "BBB" } }
+         alpha = 卡片底色透明度 0-100，blur = 模糊强度 0-200
+     所以 {alpha:"000", blur:"100"} 就是「完全不透明 + 缺省模糊」= 没改过的状态。
+     改造前这两值是塞在 data 里的一个打包串（"AAA-BBB"），v3 起拆成具名键
+     （结构化参数不该塞进一个字符串里）；旧的 `card: {dark, blur}` 写法更早已废弃。
+   ▍**status 不参与渲染**：服务端只是复用槽位形状存这两个参数。唯一的门槛是**有海报** ——
+     没海报时主 JS 会把卡片整套换成实色（见 Template/main-v6.js 的浅色主题兜底），
+     旋钮在那时没有任何意义。
    ▍CSS 侧一律写 var(--card-alpha, 1) —— 这里不输出时也是 1（= 现状）。
      反过来说，**这里绝不能输出空串或畸形值**：var() 拿到非法值会让整条
      background / backdrop-filter 声明在「计算值阶段」失效（背景直接变透明、
@@ -99,19 +111,19 @@
      合法数字 —— 沿用上面 poster_mask 的写法（Jinja 的 // 是浮点除，要 | int 收口；
      也不能用 round()，整数浮点会输出 "50.0"）。 #}
 {%- set gc_box = avatar_box['glassmorphismCard'] if avatar_box['glassmorphismCard'] is defined and avatar_box['glassmorphismCard'] else {} -%}
+{%- set gc_attrs = gc_box['attrs'] if gc_box['attrs'] is defined and gc_box['attrs'] else {} -%}
 {# ▍取值一律走 `| int(缺省)` 而不是裸 `| int`：两者对「字段在但值是 null」
    （JSON 的 null / Python 的 null）和「值不是数字字符串」的处理天差地别 ——
    裸 int 会把它们都变成 0，而 blur 的缺省是 100，0 就等于「把模糊全关掉」，
    一个 null 就能让页面糊度跑偏。带缺省的写法会回落到各自的缺省值。
-   ▍data 不是字符串也认：先 `| string` 再 split（服务端要是哪天填了个纯数字，
-   这里会当成「只有一段」，BBB 走缺省 100）。
-   ▍缺段 / 空串 / 脏串一律回落缺省：'abc-xyz' → int 认不出来 → 0 / 100。 #}
-{%- set gc_parts = (gc_box['data'] | string).split('-') if gc_box['data'] is defined and gc_box['data'] else [] -%}
-{%- set card_dark = (gc_parts[0] | int(0)) if gc_parts | length > 0 else 0 -%}
-{%- set card_dark = [[card_dark, 0] | max, 100] | min -%}
-{%- set card_blur_pct = (gc_parts[1] | int(100)) if gc_parts | length > 1 else 100 -%}
-{%- set card_blur_pct = [[card_blur_pct, 0] | max, 200] | min -%}
-{%- set card_alpha_pct = 100 - card_dark -%}
+   ▍dget 的缺省给空串：键缺席时落到 `'' | int(缺省)`，正好回到各自的缺省值。
+   ▍缺段 / 脏串一律回落缺省：'abc' → int 认不出来 → 0 / 100。
+   ▍服务端把这个键叫 alpha，但它的方向是「透明度」（000 = 不透明 = 卡片底色最实），
+   与 CSS 变量 --card-alpha（不透明度）相反 —— 所以下面要 100 - 这一次换算，
+   变量名也刻意分成 card_fade（接口值）/ card_alpha（CSS 值）。 #}
+{%- set card_fade_pct = [[(dget(gc_attrs, 'alpha', '') | int(0)), 0] | max, 100] | min -%}
+{%- set card_blur_pct = [[(dget(gc_attrs, 'blur', '') | int(100)), 0] | max, 200] | min -%}
+{%- set card_alpha_pct = 100 - card_fade_pct -%}
 {%- set card_alpha_frac = '%02d' | format((card_alpha_pct % 100) | int) -%}
 {%- set card_alpha = (card_alpha_pct // 100) | int ~ '.' ~ card_alpha_frac -%}
 {%- set card_blur_frac = '%02d' | format((card_blur_pct % 100) | int) -%}
@@ -190,7 +202,7 @@
 {%- set sign = avatar_box['sign'] if avatar_box['sign'] is defined else none -%}
 {# 头像槽位语义（与 info_header_style 里取图那段同源，改一边记得改另一边）：
      - status == 0（含槽位缺席 / status 缺失）→ 自定义头像不显示；
-     - status > 0 → 显示 avatar.data；1 以上可能有特殊处理（目前用户侧没有）；
+     - status > 0 → 显示 avatar.data（v3 起值域只剩 0/1，旧契约的"2 及以上自定义"已取消）；
      - 两种情况下 data 取不到图都再回落到 dogTag；
      - dogTag 也没有 → 整块隐藏，信息列左移接管这块位置（见 avatar-v6.css 的 .no-avatar）。 #}
 {%- set avatar_status = (avatar_img['status'] | int) if avatar_img and avatar_img['status'] is defined else 0 -%}
@@ -206,13 +218,16 @@
 {%- set uid = u['accountId'] -%}
 {%- set created = u['accountCreateTime'] | int -%}
 {%- set server = server_cn(u['serverCn'] if u['serverCn'] is defined else u['server']) -%}
-{%- set banner_dark = banner and dget(banner, 'dark') == 1 -%}
+{%- set banner_attrs = banner['attrs'] if banner and banner['attrs'] is defined else {} -%}
+{%- set banner_dark = (dget(banner_attrs, 'dark', 0) | int) == 1 -%}
 {# ▍banner_dark 只看 dark 值本身，**不带 status > 0 条件**。
    曾经写成 `banner and banner['status'] > 0 and dget(banner, 'dark') == 1`，
    结果是「关掉小背景图显示开关」会连带把深色白字也取消掉 ——
    可这是两个独立的设置：status 管背景图显不显示，dark 管文字用黑字还是白字。
    用户先设好深色、再临时关掉背景图预览时，不该把深色设置也一并丢掉。
-   （banner 槽位缺席 / dark 字段没有时，.get('dark') 得 null，!= 1，照旧按浅色处理。） #}
+   （banner 槽位缺席 / dark 键没有时，dget 得 0，!= 1，照旧按浅色处理。）
+   ▍2026-09-30 契约 v3：dark 从顶层挪进 `banner.attrs.dark`（值口径不变，仍是 "0"/"1"，
+   所以这里读出来照样 `| int` 再比 1）。 #}
 {# 有无个性颜色：判据必须与 info_header_style 里 .mirage-text 的取色条件（status > 0）一致 ——
    它们描述的是同一件事「这个名字有没有颜色」。
    这里曾经写成 status != 2，与样式那边（> 0）不一致：status == 1 的用户名字照旧被上色，
