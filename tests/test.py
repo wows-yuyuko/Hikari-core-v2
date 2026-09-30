@@ -79,10 +79,13 @@ def output_with_check_type(hikari_data: Hikari_Model, command: str):
         logger.info(command.replace(' ', '-') + '.html')
         return
     if isinstance(hikari_data.Output.Data, bytes):
-        file = get_cache_file() / 'temp_image' / (command.replace(' ', '-') + '.html')
+        # 首次运行 / 清过缓存时目录还不存在，直接 open 会 FileNotFoundError
+        temp_dir = get_cache_file() / 'temp_image'
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        file = temp_dir / (command.replace(' ', '-') + '.html')
         with open(file, 'w', encoding='utf-8') as f:
             f.write(hikari_data.template_content)
-        img = get_cache_file() / 'temp_image' / (command.replace(' ', '-') + '.' + str(hikari_data.Output.Data_Type))
+        img = temp_dir / (command.replace(' ', '-') + '.' + str(hikari_data.Output.Data_Type))
         with open(img, 'wb') as f:
             f.write(hikari_data.Output.Data)
     elif isinstance(hikari_data.Output.Data, str):
