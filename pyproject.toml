@@ -1,6 +1,6 @@
 [project]
 name = "hikari-core"
-version = "1.2.5"
+version = "2.0.1"
 description = "SDK for yuyuko,战舰世界yuyuko平台BOT SDK"
 authors = [
     {name = "benx1n", email = "1119809439@qq.com"},
@@ -24,27 +24,35 @@ dependencies = [
 homepage = "https://github.com/wows-yuyuko/Hikari-core-v2"
 repository = "https://github.com/wows-yuyuko/Hikari-core-v2"
 
-[tool.poetry]
-packages = [{include = "hikari_core"}]
+# 开发依赖（uv sync 默认安装，可用 --no-dev 跳过）
+[dependency-groups]
+dev = [
+    "ruff >=0.14.0",
+    "black >=25.0.0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build >=0.12.0, <0.13.0"]
+build-backend = "uv_build"
 
-[[tool.poetry.source]]
+[tool.uv.build-backend]
+module-name = "hikari_core"
+# 包体在仓库根目录（非 src 布局），故根目录留空
+module-root = ""
+
+# 国内镜像源：阿里云为默认索引，腾讯/清华作为补充源
+[[tool.uv.index]]
 name = "aliyun"
 url = "https://mirrors.aliyun.com/pypi/simple/"
-priority = "primary"
+default = true
 
-[[tool.poetry.source]]
+[[tool.uv.index]]
 name = "tencent"
 url = "https://mirrors.cloud.tencent.com/pypi/simple/"
-priority = "supplemental"
 
-[[tool.poetry.source]]
+[[tool.uv.index]]
 name = "tsinghua"
 url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/"
-priority = "supplemental"
 
 [tool.black]
 line-length = 150

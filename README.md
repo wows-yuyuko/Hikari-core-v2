@@ -9,6 +9,39 @@
 
 ---
 
+## 安装（uv）
+
+本项目使用 [uv](https://docs.astral.sh/uv/) 管理依赖、虚拟环境与构建发布。
+
+```bash
+# 1. 安装 uv（Windows）
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# 2. 同步依赖并创建 .venv（Python 版本见 .python-version，缺失时 uv 会自动下载）
+uv sync
+
+# 3. 首次使用安装渲染用 chromium
+uv run playwright install chromium
+
+# 4. 运行 / 测试
+uv run python your_bot.py
+```
+
+常用命令：
+
+| 命令 | 说明 |
+|---|---|
+| `uv sync` | 按 `uv.lock` 同步环境（含 dev 依赖） |
+| `uv sync --no-dev` | 只装运行依赖 |
+| `uv lock --upgrade-package httpx` | 升级单个依赖并更新锁文件 |
+| `uv run ruff check .` / `uv run black .` | 代码检查与格式化 |
+| `uv build` | 构建 sdist + wheel 到 `dist/` |
+
+> `uv.lock` 需纳入版本控制以保证构建可复现；仓库已配置阿里云为默认索引、腾讯/清华作为补充源（见 `pyproject.toml` 的 `[[tool.uv.index]]`），国内网络可直接同步。
+> 作为使用者接入时也可直接 `pip install hikari-core`。
+
+---
+
 ## 接入方式
 
 ### 1. 基础流程
