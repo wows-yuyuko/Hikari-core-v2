@@ -105,7 +105,10 @@
     {% if color_name and color_name['status'] > 0 %}
     .mirage-text {
         background: {{ color_name['data'] }};
-        background-size: 200% 200%;
+        /* ⚠️ 这里**没有** background-size（2026-10-03 试改，原为 `200% 200%`，与用户侧同源）。
+           那一条等于把渐变画成 2 倍大、文字只盖住左上 1/4 → 只露前 50%，
+           于是"色标占比"与"名字上看到的占比"差 2 倍。去掉后渐变正好铺满文字。
+           回滚：把 background-size: 200% 200% 加回来。 */
         color: transparent;
         -webkit-background-clip: text;
         background-clip: text;
