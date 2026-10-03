@@ -255,8 +255,6 @@
 .pr-number {
     font-size: 44px;
     font-weight: 600;
-    text-shadow: 0 0 4px currentColor, 0 0 8px rgba(255, 255, 255, 0.25),
-    0 0 15px rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     gap: 24px;
