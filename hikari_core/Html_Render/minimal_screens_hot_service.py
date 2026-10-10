@@ -71,6 +71,8 @@ class minimal_screens_hot_service:
         """启动 Playwright 与浏览器内核；失败直接抛错，不留 browser=None 的半成品。"""
         from hikari_core.core.config import hikari_config
         self.user_browser = hikari_config.use_broswer
+        # 浏览器临时 profile 落缓存目录（必须在 start() 之前，理由见 use_cache_as_browser_temp）
+        self.temp_dir = self.use_cache_as_browser_temp()
         self.playwright = await async_playwright().start()
         try:
             if hikari_config.use_broswer == 'chromium':
@@ -94,6 +96,31 @@ class minimal_screens_hot_service:
             except Exception:
                 pass
             self.playwright = None
+
+    @staticmethod
+    def use_cache_as_browser_temp() -> Path:
+        """把浏览器（Playwright）的临时目录指到缓存目录下，返回该目录。
+
+        ▍要解决什么：Playwright 把浏览器的临时 profile 建在 os.tmpdir()（Windows 是 %TEMP%），
+          实测某些机器上**非安装版内核**在那儿建不出单例锁文件 ——
+              Lock file can not be created: 拒绝访问。 (0x5)
+              Failed to create a ProcessSingleton for your profile directory ... Aborting
+          Chrome 为防 profile 损坏直接退出（exitCode=21），Playwright 只报一句
+          「profile is already in use」，页面根本没渲染（系统装的 Chrome 在同一条路径下却没事）。
+          同一份内核把 profile 放到缓存目录就能正常启动，所以这里统一挪过去。
+
+        ▍为什么必须在 async_playwright().start() **之前**调用：profile 路径是 Playwright 的
+          node driver 进程按**它自己的**环境变量算出来的（node 的 os.tmpdir()）。
+          start() 之后才改 os.environ、或者给 launch(env=...) 传变量，都影响不到它。
+
+        ▍三个变量一起写：Windows 读 TEMP / TMP，POSIX 读 TMPDIR；多写一个不影响什么，
+          少写一个就在那个平台静默失效（又退回 %TEMP%）。
+        """
+        temp_dir = get_cache_file() / "browser_temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        for key in ('TEMP', 'TMP', 'TMPDIR'):
+            os.environ[key] = str(temp_dir)
+        return temp_dir
 
     async def chromium(self):
         browser_path = minimal_screens_hot_service.setup_playwright(browser="chromium")
