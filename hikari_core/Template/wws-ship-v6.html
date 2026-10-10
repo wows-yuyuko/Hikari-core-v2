@@ -102,8 +102,8 @@
                          style="color: {{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damage'] | int) }}</div>
                 </div>
 
-                {# 成就徽章：与三张大卡**同一排、等分整行**（有哪枚画哪枚，连同大卡 4~6 等分） #}
-                {{ ship_badges(data['userInfo']['extension']['shipBadges']) }}
+                {# 徽章只有 PVP 口径（extension.shipBadges 只统计随机战），排位这一栏**故意不挂** ——
+                   排位数据旁边跟一排随机战徽章是错的。别顺手补上。 #}
             </div>
             <div class="overview-bottom">
                 <div class="left-item-bottom item-bottom">

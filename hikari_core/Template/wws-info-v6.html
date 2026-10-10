@@ -49,8 +49,13 @@
                 </div>
             </div>
 
-            {# 成就徽章：与三张大卡**同一排、等分整行**（有哪枚画哪枚，连同大卡 4~6 等分） #}
+            {# 成就徽章：与三张大卡**同一排、等分整行**（有哪枚画哪枚，连同大卡 4~6 等分）。
+               ▍只在上面这一排是**随机战（PVP）**数据时才挂：徽章是 PVP 口径
+                 （extension.shipBadges 只统计随机战），没打过随机战、这排显示的是排位数据时
+                 跟一排随机战徽章是错的。 #}
+            {% if data['battleTypeInfo']['PVP']['battle'] %}
             {{ ship_badges(data['userInfo']['extension']['shipBadges']) }}
+            {% endif %}
         </div>
         <div class="overview-bottom">
             <div class="item-bottom">
