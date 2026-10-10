@@ -2,6 +2,7 @@
    v6 家族公共部件 —— 用户页 / 公会页都用，且**本身没有**用户/公会分支的部件
    - info_pr():     PR 横幅
    - ship_header(): 单船页顶部的船名条
+   - ship_badges(): 成就徽章（效率徽章 / 个人杰出 / 团队杰出）三张卡
    - footer_box():  统一页脚
    调用方式: {% from 'partials/common-v6-macros.html' import ... with context %}
 
@@ -34,6 +35,65 @@
         <span class="ship-title-name">{{ ship['nameCn'] }}</span>
     </div>
 </div>
+{% endmacro %}
+
+{# ----------------------------------------------------------
+   ship_badges(badges): 成就徽章（效率徽章 / 个人杰出 / 团队杰出）
+
+   ▍数据来源：渲染数据的 userInfo.extension.shipBadges（后端 WowsShipBadgesVO，
+     只统计 PVP）。三项是**等级**，0 一律表示「没这枚」——
+        badges           精通签名（游戏内 Sign_M/Sign_1…）：**1 最高**，依次 2/3/4
+        awardsPersonal   个人杰出（mark_of_excellence.personal，单排）：3 最高
+        personalDivision 团队杰出（mark_of_excellence.division，分舰队）：3 最高
+     所以这里是「有哪枚画哪枚」：三枚全 0（或 extension 整个缺省）时**整块不输出**，
+     不是画三张空卡；只拿到一两枚时就只画一两张。
+
+   ▍名字口径（与 wows-replays-web 对齐，别自己另起一套）：
+     精通签名那枚**按等级写名字**——专家 / 一等 / 二等 / 三等，不写「精通签名」；
+     另两枚不分级，名字就是徽章名。鼠标提示统一「统称 · 名字」
+     （两枚杰出的等级另用游戏内英文名 Mark_N，方便对账）。
+
+   ▍图片：Template/badges/ 下那 10 张（**本地文件**，与 main-v6.css 同一条
+     template_path.as_uri() 路径；文件名沿用游戏内资源原名，方便以后对账）。
+     等级越界（后端给了 5 这种脏值）时那一枚直接不画，别去取不存在的图。
+
+   ▍排版：本宏**不带自己的外层容器**，卡片直接作为第一行的子项，和三张数据大卡同排、
+     等分整行（见 main-v6.css 的 .overview-change.is-split）—— 1 枚徽章这排就 4 等分、
+     2 枚 5 等分、3 枚 6 等分，卡片随枚数自动变宽 / 变窄；小卡（加成经验…）在下面
+     独立的 .overview-bottom 行，不受影响。
+     所以调用点必须写在 <div class="overview-change is-split"> 里面、最后一个大卡的后面。
+   ---------------------------------------------------------- #}
+{% macro ship_badges(badges) %}
+{% set sign_level = badges['badges'] | int %}
+{% set personal_level = badges['awardsPersonal'] | int %}
+{% set division_level = badges['personalDivision'] | int %}
+{% if sign_level > 0 or personal_level > 0 or division_level > 0 %}
+    {% if sign_level >= 1 and sign_level <= 4 %}
+        {% set sign_names = ['专家', '一等', '二等', '三等'] %}
+        {% set sign_files = ['sign_m.png', 'sign_1.png', 'sign_2.png', 'sign_3.png'] %}
+        <div class="badge-item one-background-color" title="效率徽章 · {{ sign_names[sign_level - 1] }}">
+            <img class="badge-img" src="{{ template_path.as_uri() }}/badges/{{ sign_files[sign_level - 1] }}"
+                 alt="{{ sign_names[sign_level - 1] }}">
+            <div class="badge-name">{{ sign_names[sign_level - 1] }}</div>
+        </div>
+    {% endif %}
+    {% if personal_level >= 1 and personal_level <= 3 %}
+        {% set personal_files = ['mark_1.png', 'mark_2.png', 'mark_3.png'] %}
+        <div class="badge-item one-background-color" title="个人杰出 · Mark_{{ personal_level }}">
+            <img class="badge-img" src="{{ template_path.as_uri() }}/badges/{{ personal_files[personal_level - 1] }}"
+                 alt="个人杰出">
+            <div class="badge-name">个人杰出</div>
+        </div>
+    {% endif %}
+    {% if division_level >= 1 and division_level <= 3 %}
+        {% set division_files = ['mark_1_1.png', 'mark_2_2.png', 'mark_3_3.png'] %}
+        <div class="badge-item one-background-color" title="团队杰出 · Mark_{{ division_level }}">
+            <img class="badge-img" src="{{ template_path.as_uri() }}/badges/{{ division_files[division_level - 1] }}"
+                 alt="团队杰出">
+            <div class="badge-name">团队杰出</div>
+        </div>
+    {% endif %}
+{% endif %}
 {% endmacro %}
 
 {% macro footer_box() %}

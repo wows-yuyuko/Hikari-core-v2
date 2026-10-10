@@ -7,7 +7,7 @@
     <link href="{{ template_path.as_uri() }}/avatar-v6.css" rel="stylesheet" type="text/css">
 </head>
 {% from 'partials/user-v6-macros.html' import info_header_style, info_header with context %}
-{% from 'partials/common-v6-macros.html' import ship_header, info_pr, footer_box with context %}
+{% from 'partials/common-v6-macros.html' import ship_header, info_pr, ship_badges, footer_box with context %}
 {{ info_header_style() }}
 <body>
 <div class="main-content">
@@ -31,111 +31,109 @@
         {% endif %}
 
         {% if data['typeInfo']['PVP']['battle'] %}
-            <div class="overview-change">
-                <div class="overview-change-item left-item">
-                    <div class="left-item-top item-top one-background-color">
-                        <div class="overview-count-title item-top-top">场次</div>
-                        <div class="overview-count item-top-bottom">{{ data['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] }}</div>
-                    </div>
-                    <div class="left-item-bottom item-bottom">
-                        <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">加成经验</div>
-                            <div class="mini-item-bottom">{{ data['typeInfo']['PVP']['battleInfo']['avgInfo']['xp'] }}</div>
-                        </div>
-                        <div class="change-win-box bottom-mini-item-right one-background-color">
-                            <div class="mini-item-top">命中率</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
-                        </div>
+            <div class="overview-change is-split">
+                <div class="left-item-top item-top one-background-color">
+                    <div class="overview-count-title item-top-top">场次</div>
+                    <div class="overview-count item-top-bottom">{{ data['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] }}</div>
+                </div>
+                <div class="mid-item-top item-top one-background-color">
+                    <div class="overview-win-title item-top-top">胜率</div>
+                    <div class="overview-win item-top-bottom"
+                         style="color: {{ data['typeInfo']['PVP']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['win']) }}%
                     </div>
                 </div>
-                <div class="overview-change-item mid-item">
-                    <div class="mid-item-top item-top one-background-color">
-                        <div class="overview-win-title item-top-top">胜率</div>
-                        <div class="overview-win item-top-bottom"
-                             style="color: {{ data['typeInfo']['PVP']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['win']) }}%
-                        </div>
+                <div class="right-item-top item-top one-background-color">
+                    <div class="overview-avgdmg-title item-top-top">场均</div>
+                    <div class="overview-avgdmg item-top-bottom"
+                         style="color: {{ data['typeInfo']['PVP']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['damage'] | int) }}</div>
+                </div>
+
+                {# 成就徽章：与三张大卡**同一排、等分整行**（有哪枚画哪枚，连同大卡 4~6 等分） #}
+                {{ ship_badges(data['userInfo']['extension']['shipBadges']) }}
+            </div>
+            <div class="overview-bottom">
+                <div class="left-item-bottom item-bottom">
+                    <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
+                        <div class="mini-item-top">加成经验</div>
+                        <div class="mini-item-bottom">{{ data['typeInfo']['PVP']['battleInfo']['avgInfo']['xp'] }}</div>
                     </div>
-                    <div class="mid-item-bottom item-bottom">
-                        <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">存活率</div>
+                    <div class="change-win-box bottom-mini-item-right one-background-color">
+                        <div class="mini-item-top">命中率</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
+                    </div>
+                </div>
+                <div class="mid-item-bottom item-bottom">
+                    <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
+                        <div class="mini-item-top">存活率</div>
 <div class="mini-item-bottom">{{ '%.1f' | format(data['typeInfo']['PVP']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['PVP']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
-                        </div>
-                        <div class="change-win-box bottom-mini-item-right one-background-color">
-                            <div class="mini-item-top">击落</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['planesKilled']) }}</div>
-                        </div>
+                    </div>
+                    <div class="change-win-box bottom-mini-item-right one-background-color">
+                        <div class="mini-item-top">击落</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['planesKilled']) }}</div>
                     </div>
                 </div>
-                <div class="overview-change-item right-item">
-                    <div class="right-item-top item-top one-background-color">
-                        <div class="overview-avgdmg-title item-top-top">场均</div>
-                        <div class="overview-avgdmg item-top-bottom"
-                             style="color: {{ data['typeInfo']['PVP']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['damage'] | int) }}</div>
+                <div class="right-item-bottom item-bottom">
+                    <div class="overview-kd-box bottom-mini-item-left one-background-color">
+                        <div class="mini-item-top">击杀</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['frags']) }}</div>
                     </div>
-                    <div class="right-item-bottom item-bottom">
-                        <div class="overview-kd-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">击杀</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['frags']) }}</div>
-                        </div>
-                        <div class="overview-hit-box bottom-mini-item-right one-background-color">
-                            <div class="mini-item-top">KD</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['kd']) }}</div>
-                        </div>
+                    <div class="overview-hit-box bottom-mini-item-right one-background-color">
+                        <div class="mini-item-top">KD</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['kd']) }}</div>
                     </div>
                 </div>
             </div>
         {% else %}
             <!--否则显示排位-->
-            <div class="overview-change">
-                <div class="overview-change-item left-item">
-                    <div class="left-item-top item-top one-background-color">
-                        <div class="overview-count-title item-top-top">场次</div>
-                        <div class="overview-count item-top-bottom">{{ data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] }}</div>
-                    </div>
-                    <div class="left-item-bottom item-bottom">
-                        <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">加成经验</div>
-                            <div class="mini-item-bottom">{{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['xp'] }}</div>
-                        </div>
-                        <div class="change-win-box bottom-mini-item-right one-background-color">
-                            <div class="mini-item-top">命中率</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
-                        </div>
+            <div class="overview-change is-split">
+                <div class="left-item-top item-top one-background-color">
+                    <div class="overview-count-title item-top-top">场次</div>
+                    <div class="overview-count item-top-bottom">{{ data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] }}</div>
+                </div>
+                <div class="mid-item-top item-top one-background-color">
+                    <div class="overview-win-title item-top-top">胜率</div>
+                    <div class="overview-win item-top-bottom"
+                         style="color: {{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['win']) }}%
                     </div>
                 </div>
-                <div class="overview-change-item mid-item">
-                    <div class="mid-item-top item-top one-background-color">
-                        <div class="overview-win-title item-top-top">胜率</div>
-                        <div class="overview-win item-top-bottom"
-                             style="color: {{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['winsData']['color'] }};">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['win']) }}%
-                        </div>
+                <div class="right-item-top item-top one-background-color">
+                    <div class="overview-avgdmg-title item-top-top">场均</div>
+                    <div class="overview-avgdmg item-top-bottom"
+                         style="color: {{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damage'] | int) }}</div>
+                </div>
+
+                {# 成就徽章：与三张大卡**同一排、等分整行**（有哪枚画哪枚，连同大卡 4~6 等分） #}
+                {{ ship_badges(data['userInfo']['extension']['shipBadges']) }}
+            </div>
+            <div class="overview-bottom">
+                <div class="left-item-bottom item-bottom">
+                    <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
+                        <div class="mini-item-top">加成经验</div>
+                        <div class="mini-item-bottom">{{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['xp'] }}</div>
                     </div>
-                    <div class="mid-item-bottom item-bottom">
-                        <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">存活率</div>
+                    <div class="change-win-box bottom-mini-item-right one-background-color">
+                        <div class="mini-item-top">命中率</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['hitRatioInfo']['ratioMain']) }}%</div>
+                    </div>
+                </div>
+                <div class="mid-item-bottom item-bottom">
+                    <div class="change-avgdmg-box bottom-mini-item-left one-background-color">
+                        <div class="mini-item-top">存活率</div>
 <div class="mini-item-bottom">{{ '%.1f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['survived'] / data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] * 100 if data['typeInfo']['RANK_SOLO']['battleInfo']['battleInfo']['battle'] else 0) }}%</div>
-                        </div>
-                        <div class="change-win-box bottom-mini-item-right one-background-color">
-                            <div class="mini-item-top">击落</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['planesKilled']) }}</div>
-                        </div>
+                    </div>
+                    <div class="change-win-box bottom-mini-item-right one-background-color">
+                        <div class="mini-item-top">击落</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['planesKilled']) }}</div>
                     </div>
                 </div>
-                <div class="overview-change-item right-item">
-                    <div class="right-item-top item-top one-background-color">
-                        <div class="overview-avgdmg-title item-top-top">场均</div>
-                        <div class="overview-avgdmg item-top-bottom"
-                             style="color: {{ data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['damage'] | int) }}</div>
+                <div class="right-item-bottom item-bottom">
+                    <div class="overview-kd-box bottom-mini-item-left one-background-color">
+                        <div class="mini-item-top">击杀</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['frags']) }}</div>
                     </div>
-                    <div class="right-item-bottom item-bottom">
-                        <div class="overview-kd-box bottom-mini-item-left one-background-color">
-                            <div class="mini-item-top">击杀</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['frags']) }}</div>
-                        </div>
-                        <div class="overview-hit-box bottom-mini-item-right one-background-color">
-                            <div class="mini-item-top">KD</div>
-                            <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['kd']) }}</div>
-                        </div>
+                    <div class="overview-hit-box bottom-mini-item-right one-background-color">
+                        <div class="mini-item-top">KD</div>
+                        <div class="mini-item-bottom">{{ '%.2f' | format(data['typeInfo']['RANK_SOLO']['battleInfo']['avgInfo']['kd']) }}</div>
                     </div>
                 </div>
             </div>

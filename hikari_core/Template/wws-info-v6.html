@@ -7,7 +7,7 @@
     <link href="{{ template_path.as_uri() }}/avatar-v6.css" rel="stylesheet" type="text/css">
 </head>
 {% from 'partials/user-v6-macros.html' import info_header_style, info_header with context %}
-{% from 'partials/common-v6-macros.html' import info_pr, footer_box with context %}
+{% from 'partials/common-v6-macros.html' import info_pr, ship_badges, footer_box with context %}
 {{ info_header_style() }}
 {% set show_pr = data['userInfo']['prStatus'] != 1 %}
 <body>
@@ -33,55 +33,54 @@
 
         {# ==================== 核心数据 ==================== #}
         {% set main = data['battleTypeInfo']['PVP'] if data['battleTypeInfo']['PVP']['battle'] else data['battleTypeInfo']['RANK_SOLO'] %}
-        <div class="overview-change">
-            <div class="overview-change-item">
-                <div class="item-top one-background-color">
-                    <div class="stat-label">场次</div>
-                    <div class="stat-value">{{ '{:,}'.format(main['shipInfo']['battleInfo']['battle']) }}</div>
-                </div>
-                <div class="item-bottom">
-                    <div class="bottom-mini-item one-background-color">
-                        <div class="mini-label">加成经验</div>
-                        <div class="mini-value">{{ '{:,}'.format(main['shipInfo']['avgInfo']['xp']) }}</div>
-                    </div>
-                    <div class="bottom-mini-item one-background-color">
-                        <div class="mini-label">命中率</div>
-                        <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['hitRatioInfo']['ratioMain']) }}%</div>
-                    </div>
+        <div class="overview-change is-split">
+            <div class="item-top one-background-color">
+                <div class="stat-label">场次</div>
+                <div class="stat-value">{{ '{:,}'.format(main['shipInfo']['battleInfo']['battle']) }}</div>
+            </div>
+            <div class="item-top one-background-color">
+                <div class="stat-label">胜率</div>
+                <div class="stat-value" style="color: {{ main['shipInfo']['avgInfo']['winsData']['color'] }};">{{ '%.2f' | format(main['shipInfo']['avgInfo']['win']) }}%
                 </div>
             </div>
-            <div class="overview-change-item">
-                <div class="item-top one-background-color">
-                    <div class="stat-label">胜率</div>
-                    <div class="stat-value" style="color: {{ main['shipInfo']['avgInfo']['winsData']['color'] }};">{{ '%.2f' | format(main['shipInfo']['avgInfo']['win']) }}%
-                    </div>
-                </div>
-                <div class="item-bottom">
-                    <div class="bottom-mini-item one-background-color">
-                        <div class="mini-label">存活率</div>
-                        <div class="mini-value">{{ '%.1f' | format(main['shipInfo']['battleInfo']['survived'] / main['shipInfo']['battleInfo']['battle'] * 100 if main['shipInfo']['battleInfo']['battle'] else 0) }}%</div>
-                    </div>
-                    <div class="bottom-mini-item one-background-color">
-                        <div class="mini-label">击落</div>
-                        <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['avgInfo']['planesKilled']) }}</div>
-                    </div>
+            <div class="item-top one-background-color">
+                <div class="stat-label">场均</div>
+                <div class="stat-value" style="color: {{ main['shipInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(main['shipInfo']['avgInfo']['damage']) }}
                 </div>
             </div>
-            <div class="overview-change-item">
-                <div class="item-top one-background-color">
-                    <div class="stat-label">场均</div>
-                    <div class="stat-value" style="color: {{ main['shipInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(main['shipInfo']['avgInfo']['damage']) }}
-                    </div>
+
+            {# 成就徽章：与三张大卡**同一排、等分整行**（有哪枚画哪枚，连同大卡 4~6 等分） #}
+            {{ ship_badges(data['userInfo']['extension']['shipBadges']) }}
+        </div>
+        <div class="overview-bottom">
+            <div class="item-bottom">
+                <div class="bottom-mini-item one-background-color">
+                    <div class="mini-label">加成经验</div>
+                    <div class="mini-value">{{ '{:,}'.format(main['shipInfo']['avgInfo']['xp']) }}</div>
                 </div>
-                <div class="item-bottom">
-                    <div class="bottom-mini-item one-background-color">
-                        <div class="mini-label">击杀</div>
-                        <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['avgInfo']['frags']) }}</div>
-                    </div>
-                    <div class="bottom-mini-item one-background-color">
-                        <div class="mini-label">KD</div>
-                        <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['avgInfo']['kd']) }}</div>
-                    </div>
+                <div class="bottom-mini-item one-background-color">
+                    <div class="mini-label">命中率</div>
+                    <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['hitRatioInfo']['ratioMain']) }}%</div>
+                </div>
+            </div>
+            <div class="item-bottom">
+                <div class="bottom-mini-item one-background-color">
+                    <div class="mini-label">存活率</div>
+                    <div class="mini-value">{{ '%.1f' | format(main['shipInfo']['battleInfo']['survived'] / main['shipInfo']['battleInfo']['battle'] * 100 if main['shipInfo']['battleInfo']['battle'] else 0) }}%</div>
+                </div>
+                <div class="bottom-mini-item one-background-color">
+                    <div class="mini-label">击落</div>
+                    <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['avgInfo']['planesKilled']) }}</div>
+                </div>
+            </div>
+            <div class="item-bottom">
+                <div class="bottom-mini-item one-background-color">
+                    <div class="mini-label">击杀</div>
+                    <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['avgInfo']['frags']) }}</div>
+                </div>
+                <div class="bottom-mini-item one-background-color">
+                    <div class="mini-label">KD</div>
+                    <div class="mini-value">{{ '%.2f' | format(main['shipInfo']['avgInfo']['kd']) }}</div>
                 </div>
             </div>
         </div>
