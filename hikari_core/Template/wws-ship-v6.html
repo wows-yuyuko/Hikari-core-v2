@@ -48,8 +48,12 @@
                          style="color: {{ data['typeInfo']['PVP']['battleInfo']['avgInfo']['damageData']['color'] }};">{{ '{:,}'.format(data['typeInfo']['PVP']['battleInfo']['avgInfo']['damage'] | int) }}</div>
                 </div>
 
-                {# 成就徽章：与三张大卡**同一排、等分整行**（有哪枚画哪枚，连同大卡 4~6 等分） #}
-                {{ ship_badges(data['userInfo']['extension']['shipBadges']) }}
+                {# 成就徽章：**这艘船自己的**（后端 data.shipBadges，与 shipInfo/typeInfo 同级；
+                   ⚠ 不是 userInfo.extension.shipBadges —— 那个是「账号全部战舰里的最高等级」，
+                   实测两者会不一样，例如某账号 账号级 {1,0,2} 而这艘船 {3,0,0}）。
+                   该船没有徽章时后端**整项不返回** → ship_badges 收到 undefined，
+                   三枚都不画（宏里已经处理）。 #}
+                {{ ship_badges(data['shipBadges']) }}
             </div>
             <div class="overview-bottom">
                 <div class="left-item-bottom item-bottom">

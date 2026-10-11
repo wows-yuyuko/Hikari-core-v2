@@ -453,8 +453,8 @@ body {
 
 /* 徽章图是正方形原图（sign_* / mark_*），contain 保证不被拉变形 */
 .badge-img {
-    width: 108px;
-    height: 108px;
+    width: 60px;
+    height: 60px;
     object-fit: contain;
     display: block;
 }
