@@ -85,6 +85,32 @@
         font-weight: bold;
         color: #6a11cb;
     }
+
+    /* 底部提示条：旧战舰查询规则 */
+    .tip-bar {
+        padding: 12px 20px;
+        line-height: 24px;
+        font-size: 16px;
+        font-weight: normal;
+        color: #5f5a70;
+        background: linear-gradient(135deg, rgba(255, 238, 210, 0.55) 0%, rgba(228, 222, 255, 0.55) 100%);
+        border-top: 2px solid rgba(180, 160, 230, 0.4);
+    }
+
+    .tip-bar .tip-label {
+        display: inline-block;
+        margin-right: 8px;
+        padding: 0 8px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #fff;
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    }
+
+    .tip-bar .tip-key {
+        color: #6a11cb;
+    }
 </style>
 <body>
 <div class="main-content">
@@ -143,6 +169,10 @@
 
         </tbody>
     </table>
+    <div class="tip-bar">
+        <span class="tip-label">提示</span>查询旧战舰时，名称结尾必须加 <span class="tip-key">old</span>，例如：<span
+            class="tip-key">列克星敦old</span>
+    </div>
 </div>
 </body>
 
