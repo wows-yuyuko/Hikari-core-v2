@@ -13,6 +13,24 @@ from hikari_core.core.template_registry import Templates
 from hikari_core.features.api import get_AccountIdByName
 from hikari_core.features.bind import get_DefaultBindInfo
 
+# 圣诞船池列表的舰种优先级：航母 > 战列舰 > 巡洋舰 > 驱逐舰 > 潜艇
+_CHRISTMAS_SHIP_TYPE_ORDER = {
+    'AirCarrier': 0,
+    'Battleship': 1,
+    'Cruiser': 2,
+    'Destroyer': 3,
+    'Submarine': 4,
+}
+
+
+def _christmas_ship_sort_key(item) -> tuple:
+    ship = item.get('ship') or {}
+    return (
+        int(item.get('status') or 0),  # status 0=已拥有，排在前面；1=未拥有
+        -int(ship.get('level') or 0),  # 等级从高到低
+        _CHRISTMAS_SHIP_TYPE_ORDER.get(ship.get('shipType'), len(_CHRISTMAS_SHIP_TYPE_ORDER)),
+    )
+
 
 @handle_yuyuko_errors()
 async def get_BanInfo(hikari: Hikari_Model) -> Hikari_Model:
@@ -74,6 +92,11 @@ async def check_christmas_box(hikari: Hikari_Model) -> Hikari_Model:
     result = json.loads(resp.content)
     hikari.Output.Yuyuko_Code = result['code']
     if result['code'] == 200 and result['data']:
+        # 接口返回的分组内顺序不固定，这里统一排序：
+        # 已拥有在前 → 等级从高到低 → 舰种（航母 > 战列 > 巡洋 > 驱逐 > 潜艇）。
+        for data_map in result['data'].get('dataMap') or []:
+            ships = data_map.get('data') or []
+            ships.sort(key=_christmas_ship_sort_key)
         hikari = Templates.WWS_BOX_CHRISTMAS.apply_to(hikari)
         return hikari.success(result['data'])
     else:
