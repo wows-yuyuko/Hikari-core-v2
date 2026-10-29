@@ -172,9 +172,14 @@ def set_hikari_config(  # noqa: PLR0913
         from hikari_core.features.system import update_ship_cache, update_ship_cache_cron, update_template
 
         logger.info('执行初始模板更新...')
-        update_template()
-        logger.info('执行初始缓存更新...')
-        update_ship_cache()
+        # 初始资源更新失败（网络/远端服务异常）不能影响启动：
+        # 本地缓存还能用，定时任务和管理员指令都会重试
+        try:
+            update_template()
+            logger.info('执行初始缓存更新...')
+            update_ship_cache()
+        except Exception as e:
+            logger.error(f'初始资源更新失败，已跳过本次（沿用本地缓存）: {e}')
         logger.info('启动定时任务')
         _scheduler.add_job(update_template, 'cron', hour='4,12')
         _scheduler.add_job(update_ship_cache_cron, 'cron', day_of_week='thu', hour=8, minute=0)

@@ -194,19 +194,36 @@ def update_ship_cache_cron():
     zip_path = get_cache_file() / "ship_cache.zip"
     load_ship_cache_zip(get_cache_file(), zip_path)
 
-def update_ship_cache():
+def update_ship_cache() -> bool:
+    """更新战舰资源；任何外部失败都只记日志并返回 False，不向上抛。
+
+    启动时会在 `set_hikari_config` 里调用它，如果网络抖动就抛异常，
+    整个 bot 插件都会导入失败（见 update_ship_cache 曾经遍历 None 的 TypeError）。
+    """
     logger.info('开始更新战舰资源')
     base_path = get_cache_file() / "ship_cache"
     base_path.mkdir(exist_ok=True, parents=True)
     zip_path = get_cache_file() / "ship_cache.zip"
-    if not zip_path.exists():
-        load_ship_cache_zip(get_cache_file(), zip_path)
-        get_all_ship_cache_hash_json(get_cache_file_str())
-    # 加载本地json
-    with open(get_cache_file() / "ship_cache_hash.json", "rb") as f:
-        ship_hash_local_json = json.loads(f.read())
+    if not zip_path.exists() and not load_ship_cache_zip(get_cache_file(), zip_path):
+        logger.error('本地没有战舰资源包且下载失败，跳过本次更新')
+        return False
+
+    # 本地 hash 缺失/损坏时按空处理，后面会触发全量下载
+    local_dict = {}
+    try:
+        with open(get_cache_file() / "ship_cache_hash.json", "rb") as f:
+            ship_hash_local_json = json.loads(f.read())
+        local_dict = {item["key"]: item["value"] for item in ship_hash_local_json}
+    except FileNotFoundError:
+        logger.warning('本地战舰 hash 不存在，将全量下载')
+    except Exception as e:
+        logger.warning(f'本地战舰 hash 读取失败，将全量下载: {e}')
+
     ship_hash_new_json = get_all_ship_cache_hash_json(get_cache_file_str())
-    local_dict = {item["key"]: item["value"] for item in ship_hash_local_json}
+    if not ship_hash_new_json:
+        logger.error('获取远端战舰 hash 失败，本次跳过更新（沿用本地缓存）')
+        return False
+
     remote_dict = {item["key"]: item["value"] for item in ship_hash_new_json}
     files_to_download = []
     for filename, remote_hash in remote_dict.items():
@@ -215,6 +232,7 @@ def update_ship_cache():
     for filename in files_to_download:
         write_ship_cache(base_path,f"https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/{filename}")
     logger.info("更新战舰资源完成")
+    return True
 
 def get_all_ship_cache_hash_json(dir: str):
     try:
@@ -222,17 +240,33 @@ def get_all_ship_cache_hash_json(dir: str):
         url = f'https://v3-api.wows.shinoaki.com/nahida-static/ship_cache/ship_cache_hash.json'
         with httpx.Client() as client:
             resp = client.get(url, timeout=20)
-            with open(file_json, 'wb') as f:
-                f.write(resp.content)
-            return json.loads(resp.content)
-    except Exception:
+            resp.raise_for_status()
+            data = resp.json()
+        if not isinstance(data, list):
+            logger.error(f'远端战舰 hash 格式异常（期望 list，实际 {type(data).__name__}）: {url}')
+            return None
+        # 解析成功后再落盘，避免把网关返回的 HTML 错误页写成 hash 文件
+        with open(file_json, 'wb') as f:
+            f.write(resp.content)
+        return data
+    except Exception as e:
+        logger.error(f'获取远端战舰 hash 失败: {url} -> {e}')
         return None
 
-def load_ship_cache_zip(wows_temp : Path,zip_path: Path):
+def load_ship_cache_zip(wows_temp : Path,zip_path: Path) -> bool:
     logger.info('开始下载战舰图片资源压缩包，等待时间较长！')
-    _download_file("https://v3-api.wows.shinoaki.com/nahida-static/ship_cache.zip", zip_path)
-    extract_zip(zip_path, wows_temp)
+    if not _download_file("https://v3-api.wows.shinoaki.com/nahida-static/ship_cache.zip", zip_path):
+        logger.error('战舰图片资源压缩包下载失败')
+        try:
+            zip_path.unlink(missing_ok=True)  # 别留半截包，否则下次会被误判为已存在
+        except OSError:
+            pass
+        return False
+    if not extract_zip(zip_path, wows_temp):
+        logger.error('战舰图片资源压缩包解压失败')
+        return False
     logger.info("更新战舰zip包资源完成")
+    return True
 
 def write_ship_cache(file_dir: Path, ship_url: str):
     """
