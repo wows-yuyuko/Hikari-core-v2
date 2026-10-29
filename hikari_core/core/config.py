@@ -41,6 +41,21 @@ class Config_Model(BaseModel):
     # <= 0 表示永不过期。到期后下次渲染原地重下（QQ 头像那类 URL 恒定不变，
     # 不过期就会一直贴旧图）。
     user_image_cache_ttl_minutes: int = 10080
+    # ============================================================
+    # 渲染过载保护。突发大量请求时若不限并发，每个请求都会 new 一个 Chromium
+    # 渲染进程（100~250MB），内存不设上限必然把机器撑爆（2核4G 尤甚）。
+    #   render_concurrency：同时进行的截图数（= Chromium 渲染进程上限）。
+    #       2核4G 建议 2；内存更大可上调，但超过核数只会互相抢 CPU，吞吐不变。
+    #   render_queue_size：已满时最多再排队多少个请求，超过直接回「繁忙」，
+    #       防止排队任务无限堆积。0 = 不排队，满了立即拒绝。
+    #   render_queue_timeout：排队等待槽位的最长秒数，等不到同样回「繁忙」。
+    #   render_timeout：单个请求的硬超时（秒），到点强制释放槽位并回收页面。
+    #       内部各段等待合计约 41s，默认 45 只兜住真正卡死的请求。
+    # ============================================================
+    render_concurrency: int = 2
+    render_queue_size: int = 20
+    render_queue_timeout: float = 30.0
+    render_timeout: float = 45.0
 
 
 hikari_config = Config_Model()
@@ -65,6 +80,10 @@ def set_hikari_config(  # noqa: PLR0913
     image_type: str = 'jpeg',
     Authorization: Optional[str] = None,
     user_image_cache_ttl_minutes: int = 10080,
+    render_concurrency: int = 2,
+    render_queue_size: int = 20,
+    render_queue_timeout: float = 30.0,
+    render_timeout: float = 45.0,
 ):
     """配置Hikari-core
 
@@ -87,6 +106,10 @@ def set_hikari_config(  # noqa: PLR0913
         Authorization (str): 自定义 Authorization（如 data_user 私有接口鉴权），为空时回退用 token
         user_image_cache_ttl_minutes (int): 用户头像/横幅等本地图片缓存的存活时间，**单位分钟**，
             默认 10080（7 天）；设 <= 0 则永不过期
+        render_concurrency (int): 同时进行的截图数，默认 2（2核4G 建议值，也是 Chromium 渲染进程上限）
+        render_queue_size (int): 槽位占满时最多排队数，默认 20；超出直接回「繁忙」，0 = 不排队
+        render_queue_timeout (float): 排队等待槽位的最长秒数，默认 30
+        render_timeout (float): 单个截图请求的硬超时秒数，默认 45，到点强制释放槽位
     """
     global hikari_config  # noqa: PLW0602
     hikari_config.proxy = proxy
@@ -114,6 +137,22 @@ def set_hikari_config(  # noqa: PLR0913
     except (TypeError, ValueError):
         logger.warning(f'user_image_cache_ttl_minutes={user_image_cache_ttl_minutes!r} 不是整数，回退为默认 10080 分钟（7 天）')
         hikari_config.user_image_cache_ttl_minutes = 10080
+
+    def _coerce(name: str, value, default, minimum, cast):
+        try:
+            parsed = cast(value)
+        except (TypeError, ValueError):
+            logger.warning(f'{name}={value!r} 无效，回退为默认 {default}')
+            return default
+        if parsed < minimum:
+            logger.warning(f'{name}={value!r} 小于下限 {minimum}，已按下限处理')
+            return minimum
+        return parsed
+
+    hikari_config.render_concurrency = _coerce('render_concurrency', render_concurrency, 2, 1, int)
+    hikari_config.render_queue_size = _coerce('render_queue_size', render_queue_size, 20, 0, int)
+    hikari_config.render_queue_timeout = _coerce('render_queue_timeout', render_queue_timeout, 30.0, 0.0, float)
+    hikari_config.render_timeout = _coerce('render_timeout', render_timeout, 45.0, 1.0, float)
     # 为空则使用默认路径
     from hikari_core.core.cache_utils import get_cache_file, initial_cache_file
 

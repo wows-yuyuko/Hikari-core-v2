@@ -113,6 +113,10 @@ async def on_user_reply(stored_hikari, reply_index: int):
 | `command_suggest_max` | 指令输错智能提示条数（默认 3，0 关闭） |
 | `command_suggest_dedupe` | 同功能多别名只提示一条（默认开启） |
 | `save_template_html` | 调试：渲染时额外保存 HTML 到 `<缓存目录>/template_html/`（默认关闭） |
+| `render_concurrency` | 同时进行的截图数，默认 2（2核4G 推荐值，也是 Chromium 渲染进程上限）；调高前先确认内存余量 |
+| `render_queue_size` | 槽位占满时最多排队数，默认 20；超出直接回「请求过多，请稍后再试」，0 = 不排队 |
+| `render_queue_timeout` | 排队等待槽位的最长秒数，默认 30 |
+| `render_timeout` | 单个截图请求硬超时秒数，默认 45，到点强制释放槽位 |
 
 ---
 

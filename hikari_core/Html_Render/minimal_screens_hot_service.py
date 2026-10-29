@@ -10,6 +10,8 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections import OrderedDict
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -32,9 +34,22 @@ class BrowserRenderError(RuntimeError):
     """
 
 
+class RenderBusyError(RuntimeError):
+    """渲染并发已满：排队数量超限或排队等待超时。
+
+    属于**可恢复的过载保护**，上层应回一句「稍后再试」，而不是当作渲染 bug。
+    """
+
+
+class RenderTimeoutError(RuntimeError):
+    """单个渲染请求超过 `render_timeout` 的硬超时，槽位已被强制释放。"""
+
+
 class minimal_screens_hot_service:
     _instance = None
     _initialized = False
+    # 冷启动并发：多个请求同时进来时，只让一个去启动浏览器，其余等待
+    _start_lock = asyncio.Lock()
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -43,15 +58,19 @@ class minimal_screens_hot_service:
 
     @classmethod
     async def get_instance(cls):
-        if cls._instance is None:
-            instance = minimal_screens_hot_service()
+        async with cls._start_lock:
+            instance = cls._instance
+            if instance is not None and instance.browser is not None and instance.browser.is_connected():
+                return instance
+            if instance is None:
+                instance = cls._instance = minimal_screens_hot_service()
             try:
                 await instance.start()
             except Exception:
                 # 重置单例，免得后续查询拿到 browser=None 的半成品
                 cls._instance = None
                 raise
-        return cls._instance
+            return instance
 
     def __init__(self):
         self.playwright = None
@@ -59,17 +78,32 @@ class minimal_screens_hot_service:
             return
         self.browser: Optional[Browser] = None
         self.user_browser =  None
-        self.context_pages: Dict[str, Page] = {}  # 会话页面缓存
+        self.context_pages: Dict[str, Page] = OrderedDict()  # 会话页面缓存（LRU）
+        self._page_ts: Dict[str, float] = {}  # 会话页面最近使用时间
         self.temp_dir = get_cache_file() / "browser_temp"
         self.temp_dir.mkdir(exist_ok=True)
         self.gc_count = 50
         # 内存监控
         self.last_gc = time.time()
         self.request_count = 0
+        # 过载保护：并发槽位 + 有界排队
+        self._capacity = max(1, int(hikari_config.render_concurrency))
+        self._sem = asyncio.Semaphore(self._capacity)
+        self._active = 0
+        self._waiting = 0
+        self._last_recycle = 0
+        self._recycle_lock = asyncio.Lock()
 
     async def start(self):
         """启动 Playwright 与浏览器内核；失败直接抛错，不留 browser=None 的半成品。"""
         from hikari_core.core.config import hikari_config
+        if self.browser is not None:
+            try:
+                await self.browser.close()
+            except Exception:
+                pass
+            self.browser = None
+        await self._stop_playwright()
         self.user_browser = hikari_config.use_broswer
         # 浏览器临时 profile 落缓存目录（必须在 start() 之前，理由见 use_cache_as_browser_temp）
         self.temp_dir = self.use_cache_as_browser_temp()
@@ -146,9 +180,14 @@ class minimal_screens_hot_service:
                     '--disable-web-security',
                     '--allow-file-access-from-files',
                     '--allow-running-insecure-content',
-                    # 内存优化
-                    # '--single-process',
-                    # '--max_old_space_size=128',
+                    # 内存硬上限：渲染进程数与应用层并发槽位一致；
+                    # 单渲染进程 V8 堆封顶，防止异常页面把整机吃空
+                    f'--renderer-process-limit={self._capacity}',
+                    '--js-flags=--max-old-space-size=512',
+                    '--disable-background-networking',
+                    '--disable-extensions',
+                    '--disable-sync',
+                    '--no-first-run',
                     # 性能优化
                     '--disable-background-timer-throttling',
                     '--disable-renderer-backgrounding',
@@ -225,6 +264,10 @@ class minimal_screens_hot_service:
                 return False
 
 
+    # 会话页面缓存上限：每个常驻页面都占一份渲染内存，必须有界
+    _SESSION_CACHE_MAX = 8
+    _SESSION_TTL = 600
+
     async def create_page(self, session_id: str = None) -> Page:
         """创建优化页面 - 快速轻量"""
 
@@ -240,9 +283,18 @@ class minimal_screens_hot_service:
                         window.__images_total = 0;
                         window.__images_loaded = 0;
                     """)
+                    self.context_pages.move_to_end(session_id)
+                    self._page_ts[session_id] = time.time()
                     return page
             except:
-                del self.context_pages[session_id]
+                pass
+            stale = self.context_pages.pop(session_id, None)
+            self._page_ts.pop(session_id, None)
+            if stale is not None:
+                try:
+                    await stale.context.close()
+                except Exception:
+                    pass
 
         # 创建新页面
         context = await self.browser.new_context(
@@ -372,6 +424,15 @@ class minimal_screens_hot_service:
 
         if session_id:
             self.context_pages[session_id] = page
+            self._page_ts[session_id] = time.time()
+            # 超出上限时淘汰最久未用的会话，并真正关掉它的上下文释放内存
+            while len(self.context_pages) > self._SESSION_CACHE_MAX:
+                old_sid, old_page = self.context_pages.popitem(last=False)
+                self._page_ts.pop(old_sid, None)
+                try:
+                    await old_page.context.close()
+                except Exception:
+                    pass
 
         return page
 
@@ -399,7 +460,96 @@ class minimal_screens_hot_service:
         if hikari_config.render_error_fallback:
             raise BrowserRenderError(message)
 
+    @asynccontextmanager
+    async def _render_slot(self):
+        """获取一个渲染槽位（过载保护）。
+
+        三层限制，从内到外：
+          1. 排队数超过 `render_queue_size` → 立即 RenderBusyError（不再堆积任务）；
+          2. 排队超过 `render_queue_timeout` 秒 → RenderBusyError；
+          3. 拿到槽位后最多占用 `render_timeout` 秒（由调用方套硬超时）。
+        没有这层限制时，每个请求都会 new 一个 Chromium 渲染进程，
+        突发请求会把 2核4G 机器的内存直接打满。
+        """
+        if self._waiting >= hikari_config.render_queue_size:
+            raise RenderBusyError('渲染请求过多，请稍后再试')
+        self._waiting += 1
+        try:
+            await asyncio.wait_for(self._sem.acquire(), timeout=hikari_config.render_queue_timeout)
+        except TimeoutError:
+            raise RenderBusyError('渲染排队超时，请稍后再试') from None
+        finally:
+            self._waiting -= 1
+        self._active += 1
+        try:
+            yield
+        finally:
+            self._active -= 1
+            self._sem.release()
+            try:
+                await self._maybe_recycle_browser()
+            except Exception as e:
+                logger.error(f'检查浏览器内核重建失败: {e}')
+
+    async def _maybe_recycle_browser(self):
+        """周期性重建浏览器内核，释放长期运行累积的内存碎片。
+
+        只有在没有任何渲染进行时才重建；重建期间独占全部槽位，新请求照常排队。
+        """
+        if self._active > 0 or self.request_count - self._last_recycle < 500:
+            return
+        if self._recycle_lock.locked():
+            return
+        # 先拿排他锁再占槽位：避免两个收尾任务互相等对方手里的槽位而死锁
+        async with self._recycle_lock:
+            if self._active > 0 or self.request_count - self._last_recycle < 500:
+                return
+            for _ in range(self._capacity):
+                await self._sem.acquire()
+            try:
+                logger.info(f'已渲染 {self.request_count} 次，重建浏览器内核以释放内存')
+                await self._restart_browser()
+                self._last_recycle = self.request_count
+            finally:
+                for _ in range(self._capacity):
+                    self._sem.release()
+
+    async def _restart_browser(self):
+        """关闭并重新拉起浏览器内核（调用方需保证没有页面在使用）。"""
+        for page in list(self.context_pages.values()):
+            try:
+                await page.context.close()
+            except Exception:
+                pass
+        self.context_pages.clear()
+        self._page_ts.clear()
+        try:
+            if self.browser:
+                await self.browser.close()
+        except Exception:
+            pass
+        self.browser = None
+        try:
+            if self.user_browser == 'firefox':
+                await self.firefox()
+            else:
+                await self.chromium()
+        except Exception as e:
+            logger.error(f'重建浏览器内核失败: {e}')
+
     async def screenshot(self, html_content: str, session_id: str = None, **kwargs) -> bytes:
+        """核心截图入口：受并发槽位与硬超时保护。"""
+        async with self._render_slot():
+            try:
+                async with asyncio.timeout(hikari_config.render_timeout):
+                    return await self._screenshot_impl(html_content, session_id, **kwargs)
+            except TimeoutError:
+                logger.warning(f'渲染硬超时（>{hikari_config.render_timeout:.0f}s），已强制释放槽位')
+                raise RenderTimeoutError('渲染超时，请稍后再试') from None
+            finally:
+                await self._auto_cleanup()
+
+    async def _screenshot_impl(self, html_content: str, session_id: str = None, **kwargs) -> bytes:
         """核心截图方法 - 优化执行流程"""
         self.request_count += 1
 
@@ -531,9 +681,6 @@ class minimal_screens_hot_service:
             total_time = time.time() - load_start
             logger.info(f"请求{self.request_count} - 总耗时: {total_time:.2f}s")
 
-            # 6. 内存清理（定期触发）
-            await self._auto_cleanup()
-
             return image_data
 
         except Exception as e:
@@ -558,6 +705,20 @@ class minimal_screens_hot_service:
     async def screenshot_gif_img(self, html_content: str, session_id: str = None,
                                  fps: int = 10,
                                  duration: int = 3) -> bytes:
+        """GIF 截图入口：与 screenshot 共用同一套并发槽位与硬超时保护。"""
+        async with self._render_slot():
+            try:
+                async with asyncio.timeout(hikari_config.render_timeout):
+                    return await self._screenshot_gif_impl(html_content, session_id, fps, duration)
+            except TimeoutError:
+                logger.warning(f'GIF 渲染硬超时（>{hikari_config.render_timeout:.0f}s），已强制释放槽位')
+                raise RenderTimeoutError('渲染超时，请稍后再试') from None
+            finally:
+                await self._auto_cleanup()
+
+    async def _screenshot_gif_impl(self, html_content: str, session_id: str = None,
+                                   fps: int = 10,
+                                   duration: int = 3) -> bytes:
         """核心截图方法 - 优化执行流程"""
         self.request_count += 1
 
@@ -630,8 +791,6 @@ class minimal_screens_hot_service:
             total_time = time.time() - load_start
             logger.info(f"请求{self.request_count} - 总耗时: {total_time:.2f}s")
 
-            # 6. 内存清理（定期触发）
-            await self._auto_cleanup()
             return image_data
 
         except Exception as e:
@@ -704,22 +863,26 @@ class minimal_screens_hot_service:
             self.last_gc = now
             logger.debug("强制垃圾回收完成")
 
-        # 每10分钟清理过期会话
+        # 每10分钟清理过期会话：空闲超过 TTL 的页面直接关闭并移出缓存，
+        # 否则常驻页面会一直占着渲染内存（旧实现只移除已关闭的页面）
         if now - self.last_gc > 600:
-            expired = []
-            for sid, page in list(self.context_pages.items()):
-                try:
-                    if page.is_closed():
-                        expired.append(sid)
-                except:
-                    expired.append(sid)
-
+            expired = [
+                sid for sid, ts in self._page_ts.items()
+                if now - ts > self._SESSION_TTL
+            ]
             for sid in expired:
-                del self.context_pages[sid]
+                page = self.context_pages.pop(sid, None)
+                self._page_ts.pop(sid, None)
+                if page is not None:
+                    try:
+                        await page.context.close()
+                    except Exception:
+                        pass
 
             gc.collect()
             self.last_gc = now
-            logger.info(f"清理了 {len(expired)} 个过期会话")
+            if expired:
+                logger.info(f"清理了 {len(expired)} 个过期会话")
 
     async def close(self):
         """关闭服务"""
@@ -734,6 +897,7 @@ class minimal_screens_hot_service:
             except:
                 pass
         self.context_pages.clear()
+        self._page_ts.clear()
 
         # 关闭浏览器
         if self.browser:

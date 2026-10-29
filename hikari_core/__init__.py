@@ -18,7 +18,7 @@ from .core.model import Hikari_Model, Input_Model, UserInfo_Model
 # 免得下游 'from hikari_core import server_cn' 这类用法断掉。
 from .core.render_helpers import ba_text_em, server_cn, set_render_params  # noqa: F401
 from .core.user_image_cache import localize_user_images
-from .Html_Render import BrowserRenderError, html_to_pic
+from .Html_Render import BrowserRenderError, RenderBusyError, RenderTimeoutError, html_to_pic
 from .commands.parser import analyze_command
 # 供外部 bot 使用的公共指令 API（显式导出，替代通配导入）
 from .commands.router import (  # noqa: F401
@@ -204,6 +204,11 @@ async def output_hikari(hikari: Hikari_Model) -> Hikari_Model:
         # 浏览器端渲染没成功，与其给用户一张写着报错的图，不如回一条文本错误。
         logger.error(traceback.format_exc())
         return Hikari_Model().error(f'模板渲染错误（浏览器端），请将日志中的报错提交给开发者\n{e}')
+    except (RenderBusyError, RenderTimeoutError) as e:
+        # 过载保护：并发/排队/硬超时触顶。属于可恢复状态，回一句「稍后再试」即可，
+        # 不按渲染 bug 处理（不打完整 traceback 刷屏）。
+        logger.warning(f'渲染过载保护: {e}')
+        return Hikari_Model().error(str(e))
     except playwright_Error as e:
         logger.error(traceback.format_exc())
         return Hikari_Model().error(f'playwright错误，请检查浏览器内核是否异常结束，可能是由于服务器版本过低，请升级至winserver2016+或改为firefox启动。\n{e}')
